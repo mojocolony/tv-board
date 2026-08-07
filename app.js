@@ -13,7 +13,7 @@
   const els = {
     boardView: $('boardView'), archiveView: $('archiveView'), kanbanBoard: $('kanbanBoard'), archiveGrid: $('archiveGrid'),
     archiveEmpty: $('archiveEmpty'), archiveEmptyText: $('archiveEmptyText'), archiveTitle: $('archiveTitle'), archiveEyebrow: $('archiveEyebrow'),
-    archiveSort: $('archiveSort'), searchInput: $('searchInput'), addButton: $('addButton'), quickAddColumnButton: $('quickAddColumnButton'),
+    archiveSort: $('archiveSort'), searchInput: $('searchInput'), tagFilter: $('tagFilter'), addButton: $('addButton'), quickAddColumnButton: $('quickAddColumnButton'),
     boardCount: $('boardCount'), watchedCount: $('watchedCount'), abandonedCount: $('abandonedCount'),
     showDialog: $('showDialog'), showForm: $('showForm'), showDialogTitle: $('showDialogTitle'), showId: $('showId'),
     showTitle: $('showTitle'), showLocation: $('showLocation'), showRating: $('showRating'), showPoster: $('showPoster'),
@@ -185,13 +185,59 @@
     return state.shows.filter(s => !s.archive && s.columnId === columnId).sort((a, b) => a.order - b.order || a.title.localeCompare(b.title));
   }
 
-  function searchMatches(show) {
+  function activeTag() {
+    return String(els.tagFilter?.value || '').trim().toLowerCase();
+  }
+
+  function isFiltering() {
+    return !!els.searchInput.value.trim() || !!activeTag();
+  }
+
+  function showMatches(show) {
+    const selectedTag = activeTag();
+    if (selectedTag && !show.tags.some(t => t.toLowerCase() === selectedTag)) return false;
     const q = els.searchInput.value.trim().toLowerCase();
     if (!q) return true;
     return show.title.toLowerCase().includes(q) || show.tags.some(t => t.toLowerCase().includes(q)) || show.notes.toLowerCase().includes(q);
   }
 
+  function renderTagFilter() {
+    if (!els.tagFilter) return;
+    const selected = activeTag();
+    const tags = new Map();
+    for (const show of state.shows) {
+      for (const tag of show.tags) {
+        const key = tag.toLowerCase();
+        const existing = tags.get(key);
+        if (existing) existing.count += 1;
+        else tags.set(key, { label: tag, count: 1 });
+      }
+    }
+    const sorted = [...tags.entries()].sort((a, b) => a[1].label.localeCompare(b[1].label, undefined, { sensitivity: 'base' }));
+    els.tagFilter.replaceChildren();
+    const all = document.createElement('option');
+    all.value = '';
+    all.textContent = sorted.length ? `All tags (${sorted.length})` : 'All tags';
+    els.tagFilter.appendChild(all);
+    for (const [key, info] of sorted) {
+      const option = document.createElement('option');
+      option.value = key;
+      option.textContent = `${info.label} (${info.count})`;
+      els.tagFilter.appendChild(option);
+    }
+    els.tagFilter.value = tags.has(selected) ? selected : '';
+  }
+
+  function selectTag(tag) {
+    const key = String(tag || '').trim().toLowerCase();
+    if (!key || !els.tagFilter) return;
+    renderTagFilter();
+    els.tagFilter.value = key;
+    render();
+  }
+
   function render() {
+    renderTagFilter();
     renderTabs();
     if (activeView === 'board') renderBoard();
     else renderArchive(activeView);
@@ -216,7 +262,7 @@
     els.kanbanBoard.replaceChildren();
     for (const column of state.columns) {
       const allShows = orderedShowsForColumn(column.id);
-      const visible = allShows.filter(searchMatches);
+      const visible = allShows.filter(showMatches);
       const section = document.createElement('section');
       section.className = 'kanban-column';
       section.dataset.columnId = column.id;
@@ -254,12 +300,14 @@
     els.archiveEyebrow.textContent = 'ARCHIVE';
     els.archiveTitle.textContent = isWatched ? 'Watched' : 'Abandoned';
     els.archiveEmptyText.textContent = isWatched ? 'Shows you finish will collect here.' : 'Shows you decide not to continue will collect here.';
-    let shows = state.shows.filter(s => s.archive === kind && searchMatches(s));
+    let shows = state.shows.filter(s => s.archive === kind && showMatches(s));
     const sort = els.archiveSort.value;
     if (sort === 'title') shows.sort((a, b) => a.title.localeCompare(b.title));
     else if (sort === 'rating') shows.sort((a, b) => b.rating - a.rating || a.title.localeCompare(b.title));
     else shows.sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt));
     els.archiveGrid.replaceChildren();
+    if (!shows.length && isFiltering()) els.archiveEmptyText.textContent = 'No shows in this archive match the current search or tag filter.';
+    else els.archiveEmptyText.textContent = isWatched ? 'Shows you finish will collect here.' : 'Shows you decide not to continue will collect here.';
     els.archiveEmpty.hidden = shows.length > 0;
     for (const show of shows) els.archiveGrid.appendChild(showCard(show, { draggable: false }));
   }
@@ -268,7 +316,8 @@
     const card = document.createElement('article');
     card.className = 'show-card';
     card.dataset.showId = show.id;
-    card.draggable = !!draggable && !els.searchInput.value.trim();
+    const canDrag = !!draggable && !isFiltering();
+    card.draggable = false;
     card.tabIndex = 0;
     card.setAttribute('role', 'button');
     card.setAttribute('aria-label', `Edit ${show.title}`);
@@ -289,7 +338,15 @@
     if (show.rating > 0) {
       const rating = document.createElement('div'); rating.className = 'rating-line'; rating.textContent = ratingStars(show.rating); rating.title = `${show.rating} out of 5`; titleActions.appendChild(rating);
     }
-    const handle = document.createElement('span'); handle.className = 'drag-handle'; handle.textContent = draggable ? '•••' : '';
+    const handle = document.createElement('button');
+    handle.type = 'button';
+    handle.className = 'card-drag-handle';
+    handle.hidden = !canDrag;
+    handle.draggable = canDrag;
+    handle.title = 'Drag to move';
+    handle.setAttribute('aria-label', `Drag ${show.title}`);
+    handle.addEventListener('click', e => { e.preventDefault(); e.stopPropagation(); });
+    handle.addEventListener('pointerdown', e => e.stopPropagation());
     titleActions.appendChild(handle);
     titleRow.append(h3, titleActions);
     body.appendChild(titleRow);
@@ -299,7 +356,15 @@
 
     if (show.tags.length) {
       const tags = document.createElement('div'); tags.className = 'tag-list';
-      for (const text of show.tags.slice(0, 3)) { const tag = document.createElement('span'); tag.className = 'tag'; tag.textContent = text; tags.appendChild(tag); }
+      for (const text of show.tags.slice(0, 3)) {
+        const tag = document.createElement('button');
+        tag.type = 'button';
+        tag.className = 'tag tag-button';
+        tag.textContent = text;
+        tag.title = `Show all “${text}” titles in this view`;
+        tag.addEventListener('click', e => { e.preventDefault(); e.stopPropagation(); selectTag(text); });
+        tags.appendChild(tag);
+      }
       body.appendChild(tags);
     }
 
@@ -323,7 +388,7 @@
     card.append(posterWrap, body);
     card.addEventListener('click', () => openShowDialog(show));
     card.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openShowDialog(show); } });
-    if (card.draggable) attachDragCard(card, show);
+    if (canDrag) attachDragCard(card, show, handle);
     return card;
   }
 
@@ -407,21 +472,22 @@
     document.querySelectorAll('.kanban-column').forEach(c => c.classList.remove('drag-over'));
   }
 
-  function attachDragCard(card, show) {
-    card.addEventListener('dragstart', e => {
+  function attachDragCard(card, show, handle) {
+    handle.addEventListener('dragstart', e => {
       draggedShowId = show.id;
       card.classList.add('dragging');
       clearCardDropIndicators();
       e.dataTransfer.effectAllowed = 'move';
       e.dataTransfer.setData('text/plain', show.id);
+      try { e.dataTransfer.setDragImage(card, Math.min(card.offsetWidth - 24, 36), 24); } catch (_) {}
     });
-    card.addEventListener('dragend', () => {
+    handle.addEventListener('dragend', () => {
       draggedShowId = null;
       card.classList.remove('dragging');
       clearCardDropIndicators();
     });
     card.addEventListener('dragover', e => {
-      if (!draggedShowId || draggedShowId === show.id || els.searchInput.value.trim()) return;
+      if (!draggedShowId || draggedShowId === show.id || isFiltering()) return;
       e.preventDefault();
       e.stopPropagation();
       e.dataTransfer.dropEffect = 'move';
@@ -436,7 +502,7 @@
       if (!card.contains(e.relatedTarget)) card.classList.remove('card-drop-before', 'card-drop-after');
     });
     card.addEventListener('drop', e => {
-      if (!draggedShowId || draggedShowId === show.id || els.searchInput.value.trim()) return;
+      if (!draggedShowId || draggedShowId === show.id || isFiltering()) return;
       e.preventDefault(); e.stopPropagation();
       const rect = card.getBoundingClientRect();
       const after = e.clientY >= rect.top + rect.height / 2;
@@ -449,7 +515,7 @@
 
   function attachDropZone(body, columnId) {
     body.addEventListener('dragover', e => {
-      if (!draggedShowId || els.searchInput.value.trim()) return;
+      if (!draggedShowId || isFiltering()) return;
       if (e.target.closest?.('.show-card')) return;
       e.preventDefault(); e.dataTransfer.dropEffect = 'move';
       clearCardDropIndicators();
@@ -463,7 +529,7 @@
       }
     });
     body.addEventListener('drop', e => {
-      if (!draggedShowId || els.searchInput.value.trim()) return;
+      if (!draggedShowId || isFiltering()) return;
       if (e.target.closest?.('.show-card')) return;
       e.preventDefault();
       const movingId = draggedShowId;
@@ -1252,6 +1318,7 @@
 
   document.querySelectorAll('.view-tab').forEach(button => button.addEventListener('click', () => { activeView = button.dataset.view; render(); }));
   els.searchInput.addEventListener('input', render);
+  els.tagFilter.addEventListener('change', render);
   els.archiveSort.addEventListener('change', render);
   els.addButton.addEventListener('click', () => openShowDialog());
   els.lookupShowButton.addEventListener('click', lookupShows);

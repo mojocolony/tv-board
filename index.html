@@ -35,9 +35,17 @@
     </nav>
 
     <section class="toolbar" aria-label="TV controls">
-      <div class="search-wrap">
-        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m21 20-4.35-4.35a7.5 7.5 0 1 0-1 1L20 21l1-1ZM5 11a6 6 0 1 1 12 0 6 6 0 0 1-12 0Z"/></svg>
-        <input id="searchInput" type="search" placeholder="Search shows or tags" autocomplete="off">
+      <div class="toolbar-left">
+        <div class="search-wrap">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m21 20-4.35-4.35a7.5 7.5 0 1 0-1 1L20 21l1-1ZM5 11a6 6 0 1 1 12 0 6 6 0 0 1-12 0Z"/></svg>
+          <input id="searchInput" type="search" placeholder="Search shows or tags" autocomplete="off">
+        </div>
+        <label class="tag-filter-wrap">
+          <span class="tag-filter-label">Tag</span>
+          <select id="tagFilter" aria-label="Filter shows by tag">
+            <option value="">All tags</option>
+          </select>
+        </label>
       </div>
       <div class="toolbar-right">
         <div class="sync-chip" id="syncChip" title="Storage status">
@@ -78,7 +86,7 @@
 
     <footer>
       <span id="footerMessage">Your TV board is stored only in this browser.</span>
-      <span class="footer-tip">Tip: drag column headers to reorder columns and drag cards between them on desktop; use the column arrows and card editor on touch devices. <a href="https://www.tvmaze.com/" target="_blank" rel="noopener noreferrer">TV data &amp; artwork via TVmaze</a>.</span>
+      <span class="footer-tip">Tip: click any tag to filter by it. Drag column headers to reorder columns and use each card’s grab handle to move shows. <a href="https://www.tvmaze.com/" target="_blank" rel="noopener noreferrer">TV data &amp; artwork via TVmaze</a>.</span>
     </footer>
   </main>
 
