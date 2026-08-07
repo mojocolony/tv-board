@@ -4,6 +4,7 @@
   const STORAGE_KEY = 'tvBoard.state.v1';
   const DROPBOX_KEY = 'tvBoard.dropbox.v1';
   const PKCE_KEY = 'tvBoard.pkce.v1';
+  const PREFS_KEY = 'tvBoard.settings.v1';
   const DATA_PATH = '/tv-board.json';
   const ARCHIVE_WATCHED = 'watched';
   const ARCHIVE_ABANDONED = 'abandoned';
@@ -18,6 +19,7 @@
     showTitle: $('showTitle'), showLocation: $('showLocation'), showRating: $('showRating'), showPoster: $('showPoster'),
     lookupShowButton: $('lookupShowButton'), lookupStatus: $('lookupStatus'), lookupResults: $('lookupResults'),
     showMetacritic: $('showMetacritic'), showSeasons: $('showSeasons'), showEpisodes: $('showEpisodes'), showTags: $('showTags'),
+    streamingPreview: $('streamingPreview'), streamingProvidersText: $('streamingProvidersText'), streamingProvidersNote: $('streamingProvidersNote'),
     showNotes: $('showNotes'), deleteShowButton: $('deleteShowButton'),
     columnsButton: $('columnsButton'), columnsDialog: $('columnsDialog'), closeColumnsButton: $('closeColumnsButton'),
     columnManager: $('columnManager'), addColumnForm: $('addColumnForm'), newColumnName: $('newColumnName'),
@@ -26,17 +28,21 @@
     dropboxStatus: $('dropboxStatus'), dropboxSetup: $('dropboxSetup'), dropboxConnected: $('dropboxConnected'),
     dropboxAppKey: $('dropboxAppKey'), redirectUriText: $('redirectUriText'), copyRedirectButton: $('copyRedirectButton'),
     connectDropboxButton: $('connectDropboxButton'), syncNowButton: $('syncNowButton'), disconnectDropboxButton: $('disconnectDropboxButton'),
+    tmdbStatus: $('tmdbStatus'), tmdbCredential: $('tmdbCredential'), saveTmdbButton: $('saveTmdbButton'), refreshProvidersButton: $('refreshProvidersButton'),
     exportButton: $('exportButton'), importInput: $('importInput'), toast: $('toast')
   };
 
   let state = loadState();
   let dbx = loadDropbox();
+  let prefs = loadPrefs();
   let activeView = 'board';
   let syncTimer = null;
   let toastTimer = null;
   let draggedShowId = null;
   let draggedColumnId = null;
   let lookupController = null;
+  let draftMeta = {};
+  let providerRefreshRunning = false;
 
   function nowIso() { return new Date().toISOString(); }
   function uuid() { return crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}-${Math.random().toString(16).slice(2)}`; }
@@ -77,6 +83,13 @@
       tags: Array.isArray(s.tags) ? cleanTags(s.tags) : cleanTags(String(s.tags || '').split(',')),
       rating: clampRating(s.rating),
       notes: String(s.notes || '').slice(0, 2000),
+      tvmazeId: integerOrNull(s.tvmazeId),
+      imdbId: String(s.imdbId || '').trim().slice(0, 30),
+      tmdbId: integerOrNull(s.tmdbId),
+      firstAirYear: integerOrNull(s.firstAirYear),
+      providers: cleanProviders(s.providers),
+      providersUpdatedAt: validDateString(s.providersUpdatedAt) ? s.providersUpdatedAt : null,
+      providerLink: safeUrl(s.providerLink || ''),
       order: Number.isFinite(Number(s.order)) ? Number(s.order) : index,
       updatedAt: validDateString(s.updatedAt) ? s.updatedAt : nowIso()
     })) : [];
@@ -112,6 +125,18 @@
     updateDropboxUI();
   }
 
+  function loadPrefs() {
+    try {
+      const parsed = JSON.parse(localStorage.getItem(PREFS_KEY));
+      return parsed && typeof parsed === 'object' ? { tmdbCredential: '', ...parsed } : { tmdbCredential: '' };
+    } catch (_) { return { tmdbCredential: '' }; }
+  }
+
+  function savePrefs() {
+    localStorage.setItem(PREFS_KEY, JSON.stringify(prefs));
+    updateTmdbUI();
+  }
+
   function safeUrl(value) {
     const text = String(value || '').trim();
     if (!text) return '';
@@ -127,6 +152,11 @@
     const n = Math.max(0, Math.round(Number(value)));
     return Number.isFinite(n) ? n : null;
   }
+  function integerOrNull(value) {
+    if (value === '' || value === null || value === undefined) return null;
+    const n = Math.round(Number(value));
+    return Number.isFinite(n) && n > 0 ? n : null;
+  }
   function clampRating(value) {
     const n = Number(value);
     if (!Number.isFinite(n)) return 0;
@@ -139,6 +169,16 @@
       if (seen.has(key)) return false;
       seen.add(key); return true;
     }).slice(0, 20);
+  }
+
+  function cleanProviders(providers) {
+    if (!Array.isArray(providers)) return [];
+    const seen = new Set();
+    return providers.map(p => String(p || '').trim()).filter(Boolean).map(p => p.slice(0, 80)).filter(p => {
+      const key = p.toLowerCase();
+      if (seen.has(key)) return false;
+      seen.add(key); return true;
+    }).slice(0, 12);
   }
 
   function orderedShowsForColumn(columnId) {
@@ -261,6 +301,13 @@
       const tags = document.createElement('div'); tags.className = 'tag-list';
       for (const text of show.tags.slice(0, 3)) { const tag = document.createElement('span'); tag.className = 'tag'; tag.textContent = text; tags.appendChild(tag); }
       body.appendChild(tags);
+    }
+
+    if (show.providers.length) {
+      const watch = document.createElement('div'); watch.className = 'watch-line';
+      const label = document.createElement('strong'); label.textContent = 'Watch';
+      const services = document.createElement('span'); services.textContent = show.providers.join(' · ');
+      watch.append(label, services); body.appendChild(watch);
     }
 
     if (show.metacritic || show.notes) {
@@ -475,6 +522,78 @@
     return [year, channel, country].filter(Boolean).join(' · ') || 'TV series';
   }
 
+  function tmdbCredentialLooksLikeApiKey(value) {
+    return /^[a-f0-9]{32}$/i.test(String(value || '').trim());
+  }
+
+  async function tmdbFetch(path, params = {}, credential = prefs.tmdbCredential) {
+    const cred = String(credential || '').trim();
+    if (!cred) throw new Error('TMDB is not configured');
+    const url = new URL(`https://api.themoviedb.org/3${path}`);
+    for (const [key, value] of Object.entries(params)) if (value !== null && value !== undefined && value !== '') url.searchParams.set(key, String(value));
+    const headers = { 'Accept': 'application/json' };
+    if (tmdbCredentialLooksLikeApiKey(cred)) url.searchParams.set('api_key', cred);
+    else headers.Authorization = `Bearer ${cred}`;
+    const response = await fetch(url, { headers });
+    if (!response.ok) throw new Error(`TMDB returned ${response.status}`);
+    return response.json();
+  }
+
+  function normalizedTitle(value) {
+    return String(value || '').trim().toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim();
+  }
+
+  async function resolveTmdbId(meta) {
+    if (integerOrNull(meta.tmdbId)) return integerOrNull(meta.tmdbId);
+    const imdbId = String(meta.imdbId || '').trim();
+    if (imdbId) {
+      const found = await tmdbFetch(`/find/${encodeURIComponent(imdbId)}`, { external_source: 'imdb_id' });
+      const tv = Array.isArray(found.tv_results) ? found.tv_results : [];
+      if (tv.length === 1) return integerOrNull(tv[0].id);
+      if (tv.length > 1) {
+        const exact = tv.find(r => normalizedTitle(r.name) === normalizedTitle(meta.title));
+        if (exact) return integerOrNull(exact.id);
+      }
+    }
+
+    const search = await tmdbFetch('/search/tv', { query: meta.title, language: 'en-CA' });
+    const results = Array.isArray(search.results) ? search.results : [];
+    const exact = results.filter(r => normalizedTitle(r.name) === normalizedTitle(meta.title) || normalizedTitle(r.original_name) === normalizedTitle(meta.title));
+    if (meta.firstAirYear) {
+      const sameYear = exact.find(r => String(r.first_air_date || '').slice(0, 4) === String(meta.firstAirYear));
+      if (sameYear) return integerOrNull(sameYear.id);
+    }
+    if (exact.length === 1) return integerOrNull(exact[0].id);
+    return null;
+  }
+
+  async function fetchCanadianProviders(meta) {
+    const tmdbId = await resolveTmdbId(meta);
+    if (!tmdbId) return { resolved: false, tmdbId: null, providers: [], providerLink: '', providersUpdatedAt: null };
+    const data = await tmdbFetch(`/tv/${tmdbId}/watch/providers`);
+    const ca = data?.results?.CA || null;
+    const providers = cleanProviders((ca?.flatrate || []).map(p => p?.provider_name));
+    return {
+      resolved: true,
+      tmdbId,
+      providers,
+      providerLink: safeUrl(ca?.link || ''),
+      providersUpdatedAt: nowIso()
+    };
+  }
+
+  function updateStreamingPreview(meta = draftMeta) {
+    const checked = validDateString(meta?.providersUpdatedAt);
+    const providers = cleanProviders(meta?.providers);
+    if (!checked && !providers.length) {
+      els.streamingPreview.hidden = true;
+      return;
+    }
+    els.streamingPreview.hidden = false;
+    els.streamingProvidersText.textContent = providers.length ? providers.join(' · ') : 'No subscription service found';
+    els.streamingProvidersNote.textContent = checked ? 'Canada only · subscription services only · availability via JustWatch/TMDB' : '';
+  }
+
   async function lookupShows() {
     const query = els.showTitle.value.trim();
     if (!query) { setLookupStatus('Type a show title first.'); els.showTitle.focus(); return; }
@@ -556,7 +675,32 @@
         const existing = cleanTags(els.showTags.value.split(','));
         els.showTags.value = cleanTags([...existing, ...show.genres]).join(', ');
       }
-      setLookupStatus('Details added. Add the Metacritic link, your tags, rating, or notes if you want them.');
+
+      draftMeta = {
+        ...draftMeta,
+        tvmazeId: integerOrNull(show.id),
+        imdbId: String(show.externals?.imdb || '').trim(),
+        firstAirYear: integerOrNull(String(show.premiered || '').slice(0, 4))
+      };
+
+      let streamingMessage = '';
+      if (prefs.tmdbCredential) {
+        setLookupStatus(`Details added. Checking Canadian streaming for ${show.name}…`);
+        try {
+          const streaming = await fetchCanadianProviders({ title: show.name, ...draftMeta });
+          if (streaming.resolved) {
+            draftMeta = { ...draftMeta, ...streaming };
+            updateStreamingPreview();
+            streamingMessage = streaming.providers.length
+              ? ` Streaming: ${streaming.providers.join(', ')}.`
+              : ' No Canadian subscription service was found.';
+          } else streamingMessage = ' Streaming could not be matched automatically.';
+        } catch (err) {
+          console.error(err);
+          streamingMessage = ' Streaming availability could not be checked.';
+        }
+      }
+      setLookupStatus(`Details added.${streamingMessage} Add the Metacritic link, your tags, rating, or notes if you want them.`);
     } catch (err) {
       console.error(err);
       setLookupStatus('Some show details could not be loaded. You can fill in anything missing manually.');
@@ -569,6 +713,11 @@
   function openShowDialog(show = null, columnId = null) {
     clearLookupUI();
     els.showForm.reset();
+    draftMeta = show ? {
+      tvmazeId: show.tvmazeId, imdbId: show.imdbId, tmdbId: show.tmdbId, firstAirYear: show.firstAirYear,
+      providers: [...show.providers], providersUpdatedAt: show.providersUpdatedAt, providerLink: show.providerLink
+    } : {};
+    updateStreamingPreview();
     populateLocationSelect(show);
     if (show) {
       els.showDialogTitle.textContent = 'Edit Show';
@@ -614,6 +763,13 @@
       tags: cleanTags(els.showTags.value.split(',')),
       rating: clampRating(els.showRating.value),
       notes: els.showNotes.value.trim().slice(0, 2000),
+      tvmazeId: integerOrNull(draftMeta.tvmazeId),
+      imdbId: String(draftMeta.imdbId || '').trim().slice(0, 30),
+      tmdbId: integerOrNull(draftMeta.tmdbId),
+      firstAirYear: integerOrNull(draftMeta.firstAirYear),
+      providers: cleanProviders(draftMeta.providers),
+      providersUpdatedAt: validDateString(draftMeta.providersUpdatedAt) ? draftMeta.providersUpdatedAt : null,
+      providerLink: safeUrl(draftMeta.providerLink || ''),
       updatedAt: nowIso()
     };
 
@@ -736,6 +892,79 @@
     if (!/^https?:$/.test(location.protocol)) return '';
     return location.origin + location.pathname;
   }
+
+  function updateTmdbUI() {
+    const configured = !!prefs.tmdbCredential;
+    els.tmdbStatus.textContent = configured ? 'Configured' : 'Not configured';
+    if (document.activeElement !== els.tmdbCredential) els.tmdbCredential.value = prefs.tmdbCredential || '';
+    els.refreshProvidersButton.disabled = !configured || providerRefreshRunning;
+  }
+
+  async function saveAndTestTmdb() {
+    const credential = els.tmdbCredential.value.trim();
+    if (!credential) {
+      prefs.tmdbCredential = ''; savePrefs(); showToast('TMDB credential removed'); return;
+    }
+    els.saveTmdbButton.disabled = true;
+    els.saveTmdbButton.textContent = 'Testing…';
+    try {
+      await tmdbFetch('/authentication', {}, credential);
+      prefs.tmdbCredential = credential;
+      savePrefs();
+      showToast('TMDB connected');
+      refreshAllProviders({ interactive: false, includeUnlinked: false });
+    } catch (err) {
+      console.error(err);
+      showToast('TMDB credential was not accepted');
+    } finally {
+      els.saveTmdbButton.disabled = false;
+      els.saveTmdbButton.textContent = 'Save & test';
+      updateTmdbUI();
+    }
+  }
+
+  async function refreshAllProviders({ interactive = true, includeUnlinked = true } = {}) {
+    if (!prefs.tmdbCredential || providerRefreshRunning) return;
+    providerRefreshRunning = true;
+    updateTmdbUI();
+    const shows = state.shows.filter(show => includeUnlinked || show.tmdbId || show.imdbId);
+    let refreshed = 0, unmatched = 0, failed = 0;
+    try {
+      for (const show of shows) {
+        try {
+          const streaming = await fetchCanadianProviders(show);
+          if (!streaming.resolved) { unmatched++; continue; }
+          const before = JSON.stringify([show.tmdbId, show.providers, show.providerLink]);
+          show.tmdbId = streaming.tmdbId;
+          show.providers = streaming.providers;
+          show.providerLink = streaming.providerLink;
+          show.providersUpdatedAt = streaming.providersUpdatedAt;
+          if (JSON.stringify([show.tmdbId, show.providers, show.providerLink]) !== before) show.updatedAt = nowIso();
+          refreshed++;
+        } catch (err) { console.error(err); failed++; }
+      }
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+      render();
+      if (dbx.connected && refreshed) scheduleSync();
+      if (interactive) {
+        const parts = [`${refreshed} ${refreshed === 1 ? 'show' : 'shows'} checked`];
+        if (unmatched) parts.push(`${unmatched} not matched`);
+        if (failed) parts.push(`${failed} failed`);
+        showToast(parts.join(' · '));
+      }
+    } finally {
+      providerRefreshRunning = false;
+      updateTmdbUI();
+    }
+  }
+
+  function maybeAutoRefreshProviders() {
+    if (!prefs.tmdbCredential || providerRefreshRunning) return;
+    const cutoff = Date.now() - 7 * 86400000;
+    const stale = state.shows.some(show => (show.tmdbId || show.imdbId) && (!show.providersUpdatedAt || new Date(show.providersUpdatedAt).getTime() < cutoff));
+    if (stale) refreshAllProviders({ interactive: false, includeUnlinked: false });
+  }
+
   function updateDropboxUI() {
     const connected = !!dbx.connected;
     els.dropboxSetup.hidden = connected;
@@ -937,8 +1166,10 @@
   els.closeColumnsButton.addEventListener('click', () => els.columnsDialog.close());
   els.addColumnForm.addEventListener('submit', e => { e.preventDefault(); addColumn(els.newColumnName.value); els.newColumnName.value = ''; els.newColumnName.focus(); });
 
-  els.settingsButton.addEventListener('click', () => { updateDropboxUI(); els.settingsDialog.showModal(); });
+  els.settingsButton.addEventListener('click', () => { updateDropboxUI(); updateTmdbUI(); els.settingsDialog.showModal(); });
   els.closeSettingsButton.addEventListener('click', () => els.settingsDialog.close());
+  els.saveTmdbButton.addEventListener('click', saveAndTestTmdb);
+  els.refreshProvidersButton.addEventListener('click', () => refreshAllProviders({ interactive: true, includeUnlinked: true }));
   els.copyRedirectButton.addEventListener('click', async () => {
     const redirect = getRedirectUri();
     if (!redirect) { showToast('Host the app on HTTPS first'); return; }
@@ -957,5 +1188,9 @@
   if ('serviceWorker' in navigator && location.protocol.startsWith('http')) navigator.serviceWorker.register('./service-worker.js').catch(() => {});
 
   render();
-  handleOAuthReturn().then(() => { if (dbx.connected && !new URLSearchParams(location.search).get('code')) syncWithDropbox(); });
+  updateTmdbUI();
+  handleOAuthReturn().then(() => {
+    if (dbx.connected && !new URLSearchParams(location.search).get('code')) syncWithDropbox();
+    setTimeout(maybeAutoRefreshProviders, 700);
+  });
 })();

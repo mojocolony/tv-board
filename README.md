@@ -13,7 +13,8 @@ A small browser-based Kanban board made specifically for television viewing.
 - Tap/click any card to edit or move it on touch devices
 - Separate Watched and Abandoned archives
 - Compact landscape artwork header on each show card
-- Optional one-click TVmaze lookup for landscape artwork, genres, seasons, and episode count
+- One-click TVmaze lookup for landscape artwork, genres, seasons, and episode count
+- Optional Canadian subscription-streaming availability via TMDB + JustWatch
 - Metacritic link
 - Season and episode counts
 - Custom tags
@@ -65,3 +66,18 @@ Days Until will continue using `/days-until.json`, while TV Board uses `/tv-boar
 - Dropbox authorization tokens remain in each browser. Do not connect Dropbox on a public/shared computer.
 - When search is active, drag-and-drop is disabled so filtering cannot accidentally change card order.
 - The app merges show changes by show ID and edit time. Column configuration uses the newest column edit time. Deleted-item markers are kept for 180 days to reduce the chance that an older device restores a deleted show.
+
+
+## Canadian streaming availability
+
+TV Board keeps TVmaze as the source for artwork and show metadata. TMDB is used only to identify subscription streaming providers in Canada; the availability data is powered by JustWatch. Rental, purchase, free, and ad-supported listings are ignored.
+
+1. Create a free TMDB developer API credential.
+2. In TV Board, open Settings.
+3. Under Canadian Streaming, paste either your TMDB **API Read Access Token** or your v3 **API Key**.
+4. Choose **Save & test**.
+5. Choose **Refresh all shows** once to match existing shows and add Canadian subscription services.
+
+After that, new shows found through TVmaze will also check Canadian streaming automatically. Linked shows are refreshed periodically while TV Board is open. Your TMDB credential is stored only in that browser and is not written to Dropbox or GitHub; the resulting provider names are part of the board data and can sync through Dropbox.
+
+TMDB attribution and the required JustWatch source attribution are included in the Settings screen.

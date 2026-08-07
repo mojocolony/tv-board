@@ -151,6 +151,12 @@
           <input id="showEpisodes" type="number" min="0" max="99999" step="1" placeholder="24" inputmode="numeric">
         </label>
 
+        <div id="streamingPreview" class="streaming-preview span-2" hidden>
+          <span class="small-label">Subscription streaming in Canada</span>
+          <strong id="streamingProvidersText"></strong>
+          <small id="streamingProvidersNote"></small>
+        </div>
+
         <label class="span-2">
           <span>Tags</span>
           <input id="showTags" type="text" maxlength="300" placeholder="British, spy, drama, Apple TV+" autocomplete="off">
@@ -195,7 +201,7 @@
     <div class="dialog-heading">
       <div>
         <p class="eyebrow">SETTINGS</p>
-        <h2>Storage & Sync</h2>
+        <h2>Storage, Sync & Streaming</h2>
       </div>
       <button class="icon-button close-button" id="closeSettingsButton" type="button" aria-label="Close">×</button>
     </div>
@@ -209,6 +215,29 @@
           Import backup
           <input id="importInput" type="file" accept="application/json,.json">
         </label>
+      </div>
+    </section>
+
+    <section class="settings-section streaming-section">
+      <div class="setting-title-row">
+        <h3>Canadian Streaming</h3>
+        <span class="mini-status" id="tmdbStatus">Not configured</span>
+      </div>
+      <p>Show subscription streaming services available in Canada. TV Board keeps TVmaze for artwork and show details, and uses TMDB’s JustWatch-powered availability data only for streaming.</p>
+      <label>
+        <span>TMDB API Read Access Token or API Key</span>
+        <input id="tmdbCredential" type="password" placeholder="Paste your TMDB credential" autocomplete="off" autocapitalize="off" spellcheck="false">
+      </label>
+      <p class="helper-text">The credential is stored only in this browser, never in Dropbox or GitHub. Subscription services only: rental, purchase, free, and ad-supported listings are ignored.</p>
+      <div class="settings-actions">
+        <button class="secondary-button" id="saveTmdbButton" type="button">Save &amp; test</button>
+        <button class="secondary-button" id="refreshProvidersButton" type="button">Refresh all shows</button>
+      </div>
+      <div class="api-credits">
+        <a class="tmdb-credit" href="https://www.themoviedb.org/" target="_blank" rel="noopener noreferrer" aria-label="TMDB">
+          <img src="https://www.themoviedb.org/assets/2/v4/logos/v2/blue_square_1-5bdc75aaebeb75dc7ae79426ddd9be3b2be1e342510f8202baf6bffa71d7f5c4.svg" alt="TMDB">
+        </a>
+        <p>This product uses the TMDB API but is not endorsed or certified by TMDB. Streaming availability data is provided by JustWatch via TMDB.</p>
       </div>
     </section>
 

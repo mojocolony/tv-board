@@ -713,3 +713,44 @@ footer a { color: inherit; text-underline-offset: 2px; }
   .poster-wrap { height: 100px; }
   .archive-grid .show-card .poster-wrap { height: 100px; }
 }
+
+
+/* Canadian streaming availability */
+.watch-line {
+  display: flex;
+  gap: 6px;
+  align-items: baseline;
+  margin-top: 7px;
+  color: #5e5a52;
+  font-size: 10.5px;
+  line-height: 1.35;
+}
+.watch-line strong {
+  color: var(--ink);
+  font-size: 10.5px;
+  font-weight: 800;
+}
+.streaming-preview {
+  padding: 10px 11px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: rgba(255,255,255,.42);
+}
+.streaming-preview > * { display: block; }
+.streaming-preview strong { margin-top: 4px; font-size: 13px; }
+.streaming-preview small { margin-top: 3px; }
+.setting-title-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.api-credits {
+  display: grid;
+  grid-template-columns: 42px 1fr;
+  gap: 11px;
+  align-items: center;
+  margin-top: 15px;
+  padding: 11px;
+  border: 1px solid var(--line);
+  border-radius: 11px;
+  background: rgba(255,255,255,.42);
+}
+.api-credits p { margin: 0; font-size: 10px; line-height: 1.45; }
+.tmdb-credit { display: block; width: 42px; height: 42px; }
+.tmdb-credit img { display: block; width: 42px; height: 42px; object-fit: contain; }
