@@ -507,6 +507,21 @@ footer {
 .helper-text code, .connected-message code { font-size: .95em; }
 .settings-note { margin-top: 16px !important; margin-bottom: 22px !important; color: #99948a; font-size: 10.5px; line-height: 1.45; }
 
+
+.tmdb-test-message {
+  margin-top: 10px !important;
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: rgba(255,255,255,.45);
+  color: #625f58;
+  font-size: 12px;
+  line-height: 1.45;
+}
+.tmdb-test-message.success { border-color: #9eaa95; color: #485441; background: rgba(235,241,231,.62); }
+.tmdb-test-message.error { border-color: #c8a59d; color: #71483f; background: rgba(246,233,229,.72); }
+.tmdb-test-message.testing { color: #625f58; }
+
 .toast {
   position: fixed;
   left: 50%;

@@ -28,7 +28,7 @@
     dropboxStatus: $('dropboxStatus'), dropboxSetup: $('dropboxSetup'), dropboxConnected: $('dropboxConnected'),
     dropboxAppKey: $('dropboxAppKey'), redirectUriText: $('redirectUriText'), copyRedirectButton: $('copyRedirectButton'),
     connectDropboxButton: $('connectDropboxButton'), syncNowButton: $('syncNowButton'), disconnectDropboxButton: $('disconnectDropboxButton'),
-    tmdbStatus: $('tmdbStatus'), tmdbCredential: $('tmdbCredential'), saveTmdbButton: $('saveTmdbButton'), refreshProvidersButton: $('refreshProvidersButton'),
+    tmdbStatus: $('tmdbStatus'), tmdbCredential: $('tmdbCredential'), tmdbTestMessage: $('tmdbTestMessage'), saveTmdbButton: $('saveTmdbButton'), refreshProvidersButton: $('refreshProvidersButton'),
     exportButton: $('exportButton'), importInput: $('importInput'), toast: $('toast')
   };
 
@@ -522,12 +522,16 @@
     return [year, channel, country].filter(Boolean).join(' · ') || 'TV series';
   }
 
+  function sanitizeTmdbCredential(value) {
+    return String(value || '').trim().replace(/^Bearer\s+/i, '').replace(/^["']|["']$/g, '').trim();
+  }
+
   function tmdbCredentialLooksLikeApiKey(value) {
-    return /^[a-f0-9]{32}$/i.test(String(value || '').trim());
+    return /^[a-f0-9]{32}$/i.test(sanitizeTmdbCredential(value));
   }
 
   async function tmdbFetch(path, params = {}, credential = prefs.tmdbCredential) {
-    const cred = String(credential || '').trim();
+    const cred = sanitizeTmdbCredential(credential);
     if (!cred) throw new Error('TMDB is not configured');
     const url = new URL(`https://api.themoviedb.org/3${path}`);
     for (const [key, value] of Object.entries(params)) if (value !== null && value !== undefined && value !== '') url.searchParams.set(key, String(value));
@@ -535,7 +539,16 @@
     if (tmdbCredentialLooksLikeApiKey(cred)) url.searchParams.set('api_key', cred);
     else headers.Authorization = `Bearer ${cred}`;
     const response = await fetch(url, { headers });
-    if (!response.ok) throw new Error(`TMDB returned ${response.status}`);
+    if (!response.ok) {
+      let detail = '';
+      try {
+        const body = await response.json();
+        detail = body?.status_message ? `: ${body.status_message}` : '';
+      } catch (_) {}
+      const error = new Error(`TMDB returned ${response.status}${detail}`);
+      error.status = response.status;
+      throw error;
+    }
     return response.json();
   }
 
@@ -893,6 +906,13 @@
     return location.origin + location.pathname;
   }
 
+  function setTmdbTestMessage(kind, text) {
+    if (!els.tmdbTestMessage) return;
+    els.tmdbTestMessage.hidden = !text;
+    els.tmdbTestMessage.className = `tmdb-test-message${kind ? ` ${kind}` : ''}`;
+    els.tmdbTestMessage.textContent = text || '';
+  }
+
   function updateTmdbUI() {
     const configured = !!prefs.tmdbCredential;
     els.tmdbStatus.textContent = configured ? 'Configured' : 'Not configured';
@@ -901,20 +921,28 @@
   }
 
   async function saveAndTestTmdb() {
-    const credential = els.tmdbCredential.value.trim();
+    const credential = sanitizeTmdbCredential(els.tmdbCredential.value);
     if (!credential) {
-      prefs.tmdbCredential = ''; savePrefs(); showToast('TMDB credential removed'); return;
+      prefs.tmdbCredential = '';
+      savePrefs();
+      setTmdbTestMessage('', 'TMDB credential removed.');
+      showToast('TMDB credential removed');
+      return;
     }
     els.saveTmdbButton.disabled = true;
     els.saveTmdbButton.textContent = 'Testing…';
+    setTmdbTestMessage('testing', 'Testing your TMDB credential…');
     try {
       await tmdbFetch('/authentication', {}, credential);
       prefs.tmdbCredential = credential;
       savePrefs();
+      setTmdbTestMessage('success', 'Connected to TMDB successfully. You can now refresh Canadian subscription availability.');
       showToast('TMDB connected');
       refreshAllProviders({ interactive: false, includeUnlinked: false });
     } catch (err) {
       console.error(err);
+      const suffix = err?.status ? ` (${err.status})` : '';
+      setTmdbTestMessage('error', `TMDB did not accept this credential${suffix}. Paste either the 32-character v3 API Key or the API Read Access Token from your TMDB API settings.`);
       showToast('TMDB credential was not accepted');
     } finally {
       els.saveTmdbButton.disabled = false;
