@@ -103,7 +103,7 @@
             </label>
             <button class="secondary-button lookup-button" id="lookupShowButton" type="button">Find details</button>
           </div>
-          <small>Find details searches TVmaze for artwork, genres, seasons, and episode count. You can still enter everything manually.</small>
+          <small>Find details searches TVmaze for artwork, genres, seasons, and episode count, and fills in a likely Metacritic link. You can still edit everything manually.</small>
           <div id="lookupStatus" class="lookup-status" hidden></div>
           <div id="lookupResults" class="lookup-results" hidden></div>
         </div>
@@ -139,6 +139,7 @@
         <label class="span-2">
           <span>Metacritic page</span>
           <input id="showMetacritic" type="url" maxlength="1000" placeholder="https://www.metacritic.com/tv/…" autocomplete="off" inputmode="url">
+          <small>Filled automatically from the show title when you use “Find details.” Because Metacritic has occasional naming exceptions, this remains editable.</small>
         </label>
 
         <label>

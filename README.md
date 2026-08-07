@@ -15,7 +15,7 @@ A small browser-based Kanban board made specifically for television viewing.
 - Compact landscape artwork header on each show card
 - One-click TVmaze lookup for landscape artwork, genres, seasons, and episode count
 - Optional Canadian subscription-streaming availability via TMDB + JustWatch
-- Metacritic link
+- Automatic likely Metacritic link when using Find details, with manual editing for exceptions
 - Season and episode counts
 - Custom tags
 - Half-star ratings from 0.5 to 5 stars

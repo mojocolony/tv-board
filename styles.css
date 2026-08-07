@@ -287,6 +287,17 @@ button, select { cursor: pointer; }
 }
 .show-card:hover { transform: translateY(-2px); box-shadow: 0 10px 22px rgba(42, 38, 31, .10); }
 .show-card.dragging { opacity: .42; transform: rotate(1deg) scale(.99); }
+.show-card.card-drop-before { box-shadow: inset 0 4px 0 var(--ink), 0 4px 13px rgba(42, 38, 31, .06); }
+.show-card.card-drop-after { box-shadow: inset 0 -4px 0 var(--ink), 0 4px 13px rgba(42, 38, 31, .06); }
+.column-body.card-drop-end::after {
+  content: "";
+  display: block;
+  flex: 0 0 auto;
+  height: 4px;
+  margin: 0 2px;
+  border-radius: 999px;
+  background: var(--ink);
+}
 .poster-wrap {
   position: relative;
   aspect-ratio: 2 / 3;

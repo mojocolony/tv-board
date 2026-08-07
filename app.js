@@ -401,44 +401,74 @@
     saveState();
   }
 
+  function clearCardDropIndicators() {
+    document.querySelectorAll('.show-card').forEach(c => c.classList.remove('card-drop-before', 'card-drop-after'));
+    document.querySelectorAll('.column-body').forEach(b => b.classList.remove('card-drop-end'));
+    document.querySelectorAll('.kanban-column').forEach(c => c.classList.remove('drag-over'));
+  }
+
   function attachDragCard(card, show) {
     card.addEventListener('dragstart', e => {
       draggedShowId = show.id;
       card.classList.add('dragging');
+      clearCardDropIndicators();
       e.dataTransfer.effectAllowed = 'move';
       e.dataTransfer.setData('text/plain', show.id);
     });
     card.addEventListener('dragend', () => {
       draggedShowId = null;
       card.classList.remove('dragging');
-      document.querySelectorAll('.kanban-column').forEach(c => c.classList.remove('drag-over'));
+      clearCardDropIndicators();
     });
     card.addEventListener('dragover', e => {
       if (!draggedShowId || draggedShowId === show.id || els.searchInput.value.trim()) return;
       e.preventDefault();
+      e.stopPropagation();
       e.dataTransfer.dropEffect = 'move';
+      clearCardDropIndicators();
+      const rect = card.getBoundingClientRect();
+      const after = e.clientY >= rect.top + rect.height / 2;
+      card.classList.toggle('card-drop-before', !after);
+      card.classList.toggle('card-drop-after', after);
+      card.closest('.kanban-column')?.classList.add('drag-over');
+    });
+    card.addEventListener('dragleave', e => {
+      if (!card.contains(e.relatedTarget)) card.classList.remove('card-drop-before', 'card-drop-after');
     });
     card.addEventListener('drop', e => {
       if (!draggedShowId || draggedShowId === show.id || els.searchInput.value.trim()) return;
       e.preventDefault(); e.stopPropagation();
-      moveShowBefore(draggedShowId, show.id, show.columnId);
+      const rect = card.getBoundingClientRect();
+      const after = e.clientY >= rect.top + rect.height / 2;
+      const movingId = draggedShowId;
+      clearCardDropIndicators();
+      if (after) moveShowAfter(movingId, show.id, show.columnId);
+      else moveShowBefore(movingId, show.id, show.columnId);
     });
   }
 
   function attachDropZone(body, columnId) {
     body.addEventListener('dragover', e => {
       if (!draggedShowId || els.searchInput.value.trim()) return;
+      if (e.target.closest?.('.show-card')) return;
       e.preventDefault(); e.dataTransfer.dropEffect = 'move';
+      clearCardDropIndicators();
       body.closest('.kanban-column')?.classList.add('drag-over');
+      body.classList.add('card-drop-end');
     });
     body.addEventListener('dragleave', e => {
-      if (!body.contains(e.relatedTarget)) body.closest('.kanban-column')?.classList.remove('drag-over');
+      if (!body.contains(e.relatedTarget)) {
+        body.closest('.kanban-column')?.classList.remove('drag-over');
+        body.classList.remove('card-drop-end');
+      }
     });
     body.addEventListener('drop', e => {
       if (!draggedShowId || els.searchInput.value.trim()) return;
+      if (e.target.closest?.('.show-card')) return;
       e.preventDefault();
-      body.closest('.kanban-column')?.classList.remove('drag-over');
-      moveShowToEnd(draggedShowId, columnId);
+      const movingId = draggedShowId;
+      clearCardDropIndicators();
+      moveShowToEnd(movingId, columnId);
     });
   }
 
@@ -452,6 +482,21 @@
     const ordered = orderedShowsForColumn(columnId).filter(s => s.id !== showId);
     const targetIndex = ordered.findIndex(s => s.id === targetId);
     ordered.splice(targetIndex < 0 ? ordered.length : targetIndex, 0, moving);
+    rewriteOrder(columnId, ordered);
+    if (!wasArchived && oldColumn && oldColumn !== columnId) normalizeColumnOrder(oldColumn);
+    saveState();
+  }
+
+  function moveShowAfter(showId, targetId, columnId) {
+    const moving = state.shows.find(s => s.id === showId);
+    if (!moving) return;
+    const oldColumn = moving.columnId;
+    const wasArchived = !!moving.archive;
+    moving.archive = null;
+    moving.columnId = columnId;
+    const ordered = orderedShowsForColumn(columnId).filter(s => s.id !== showId);
+    const targetIndex = ordered.findIndex(s => s.id === targetId);
+    ordered.splice(targetIndex < 0 ? ordered.length : targetIndex + 1, 0, moving);
     rewriteOrder(columnId, ordered);
     if (!wasArchived && oldColumn && oldColumn !== columnId) normalizeColumnOrder(oldColumn);
     saveState();
@@ -607,6 +652,23 @@
     els.streamingProvidersNote.textContent = checked ? 'Canada only · subscription services only · availability via JustWatch/TMDB' : '';
   }
 
+
+  function metacriticSlug(title) {
+    return String(title || '')
+      .normalize('NFKD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .toLowerCase()
+      .replace(/&/g, ' ')
+      .replace(/[’'`]/g, '')
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-+|-+$/g, '');
+  }
+
+  function likelyMetacriticUrl(title) {
+    const slug = metacriticSlug(title);
+    return slug ? `https://www.metacritic.com/tv/${slug}/` : '';
+  }
+
   async function lookupShows() {
     const query = els.showTitle.value.trim();
     if (!query) { setLookupStatus('Type a show title first.'); els.showTitle.focus(); return; }
@@ -689,11 +751,17 @@
         els.showTags.value = cleanTags([...existing, ...show.genres]).join(', ');
       }
 
+      const generatedMetacriticUrl = likelyMetacriticUrl(show.name);
+      if (!els.showMetacritic.value.trim() || els.showMetacritic.value.trim() === draftMeta.autoMetacriticUrl) {
+        els.showMetacritic.value = generatedMetacriticUrl;
+      }
+
       draftMeta = {
         ...draftMeta,
         tvmazeId: integerOrNull(show.id),
         imdbId: String(show.externals?.imdb || '').trim(),
-        firstAirYear: integerOrNull(String(show.premiered || '').slice(0, 4))
+        firstAirYear: integerOrNull(String(show.premiered || '').slice(0, 4)),
+        autoMetacriticUrl: generatedMetacriticUrl
       };
 
       let streamingMessage = '';
@@ -713,7 +781,7 @@
           streamingMessage = ' Streaming availability could not be checked.';
         }
       }
-      setLookupStatus(`Details added.${streamingMessage} Add the Metacritic link, your tags, rating, or notes if you want them.`);
+      setLookupStatus(`Details added.${streamingMessage} A likely Metacritic link was filled in automatically; you can edit it if needed. Add your tags, rating, or notes if you want them.`);
     } catch (err) {
       console.error(err);
       setLookupStatus('Some show details could not be loaded. You can fill in anything missing manually.');
