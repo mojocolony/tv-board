@@ -1,0 +1,252 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#f4f1ea">
+  <meta name="description" content="A private Kanban board for deciding what to watch next.">
+  <title>TV Board</title>
+  <link rel="manifest" href="./manifest.webmanifest">
+  <link rel="icon" href="./icon-192.png" sizes="192x192">
+  <link rel="apple-touch-icon" href="./icon-192.png">
+  <link rel="stylesheet" href="./styles.css">
+</head>
+<body>
+  <main class="app-shell">
+    <header class="topbar">
+      <div class="brand-block">
+        <p class="eyebrow">TV KANBAN</p>
+        <h1>TV Board</h1>
+      </div>
+      <div class="topbar-actions">
+        <button class="icon-button" id="columnsButton" type="button" aria-label="Manage columns" title="Manage columns">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h6v14H4V5Zm10 0h6v8h-6V5Zm0 12h6v2h-6v-2Z"/></svg>
+        </button>
+        <button class="icon-button" id="settingsButton" type="button" aria-label="Open settings" title="Settings">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 8.5A3.5 3.5 0 1 0 12 15.5 3.5 3.5 0 0 0 12 8.5Zm8.1 4.35c.04-.28.06-.56.06-.85s-.02-.57-.06-.85l1.82-1.42-1.72-2.98-2.25.9a8.1 8.1 0 0 0-1.47-.85L16.14 4h-3.44l-.34 2.8c-.52.22-1.01.5-1.47.85l-2.25-.9-1.72 2.98 1.82 1.42c-.04.28-.06.56-.06.85s.02.57.06.85l-1.82 1.42 1.72 2.98 2.25-.9c.46.35.95.63 1.47.85l.34 2.8h3.44l.34-2.8c.52-.22 1.01-.5 1.47-.85l2.25.9 1.72-2.98-1.82-1.42Z"/></svg>
+        </button>
+      </div>
+    </header>
+
+    <nav class="view-tabs" aria-label="TV Board views">
+      <button class="view-tab active" data-view="board" type="button">Board <span id="boardCount" class="tab-count">0</span></button>
+      <button class="view-tab" data-view="watched" type="button">Watched <span id="watchedCount" class="tab-count">0</span></button>
+      <button class="view-tab" data-view="abandoned" type="button">Abandoned <span id="abandonedCount" class="tab-count">0</span></button>
+    </nav>
+
+    <section class="toolbar" aria-label="TV controls">
+      <div class="search-wrap">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m21 20-4.35-4.35a7.5 7.5 0 1 0-1 1L20 21l1-1ZM5 11a6 6 0 1 1 12 0 6 6 0 0 1-12 0Z"/></svg>
+        <input id="searchInput" type="search" placeholder="Search shows or tags" autocomplete="off">
+      </div>
+      <div class="toolbar-right">
+        <div class="sync-chip" id="syncChip" title="Storage status">
+          <span class="status-dot" id="statusDot"></span>
+          <span id="syncLabel">Saved on this device</span>
+        </div>
+        <button class="secondary-button board-only-action" id="quickAddColumnButton" type="button">+ Add Column</button>
+        <button class="primary-button" id="addButton" type="button">+ Add Show</button>
+      </div>
+    </section>
+
+    <section id="boardView" class="board-view" aria-live="polite">
+      <div id="kanbanBoard" class="kanban-board"></div>
+    </section>
+
+    <section id="archiveView" class="archive-view" hidden aria-live="polite">
+      <div class="archive-heading">
+        <div>
+          <p class="eyebrow" id="archiveEyebrow">ARCHIVE</p>
+          <h2 id="archiveTitle">Watched</h2>
+        </div>
+        <label class="sort-control">
+          <span>Sort</span>
+          <select id="archiveSort">
+            <option value="recent">Recently updated</option>
+            <option value="rating">Rating</option>
+            <option value="title">Title</option>
+          </select>
+        </label>
+      </div>
+      <div id="archiveGrid" class="archive-grid"></div>
+      <div id="archiveEmpty" class="empty-state compact" hidden>
+        <div class="empty-icon">▣</div>
+        <h2>Nothing here yet.</h2>
+        <p id="archiveEmptyText">Shows you finish will collect here.</p>
+      </div>
+    </section>
+
+    <footer>
+      <span id="footerMessage">Your TV board is stored only in this browser.</span>
+      <span class="footer-tip">Tip: drag column headers to reorder columns and drag cards between them on desktop; use the column arrows and card editor on touch devices. <a href="https://www.tvmaze.com/" target="_blank" rel="noopener noreferrer">TV data &amp; artwork via TVmaze</a>.</span>
+    </footer>
+  </main>
+
+  <dialog id="showDialog" class="dialog-card show-dialog">
+    <form id="showForm" method="dialog">
+      <div class="dialog-heading">
+        <div>
+          <p class="eyebrow">SHOW</p>
+          <h2 id="showDialogTitle">Add Show</h2>
+        </div>
+        <button class="icon-button close-button" value="cancel" type="submit" aria-label="Close">×</button>
+      </div>
+
+      <input type="hidden" id="showId">
+
+      <div class="form-grid">
+        <div class="span-2 show-lookup-block">
+          <div class="show-lookup-row">
+            <label class="show-title-label">
+              <span>Title</span>
+              <input id="showTitle" type="text" maxlength="120" placeholder="Slow Horses" required autocomplete="off">
+            </label>
+            <button class="secondary-button lookup-button" id="lookupShowButton" type="button">Find details</button>
+          </div>
+          <small>Find details searches TVmaze for artwork, genres, seasons, and episode count. You can still enter everything manually.</small>
+          <div id="lookupStatus" class="lookup-status" hidden></div>
+          <div id="lookupResults" class="lookup-results" hidden></div>
+        </div>
+
+        <label>
+          <span>Location</span>
+          <select id="showLocation"></select>
+        </label>
+
+        <label>
+          <span>Your rating</span>
+          <select id="showRating">
+            <option value="0">Not rated</option>
+            <option value="0.5">½ star</option>
+            <option value="1">★</option>
+            <option value="1.5">★½</option>
+            <option value="2">★★</option>
+            <option value="2.5">★★½</option>
+            <option value="3">★★★</option>
+            <option value="3.5">★★★½</option>
+            <option value="4">★★★★</option>
+            <option value="4.5">★★★★½</option>
+            <option value="5">★★★★★</option>
+          </select>
+        </label>
+
+        <label class="span-2">
+          <span>Header artwork URL</span>
+          <input id="showPoster" type="url" maxlength="1000" placeholder="https://…" autocomplete="off" inputmode="url">
+          <small>Wide landscape images work best. “Find details” will choose a TVmaze background image when one is available.</small>
+        </label>
+
+        <label class="span-2">
+          <span>Metacritic page</span>
+          <input id="showMetacritic" type="url" maxlength="1000" placeholder="https://www.metacritic.com/tv/…" autocomplete="off" inputmode="url">
+        </label>
+
+        <label>
+          <span>Seasons</span>
+          <input id="showSeasons" type="number" min="0" max="999" step="1" placeholder="3" inputmode="numeric">
+        </label>
+
+        <label>
+          <span>Episodes</span>
+          <input id="showEpisodes" type="number" min="0" max="99999" step="1" placeholder="24" inputmode="numeric">
+        </label>
+
+        <label class="span-2">
+          <span>Tags</span>
+          <input id="showTags" type="text" maxlength="300" placeholder="British, spy, drama, Apple TV+" autocomplete="off">
+          <small>Separate tags with commas.</small>
+        </label>
+
+        <label class="span-2">
+          <span>Notes</span>
+          <textarea id="showNotes" rows="4" maxlength="2000" placeholder="Why it caught your eye, where you left off, who recommended it…"></textarea>
+        </label>
+      </div>
+
+      <div class="dialog-actions split-actions">
+        <button class="danger-button" id="deleteShowButton" type="button" hidden>Delete</button>
+        <div class="right-actions">
+          <button class="secondary-button" value="cancel" type="submit">Cancel</button>
+          <button class="primary-button" id="saveShowButton" value="default" type="submit">Save</button>
+        </div>
+      </div>
+    </form>
+  </dialog>
+
+  <dialog id="columnsDialog" class="dialog-card columns-dialog">
+    <div class="dialog-heading">
+      <div>
+        <p class="eyebrow">BOARD</p>
+        <h2>Manage Columns</h2>
+      </div>
+      <button class="icon-button close-button" id="closeColumnsButton" type="button" aria-label="Close">×</button>
+    </div>
+
+    <p class="dialog-intro">These are your active viewing columns. Watched and Abandoned stay separate as archives.</p>
+    <div id="columnManager" class="column-manager"></div>
+
+    <form id="addColumnForm" class="add-column-form">
+      <input id="newColumnName" type="text" maxlength="50" placeholder="Add another column" autocomplete="off" required>
+      <button class="primary-button" type="submit">Add</button>
+    </form>
+  </dialog>
+
+  <dialog id="settingsDialog" class="dialog-card settings-dialog">
+    <div class="dialog-heading">
+      <div>
+        <p class="eyebrow">SETTINGS</p>
+        <h2>Storage & Sync</h2>
+      </div>
+      <button class="icon-button close-button" id="closeSettingsButton" type="button" aria-label="Close">×</button>
+    </div>
+
+    <section class="settings-section">
+      <h3>This device</h3>
+      <p>Your board always works locally in this browser. Exporting a backup gives you a plain JSON copy of all shows and columns.</p>
+      <div class="settings-actions">
+        <button class="secondary-button" id="exportButton" type="button">Export backup</button>
+        <label class="secondary-button file-button">
+          Import backup
+          <input id="importInput" type="file" accept="application/json,.json">
+        </label>
+      </div>
+    </section>
+
+    <section class="settings-section dropbox-section">
+      <div class="setting-title-row">
+        <h3>Dropbox Sync</h3>
+        <span class="mini-status" id="dropboxStatus">Not connected</span>
+      </div>
+      <p>Use Dropbox to keep the same board on your devices. The data file is stored privately in your Dropbox app folder.</p>
+
+      <div id="dropboxSetup">
+        <label>
+          <span>Dropbox App Key</span>
+          <input id="dropboxAppKey" type="text" placeholder="Paste your app key" autocomplete="off" autocapitalize="off" spellcheck="false">
+        </label>
+        <div class="redirect-box">
+          <span class="small-label">Redirect URI to add in Dropbox</span>
+          <code id="redirectUriText"></code>
+          <button id="copyRedirectButton" class="text-button" type="button">Copy</button>
+        </div>
+        <p class="helper-text">You can reuse the Dropbox app you created for Days Until: add this site’s redirect URI to that app, then paste the same App key here. It will use a separate <code>/tv-board.json</code> file.</p>
+        <button class="dropbox-button" id="connectDropboxButton" type="button">Connect Dropbox</button>
+      </div>
+
+      <div id="dropboxConnected" hidden>
+        <p class="connected-message">Dropbox is connected. Changes are synced to <code>/tv-board.json</code> in the app folder.</p>
+        <div class="settings-actions">
+          <button class="secondary-button" id="syncNowButton" type="button">Sync now</button>
+          <button class="danger-button" id="disconnectDropboxButton" type="button">Disconnect</button>
+        </div>
+      </div>
+    </section>
+
+    <p class="settings-note">The website never stores your Dropbox password. Authorization tokens remain in this browser.</p>
+  </dialog>
+
+  <div id="toast" class="toast" role="status" aria-live="polite"></div>
+
+  <script src="./app.js" defer></script>
+</body>
+</html>
