@@ -1,4 +1,4 @@
-const CACHE = 'tv-board-final-8';
+const CACHE = 'tv-board-final-9';
 const ASSETS = ['./', './index.html', './styles.css', './app.js', './manifest.webmanifest', './icon-192.png', './icon-512.png'];
 
 self.addEventListener('install', event => {

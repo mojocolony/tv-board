@@ -53,11 +53,12 @@
       version: 1,
       columnsUpdatedAt: t,
       columns: [
-        { id: 'watching', name: 'Watching' },
-        { id: 'next', name: 'Next' },
-        { id: 'someday', name: 'Someday' },
-        { id: 'waiting', name: 'Waiting for New Season' }
+        { id: 'watching', name: 'Watching', order: 0, updatedAt: t },
+        { id: 'next', name: 'Next', order: 1, updatedAt: t },
+        { id: 'someday', name: 'Someday', order: 2, updatedAt: t },
+        { id: 'waiting', name: 'Waiting for New Season', order: 3, updatedAt: t }
       ],
+      columnDeleted: [],
       shows: [],
       deleted: []
     };
@@ -66,9 +67,29 @@
   function normalizeState(raw) {
     const fallback = defaultState();
     if (!raw || typeof raw !== 'object') return fallback;
-    const columns = Array.isArray(raw.columns) && raw.columns.length
-      ? raw.columns.filter(c => c && c.id && c.name).map(c => ({ id: String(c.id), name: String(c.name).slice(0, 50) }))
+    const legacyColumnsUpdatedAt = validDateString(raw.columnsUpdatedAt) ? raw.columnsUpdatedAt : nowIso();
+    let columns = Array.isArray(raw.columns) && raw.columns.length
+      ? raw.columns.filter(c => c && c.id && c.name).map((c, index) => ({
+          id: String(c.id),
+          name: String(c.name).slice(0, 50),
+          order: Number.isFinite(Number(c.order)) ? Number(c.order) : index,
+          updatedAt: validDateString(c.updatedAt) ? c.updatedAt : legacyColumnsUpdatedAt
+        }))
       : fallback.columns;
+    const columnDeleted = Array.isArray(raw.columnDeleted)
+      ? raw.columnDeleted.filter(d => d && d.id && validDateString(d.deletedAt)).map(d => ({ id: String(d.id), deletedAt: d.deletedAt }))
+      : [];
+    const columnTombstones = new Map();
+    for (const d of columnDeleted) {
+      const old = columnTombstones.get(d.id);
+      if (!old || new Date(d.deletedAt) > new Date(old.deletedAt)) columnTombstones.set(d.id, d);
+    }
+    columns = columns.filter(c => {
+      const deleted = columnTombstones.get(c.id);
+      return !deleted || new Date(c.updatedAt) > new Date(deleted.deletedAt);
+    }).sort((a, b) => a.order - b.order || a.name.localeCompare(b.name));
+    if (!columns.length) columns = fallback.columns;
+    columns.forEach((c, index) => { c.order = index; });
     const validIds = new Set(columns.map(c => c.id));
     const first = columns[0].id;
     const shows = Array.isArray(raw.shows) ? raw.shows.filter(s => s && s.id && s.title).map((s, index) => ({
@@ -95,8 +116,9 @@
     })) : [];
     return {
       version: 1,
-      columnsUpdatedAt: validDateString(raw.columnsUpdatedAt) ? raw.columnsUpdatedAt : nowIso(),
+      columnsUpdatedAt: legacyColumnsUpdatedAt,
       columns,
+      columnDeleted: [...columnTombstones.values()],
       shows,
       deleted: Array.isArray(raw.deleted) ? raw.deleted.filter(d => d && d.id && validDateString(d.deletedAt)) : []
     };
@@ -462,7 +484,7 @@
     const to = target + (insertAfter ? 1 : 0);
     state.columns.splice(to, 0, moving);
     draggedColumnId = null;
-    touchColumns();
+    stampColumnOrder();
     saveState();
   }
 
@@ -989,24 +1011,29 @@
     });
   }
 
-  function touchColumns() { state.columnsUpdatedAt = nowIso(); }
+  function stampColumnOrder(t = nowIso()) {
+    state.columns.forEach((column, index) => { column.order = index; column.updatedAt = t; });
+    state.columnsUpdatedAt = t;
+  }
   function renameColumn(id, name) {
     const cleaned = name.trim().slice(0, 50);
     const column = state.columns.find(c => c.id === id);
     if (!column) return;
     if (!cleaned) { renderColumnManager(); showToast('Column name cannot be blank'); return; }
-    column.name = cleaned; touchColumns(); saveState(); renderColumnManager();
+    const t = nowIso();
+    column.name = cleaned; column.updatedAt = t; state.columnsUpdatedAt = t; saveState(); renderColumnManager();
   }
   function moveColumn(from, to) {
     if (to < 0 || to >= state.columns.length) return;
     state.columns.splice(to, 0, state.columns.splice(from, 1)[0]);
-    touchColumns(); saveState(); renderColumnManager();
+    stampColumnOrder(); saveState(); renderColumnManager();
   }
   function addColumn(name) {
     const cleaned = name.trim().slice(0, 50);
     if (!cleaned) return;
-    state.columns.push({ id: uuid(), name: cleaned });
-    touchColumns(); saveState(); renderColumnManager();
+    const t = nowIso();
+    state.columns.push({ id: uuid(), name: cleaned, order: state.columns.length, updatedAt: t });
+    state.columnsUpdatedAt = t; saveState(); renderColumnManager();
   }
   function deleteColumn(id) {
     if (state.columns.length <= 1) return;
@@ -1021,7 +1048,10 @@
     const t = nowIso();
     for (const show of affected) { show.columnId = fallback.id; show.updatedAt = t; }
     state.columns = state.columns.filter(c => c.id !== id);
-    touchColumns(); normalizeColumnOrder(fallback.id); saveState(); renderColumnManager();
+    state.columnDeleted = Array.isArray(state.columnDeleted) ? state.columnDeleted : [];
+    const prior = state.columnDeleted.find(d => d.id === id);
+    if (prior) prior.deletedAt = t; else state.columnDeleted.push({ id, deletedAt: t });
+    stampColumnOrder(t); normalizeColumnOrder(fallback.id); saveState(); renderColumnManager();
   }
 
   function showToast(message) {
@@ -1249,9 +1279,29 @@
     const local = normalizeState(localRaw);
     if (!remoteRaw || !Array.isArray(remoteRaw.shows)) return local;
     const remote = normalizeState(remoteRaw);
-    const columnsSource = new Date(remote.columnsUpdatedAt) > new Date(local.columnsUpdatedAt) ? remote : local;
-    const columns = columnsSource.columns;
-    const columnsUpdatedAt = columnsSource.columnsUpdatedAt;
+
+    const columnTombstones = new Map();
+    for (const d of [...(remote.columnDeleted || []), ...(local.columnDeleted || [])]) {
+      const old = columnTombstones.get(d.id);
+      if (!old || new Date(d.deletedAt) > new Date(old.deletedAt)) columnTombstones.set(d.id, d);
+    }
+
+    const columnMap = new Map();
+    for (const c of [...remote.columns, ...local.columns]) {
+      const old = columnMap.get(c.id);
+      if (!old || new Date(c.updatedAt || 0) >= new Date(old.updatedAt || 0)) columnMap.set(c.id, { ...c });
+    }
+    for (const [id, deleted] of columnTombstones.entries()) {
+      const c = columnMap.get(id);
+      if (!c || new Date(deleted.deletedAt) >= new Date(c.updatedAt || 0)) columnMap.delete(id);
+      else columnTombstones.delete(id);
+    }
+
+    let columns = [...columnMap.values()].sort((a, b) => a.order - b.order || new Date(a.updatedAt || 0) - new Date(b.updatedAt || 0) || a.name.localeCompare(b.name));
+    if (!columns.length) columns = defaultState().columns;
+    columns.forEach((c, index) => { c.order = index; });
+    const columnsUpdatedAt = [local.columnsUpdatedAt, remote.columnsUpdatedAt, ...columns.map(c => c.updatedAt)]
+      .filter(validDateString).sort().pop() || nowIso();
     const validIds = new Set(columns.map(c => c.id));
     const fallbackId = columns[0].id;
     const shows = new Map();
@@ -1273,7 +1323,8 @@
     }
     const cutoff = Date.now() - 180 * 86400000;
     const deleted = [...tombstones.values()].filter(d => new Date(d.deletedAt).getTime() >= cutoff);
-    return normalizeState({ version: 1, columns, columnsUpdatedAt, shows: [...shows.values()], deleted });
+    const columnDeleted = [...columnTombstones.values()].filter(d => new Date(d.deletedAt).getTime() >= cutoff);
+    return normalizeState({ version: 1, columns, columnsUpdatedAt, columnDeleted, shows: [...shows.values()], deleted });
   }
 
   function scheduleSync() {
