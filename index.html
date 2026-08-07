@@ -89,7 +89,7 @@
           <p class="eyebrow">SHOW</p>
           <h2 id="showDialogTitle">Add Show</h2>
         </div>
-        <button class="icon-button close-button" value="cancel" type="submit" aria-label="Close">×</button>
+        <button class="icon-button close-button" id="closeShowButton" type="button" aria-label="Close">×</button>
       </div>
 
       <input type="hidden" id="showId">
@@ -172,7 +172,7 @@
       <div class="dialog-actions split-actions">
         <button class="danger-button" id="deleteShowButton" type="button" hidden>Delete</button>
         <div class="right-actions">
-          <button class="secondary-button" value="cancel" type="submit">Cancel</button>
+          <button class="secondary-button" id="cancelShowButton" type="button">Cancel</button>
           <button class="primary-button" id="saveShowButton" value="default" type="submit">Save</button>
         </div>
       </div>

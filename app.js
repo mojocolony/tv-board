@@ -20,7 +20,7 @@
     lookupShowButton: $('lookupShowButton'), lookupStatus: $('lookupStatus'), lookupResults: $('lookupResults'),
     showMetacritic: $('showMetacritic'), showSeasons: $('showSeasons'), showEpisodes: $('showEpisodes'), showTags: $('showTags'),
     streamingPreview: $('streamingPreview'), streamingProvidersText: $('streamingProvidersText'), streamingProvidersNote: $('streamingProvidersNote'),
-    showNotes: $('showNotes'), deleteShowButton: $('deleteShowButton'),
+    showNotes: $('showNotes'), deleteShowButton: $('deleteShowButton'), closeShowButton: $('closeShowButton'), cancelShowButton: $('cancelShowButton'),
     columnsButton: $('columnsButton'), columnsDialog: $('columnsDialog'), closeColumnsButton: $('closeColumnsButton'),
     columnManager: $('columnManager'), addColumnForm: $('addColumnForm'), newColumnName: $('newColumnName'),
     settingsButton: $('settingsButton'), settingsDialog: $('settingsDialog'), closeSettingsButton: $('closeSettingsButton'),
@@ -723,6 +723,13 @@
     }
   }
 
+  function closeShowDialog() {
+    clearLookupUI();
+    draftMeta = {};
+    updateStreamingPreview();
+    if (els.showDialog.open) els.showDialog.close('cancel');
+  }
+
   function openShowDialog(show = null, columnId = null) {
     clearLookupUI();
     els.showForm.reset();
@@ -1184,8 +1191,16 @@
     if (e.key === 'Enter' && !els.lookupResults.hidden) { e.preventDefault(); }
   });
   els.showForm.addEventListener('submit', e => {
-    if (e.submitter?.value === 'cancel') return;
     e.preventDefault(); if (upsertShow()) els.showDialog.close();
+  });
+  els.closeShowButton.addEventListener('click', closeShowDialog);
+  els.cancelShowButton.addEventListener('click', closeShowDialog);
+  els.showDialog.addEventListener('cancel', () => { clearLookupUI(); draftMeta = {}; });
+  els.showDialog.addEventListener('close', () => { clearLookupUI(); draftMeta = {}; });
+  els.showDialog.addEventListener('click', e => {
+    const rect = els.showDialog.getBoundingClientRect();
+    const outside = e.clientX < rect.left || e.clientX > rect.right || e.clientY < rect.top || e.clientY > rect.bottom;
+    if (outside) closeShowDialog();
   });
   els.deleteShowButton.addEventListener('click', deleteCurrentShow);
 
