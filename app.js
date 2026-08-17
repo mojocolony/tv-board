@@ -1,66 +1,157 @@
 (() => {
   'use strict';
 
+  const APP_VERSION = '2.0.0';
   const STORAGE_KEY = 'tvBoard.state.v1';
   const DROPBOX_KEY = 'tvBoard.dropbox.v1';
   const PKCE_KEY = 'tvBoard.pkce.v1';
   const PREFS_KEY = 'tvBoard.settings.v1';
+  const UI_KEY = 'tvBoard.ui.v2';
   const DATA_PATH = '/tv-board.json';
   const ARCHIVE_WATCHED = 'watched';
   const ARCHIVE_ABANDONED = 'abandoned';
+  const TOMBSTONE_DAYS = 180;
 
-  const $ = (id) => document.getElementById(id);
+  const $ = id => document.getElementById(id);
   const els = {
-    boardView: $('boardView'), archiveView: $('archiveView'), kanbanBoard: $('kanbanBoard'), archiveGrid: $('archiveGrid'),
-    archiveEmpty: $('archiveEmpty'), archiveEmptyText: $('archiveEmptyText'), archiveTitle: $('archiveTitle'), archiveEyebrow: $('archiveEyebrow'),
-    archiveSort: $('archiveSort'), searchInput: $('searchInput'), tagFilter: $('tagFilter'), addButton: $('addButton'), quickAddColumnButton: $('quickAddColumnButton'),
-    boardCount: $('boardCount'), watchedCount: $('watchedCount'), abandonedCount: $('abandonedCount'),
-    showDialog: $('showDialog'), showForm: $('showForm'), showDialogTitle: $('showDialogTitle'), showId: $('showId'),
-    showTitle: $('showTitle'), showLocation: $('showLocation'), showRating: $('showRating'), showPoster: $('showPoster'),
-    lookupShowButton: $('lookupShowButton'), lookupStatus: $('lookupStatus'), lookupResults: $('lookupResults'),
-    showMetacritic: $('showMetacritic'), showSeasons: $('showSeasons'), showEpisodes: $('showEpisodes'), showTags: $('showTags'),
-    streamingPreview: $('streamingPreview'), streamingProvidersText: $('streamingProvidersText'), streamingProvidersNote: $('streamingProvidersNote'),
-    showNotes: $('showNotes'), deleteShowButton: $('deleteShowButton'), closeShowButton: $('closeShowButton'), cancelShowButton: $('cancelShowButton'),
-    columnsButton: $('columnsButton'), columnsDialog: $('columnsDialog'), closeColumnsButton: $('closeColumnsButton'),
-    columnManager: $('columnManager'), addColumnForm: $('addColumnForm'), newColumnName: $('newColumnName'),
-    settingsButton: $('settingsButton'), settingsDialog: $('settingsDialog'), closeSettingsButton: $('closeSettingsButton'),
-    syncChip: $('syncChip'), statusDot: $('statusDot'), syncLabel: $('syncLabel'), footerMessage: $('footerMessage'),
-    dropboxStatus: $('dropboxStatus'), dropboxSetup: $('dropboxSetup'), dropboxConnected: $('dropboxConnected'),
-    dropboxAppKey: $('dropboxAppKey'), redirectUriText: $('redirectUriText'), copyRedirectButton: $('copyRedirectButton'),
-    connectDropboxButton: $('connectDropboxButton'), syncNowButton: $('syncNowButton'), disconnectDropboxButton: $('disconnectDropboxButton'),
+    sidebar: $('sidebar'), sidebarScrim: $('sidebarScrim'), mobileMenuButton: $('mobileMenuButton'),
+    statusNav: $('statusNav'), savedViewsNav: $('savedViewsNav'), allCount: $('allCount'), favouritesCount: $('favouritesCount'), watchedCount: $('watchedCount'), abandonedCount: $('abandonedCount'),
+    manageSavedViewsButton: $('manageSavedViewsButton'), settingsButton: $('settingsButton'),
+    viewTitle: $('viewTitle'), viewSubtitle: $('viewSubtitle'), syncChip: $('syncChip'), statusDot: $('statusDot'), syncLabel: $('syncLabel'),
+    addShowButton: $('addShowButton'), emptyAddButton: $('emptyAddButton'), searchInput: $('searchInput'), filterButton: $('filterButton'), filterBadge: $('filterBadge'), sortSelect: $('sortSelect'),
+    activeFilters: $('activeFilters'), showList: $('showList'), emptyState: $('emptyState'), emptyTitle: $('emptyTitle'), emptyText: $('emptyText'), footerMessage: $('footerMessage'),
+    filterDrawer: $('filterDrawer'), drawerScrim: $('drawerScrim'), closeFilterButton: $('closeFilterButton'), filterStatuses: $('filterStatuses'), filterGenres: $('filterGenres'), filterEpisodes: $('filterEpisodes'),
+    filterTime: $('filterTime'), filterYearFrom: $('filterYearFrom'), filterYearTo: $('filterYearTo'), filterRating: $('filterRating'), filterFavourite: $('filterFavourite'), filterNetworks: $('filterNetworks'), filterTags: $('filterTags'),
+    clearFiltersButton: $('clearFiltersButton'), saveViewButton: $('saveViewButton'), applyFiltersButton: $('applyFiltersButton'),
+    showDialog: $('showDialog'), showForm: $('showForm'), showDialogTitle: $('showDialogTitle'), showId: $('showId'), showTitle: $('showTitle'), showLocation: $('showLocation'), showRating: $('showRating'), showFavourite: $('showFavourite'), showFavouriteText: $('showFavouriteText'),
+    showPoster: $('showPoster'), posterPreview: $('posterPreview'), lookupShowButton: $('lookupShowButton'), lookupStatus: $('lookupStatus'), lookupResults: $('lookupResults'), showYear: $('showYear'), showSeasons: $('showSeasons'), showEpisodes: $('showEpisodes'),
+    showRuntime: $('showRuntime'), showTotalMinutes: $('showTotalMinutes'), showSeriesStatus: $('showSeriesStatus'), showNetwork: $('showNetwork'), showCountry: $('showCountry'), showGenres: $('showGenres'), showMetacritic: $('showMetacritic'),
+    streamingProvidersText: $('streamingProvidersText'), streamingProvidersNote: $('streamingProvidersNote'), refreshShowStreamingButton: $('refreshShowStreamingButton'), showTags: $('showTags'), showNotes: $('showNotes'),
+    deleteShowButton: $('deleteShowButton'), closeShowButton: $('closeShowButton'), cancelShowButton: $('cancelShowButton'),
+    statusesDialog: $('statusesDialog'), closeStatusesButton: $('closeStatusesButton'), statusManager: $('statusManager'), addStatusForm: $('addStatusForm'), newStatusName: $('newStatusName'),
+    savedViewsDialog: $('savedViewsDialog'), closeSavedViewsButton: $('closeSavedViewsButton'), savedViewManager: $('savedViewManager'),
+    settingsDialog: $('settingsDialog'), closeSettingsButton: $('closeSettingsButton'), openStatusesButton: $('openStatusesButton'), exportButton: $('exportButton'), importInput: $('importInput'),
     tmdbStatus: $('tmdbStatus'), tmdbCredential: $('tmdbCredential'), tmdbTestMessage: $('tmdbTestMessage'), saveTmdbButton: $('saveTmdbButton'), refreshProvidersButton: $('refreshProvidersButton'),
-    exportButton: $('exportButton'), importInput: $('importInput'), toast: $('toast')
+    dropboxStatus: $('dropboxStatus'), dropboxSetup: $('dropboxSetup'), dropboxConnected: $('dropboxConnected'), dropboxAppKey: $('dropboxAppKey'), redirectUriText: $('redirectUriText'), copyRedirectButton: $('copyRedirectButton'),
+    connectDropboxButton: $('connectDropboxButton'), syncNowButton: $('syncNowButton'), disconnectDropboxButton: $('disconnectDropboxButton'), toast: $('toast')
   };
+
+  const ICONS = {
+    library: '<path d="m16 6 4 14"/><path d="M12 6v14"/><path d="M8 8v12"/><path d="M4 4v16"/>',
+    heart: '<path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.7l-1.1-1.1a5.5 5.5 0 0 0-7.8 7.8l1.1 1.1L12 21l7.8-7.5 1.1-1.1a5.5 5.5 0 0 0-.1-7.8Z"/>',
+    check: '<path d="M20 6 9 17l-5-5"/>',
+    archive: '<path d="M3 6h18"/><path d="M5 6v14h14V6"/><path d="M9 10h6"/><path d="M4 3h16v3H4z"/>',
+    settings: '<path d="M12 15.5a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7Z"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.9l.1.1-2.8 2.8-.1-.1a1.7 1.7 0 0 0-1.9-.3 1.7 1.7 0 0 0-1 1.6V21h-4v-.1A1.7 1.7 0 0 0 9 19.3a1.7 1.7 0 0 0-1.9.3l-.1.1L4.2 17l.1-.1a1.7 1.7 0 0 0 .3-1.9A1.7 1.7 0 0 0 3 14H3v-4h.1A1.7 1.7 0 0 0 4.7 9a1.7 1.7 0 0 0-.3-1.9L4.3 7 7 4.2l.1.1A1.7 1.7 0 0 0 9 4.7 1.7 1.7 0 0 0 10 3.1V3h4v.1A1.7 1.7 0 0 0 15 4.7a1.7 1.7 0 0 0 1.9-.3l.1-.1L19.8 7l-.1.1a1.7 1.7 0 0 0-.3 1.9 1.7 1.7 0 0 0 1.6 1h.1v4H21a1.7 1.7 0 0 0-1.6 1Z"/>',
+    search: '<circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/>',
+    filter: '<path d="M4 5h16"/><path d="M7 12h10"/><path d="M10 19h4"/>',
+    sort: '<path d="M3 6h18"/><path d="M6 12h12"/><path d="M10 18h4"/>',
+    plus: '<path d="M12 5v14M5 12h14"/>',
+    tv: '<rect x="2" y="5" width="20" height="14" rx="2"/><path d="m8 2 4 3 4-3"/>',
+    clock: '<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>',
+    calendar: '<rect x="3" y="5" width="18" height="16" rx="2"/><path d="M16 3v4M8 3v4M3 10h18"/>',
+    tag: '<path d="M20 13 13 20l-9-9V4h7l9 9Z"/><circle cx="8.5" cy="8.5" r="1"/>',
+    menu: '<path d="M4 6h16M4 12h16M4 18h16"/>',
+    bookmark: '<path d="M6 3h12v18l-6-4-6 4V3Z"/>',
+    chevron: '<path d="m9 18 6-6-6-6"/>'
+  };
+
+  function iconSvg(name) {
+    return `<svg viewBox="0 0 24 24" aria-hidden="true">${ICONS[name] || ICONS.tv}</svg>`;
+  }
+  function renderIcons(root = document) {
+    root.querySelectorAll('[data-icon]').forEach(el => {
+      if (!el.dataset.iconRendered) {
+        el.innerHTML = iconSvg(el.dataset.icon);
+        el.dataset.iconRendered = '1';
+      }
+    });
+  }
 
   let state = loadState();
   let dbx = loadDropbox();
   let prefs = loadPrefs();
-  let activeView = 'board';
+  let ui = loadUi();
+  let activeView = ui.activeView || 'all';
+  let filters = normalizeFilters(ui.filters);
+  let filterDraft = clone(filters);
+  let sortMode = ui.sort || 'recent';
+  let draftMeta = {};
+  let lookupController = null;
   let syncTimer = null;
   let toastTimer = null;
-  let draggedShowId = null;
-  let draggedColumnId = null;
-  let lookupController = null;
-  let draftMeta = {};
   let providerRefreshRunning = false;
 
   function nowIso() { return new Date().toISOString(); }
   function uuid() { return crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}-${Math.random().toString(16).slice(2)}`; }
+  function clone(value) { return JSON.parse(JSON.stringify(value)); }
+  function validDateString(value) { return typeof value === 'string' && !Number.isNaN(Date.parse(value)); }
+  function integerOrNull(value) {
+    if (value === '' || value === null || value === undefined) return null;
+    const n = Math.round(Number(value));
+    return Number.isFinite(n) && n >= 0 ? n : null;
+  }
+  function positiveIntegerOrNull(value) {
+    const n = integerOrNull(value);
+    return n !== null && n > 0 ? n : null;
+  }
+  function clampRating(value) {
+    const n = Number(value);
+    if (!Number.isFinite(n)) return 0;
+    return Math.max(0, Math.min(5, Math.round(n * 2) / 2));
+  }
+  function safeUrl(value) {
+    const text = String(value || '').trim();
+    if (!text) return '';
+    try {
+      const url = new URL(text);
+      return ['http:', 'https:'].includes(url.protocol) ? url.href : '';
+    } catch (_) { return ''; }
+  }
+  function cleanList(items, max = 30, maxLength = 80) {
+    const seen = new Set();
+    return (Array.isArray(items) ? items : []).map(x => String(x || '').trim()).filter(Boolean).map(x => x.slice(0, maxLength)).filter(x => {
+      const key = x.toLowerCase();
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    }).slice(0, max);
+  }
+  function cleanTags(items) { return cleanList(items, 25, 40); }
+  function cleanGenres(items) { return cleanList(items, 20, 50); }
+  function cleanProviders(items) { return cleanList(items, 20, 80); }
+  function splitComma(text) { return String(text || '').split(',').map(s => s.trim()).filter(Boolean); }
+  function safeText(value, max = 200) { return String(value || '').trim().slice(0, max); }
+  function slugify(value) {
+    return String(value || '').normalize('NFKD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/&/g, ' and ').replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
+  }
+  function defaultColour(index) {
+    const palette = ['#476b86', '#6f7651', '#8b684f', '#76617d', '#496f6b', '#77654f', '#6b6f78'];
+    return palette[index % palette.length];
+  }
+  function safeColour(value, index = 0) { return /^#[0-9a-f]{6}$/i.test(String(value || '')) ? String(value) : defaultColour(index); }
+  function hexAlpha(hex, alpha = .12) {
+    const h = String(hex || '').replace('#', '');
+    if (!/^[0-9a-f]{6}$/i.test(h)) return `rgba(80,80,80,${alpha})`;
+    const n = parseInt(h, 16);
+    return `rgba(${(n >> 16) & 255},${(n >> 8) & 255},${n & 255},${alpha})`;
+  }
 
   function defaultState() {
     const t = nowIso();
     return {
-      version: 1,
+      version: 2,
       columnsUpdatedAt: t,
       columns: [
-        { id: 'watching', name: 'Watching', order: 0, updatedAt: t },
-        { id: 'next', name: 'Next', order: 1, updatedAt: t },
-        { id: 'someday', name: 'Someday', order: 2, updatedAt: t },
-        { id: 'waiting', name: 'Waiting for New Season', order: 3, updatedAt: t }
+        { id: 'watching', name: 'Watching', order: 0, color: defaultColour(0), updatedAt: t },
+        { id: 'next', name: 'Next', order: 1, color: defaultColour(1), updatedAt: t },
+        { id: 'someday', name: 'Someday', order: 2, color: defaultColour(2), updatedAt: t },
+        { id: 'waiting', name: 'Waiting for New Season', order: 3, color: defaultColour(3), updatedAt: t }
       ],
       columnDeleted: [],
       shows: [],
-      deleted: []
+      deleted: [],
+      savedViews: [],
+      savedViewsUpdatedAt: t
     };
   }
 
@@ -70,1356 +161,753 @@
     const legacyColumnsUpdatedAt = validDateString(raw.columnsUpdatedAt) ? raw.columnsUpdatedAt : nowIso();
     let columns = Array.isArray(raw.columns) && raw.columns.length
       ? raw.columns.filter(c => c && c.id && c.name).map((c, index) => ({
-          id: String(c.id),
-          name: String(c.name).slice(0, 50),
+          id: safeText(c.id, 80),
+          name: safeText(c.name, 50),
           order: Number.isFinite(Number(c.order)) ? Number(c.order) : index,
+          color: safeColour(c.color, index),
           updatedAt: validDateString(c.updatedAt) ? c.updatedAt : legacyColumnsUpdatedAt
         }))
       : fallback.columns;
-    const columnDeleted = Array.isArray(raw.columnDeleted)
-      ? raw.columnDeleted.filter(d => d && d.id && validDateString(d.deletedAt)).map(d => ({ id: String(d.id), deletedAt: d.deletedAt }))
-      : [];
-    const columnTombstones = new Map();
-    for (const d of columnDeleted) {
-      const old = columnTombstones.get(d.id);
-      if (!old || new Date(d.deletedAt) > new Date(old.deletedAt)) columnTombstones.set(d.id, d);
-    }
+
+    const columnDeleted = latestTombstones(Array.isArray(raw.columnDeleted) ? raw.columnDeleted : []);
+    const colTombs = new Map(columnDeleted.map(d => [d.id, d]));
     columns = columns.filter(c => {
-      const deleted = columnTombstones.get(c.id);
-      return !deleted || new Date(c.updatedAt) > new Date(deleted.deletedAt);
-    }).sort((a, b) => a.order - b.order || a.name.localeCompare(b.name));
+      const tomb = colTombs.get(c.id);
+      return !tomb || new Date(c.updatedAt) > new Date(tomb.deletedAt);
+    }).sort((a,b) => a.order - b.order || a.name.localeCompare(b.name));
     if (!columns.length) columns = fallback.columns;
-    columns.forEach((c, index) => { c.order = index; });
+    columns.forEach((c,i) => { c.order = i; c.color = safeColour(c.color, i); });
     const validIds = new Set(columns.map(c => c.id));
     const first = columns[0].id;
-    const shows = Array.isArray(raw.shows) ? raw.shows.filter(s => s && s.id && s.title).map((s, index) => ({
-      id: String(s.id),
-      title: String(s.title).slice(0, 120),
-      columnId: validIds.has(s.columnId) ? s.columnId : first,
-      archive: s.archive === ARCHIVE_WATCHED || s.archive === ARCHIVE_ABANDONED ? s.archive : null,
-      poster: safeUrl(s.poster || ''),
-      metacritic: safeUrl(s.metacritic || ''),
-      seasons: numberOrNull(s.seasons),
-      episodes: numberOrNull(s.episodes),
-      tags: Array.isArray(s.tags) ? cleanTags(s.tags) : cleanTags(String(s.tags || '').split(',')),
-      rating: clampRating(s.rating),
-      notes: String(s.notes || '').slice(0, 2000),
-      tvmazeId: integerOrNull(s.tvmazeId),
-      imdbId: String(s.imdbId || '').trim().slice(0, 30),
-      tmdbId: integerOrNull(s.tmdbId),
-      firstAirYear: integerOrNull(s.firstAirYear),
-      providers: cleanProviders(s.providers),
-      providersUpdatedAt: validDateString(s.providersUpdatedAt) ? s.providersUpdatedAt : null,
-      providerLink: safeUrl(s.providerLink || ''),
-      order: Number.isFinite(Number(s.order)) ? Number(s.order) : index,
-      updatedAt: validDateString(s.updatedAt) ? s.updatedAt : nowIso()
+
+    const shows = Array.isArray(raw.shows) ? raw.shows.filter(s => s && s.id && s.title).map((s, index) => {
+      const archive = s.archive === ARCHIVE_WATCHED || s.archive === ARCHIVE_ABANDONED ? s.archive : null;
+      const updatedAt = validDateString(s.updatedAt) ? s.updatedAt : nowIso();
+      const createdAt = validDateString(s.createdAt) ? s.createdAt : updatedAt;
+      const genres = Array.isArray(s.genres) ? cleanGenres(s.genres) : cleanGenres(splitComma(s.genres));
+      return {
+        id: safeText(s.id, 100),
+        title: safeText(s.title, 120),
+        columnId: validIds.has(String(s.columnId)) ? String(s.columnId) : first,
+        archive,
+        poster: safeUrl(s.poster || ''),
+        metacritic: safeUrl(s.metacritic || ''),
+        seasons: integerOrNull(s.seasons),
+        episodes: integerOrNull(s.episodes),
+        runtime: integerOrNull(s.runtime ?? s.averageRuntime),
+        totalMinutes: integerOrNull(s.totalMinutes),
+        genres,
+        network: safeText(s.network || s.webChannel || '', 100),
+        country: safeText(s.country || '', 80),
+        seriesStatus: safeText(s.seriesStatus || s.status || '', 50),
+        favourite: Boolean(s.favourite || s.favorite),
+        tags: Array.isArray(s.tags) ? cleanTags(s.tags) : cleanTags(splitComma(s.tags)),
+        rating: clampRating(s.rating),
+        notes: String(s.notes || '').slice(0, 4000),
+        tvmazeId: positiveIntegerOrNull(s.tvmazeId),
+        imdbId: safeText(s.imdbId || '', 40),
+        tmdbId: positiveIntegerOrNull(s.tmdbId),
+        firstAirYear: positiveIntegerOrNull(s.firstAirYear ?? s.year),
+        providers: cleanProviders(s.providers),
+        providersUpdatedAt: validDateString(s.providersUpdatedAt) ? s.providersUpdatedAt : null,
+        providerLink: safeUrl(s.providerLink || ''),
+        order: Number.isFinite(Number(s.order)) ? Number(s.order) : index,
+        createdAt,
+        updatedAt
+      };
+    }) : [];
+
+    const deleted = latestTombstones(Array.isArray(raw.deleted) ? raw.deleted : []);
+    const showTombs = new Map(deleted.map(d => [d.id, d]));
+    const survivingShows = shows.filter(s => {
+      const tomb = showTombs.get(s.id);
+      return !tomb || new Date(s.updatedAt) > new Date(tomb.deletedAt);
+    });
+
+    const savedViews = Array.isArray(raw.savedViews) ? raw.savedViews.filter(v => v && v.id && v.name).map(v => ({
+      id: safeText(v.id, 100), name: safeText(v.name, 60), filters: normalizeFilters(v.filters), sort: validSort(v.sort) ? v.sort : 'recent', updatedAt: validDateString(v.updatedAt) ? v.updatedAt : nowIso()
     })) : [];
+
     return {
-      version: 1,
+      version: 2,
       columnsUpdatedAt: legacyColumnsUpdatedAt,
       columns,
-      columnDeleted: [...columnTombstones.values()],
-      shows,
-      deleted: Array.isArray(raw.deleted) ? raw.deleted.filter(d => d && d.id && validDateString(d.deletedAt)) : []
+      columnDeleted,
+      shows: survivingShows,
+      deleted,
+      savedViews,
+      savedViewsUpdatedAt: validDateString(raw.savedViewsUpdatedAt) ? raw.savedViewsUpdatedAt : nowIso()
     };
+  }
+
+  function latestTombstones(items) {
+    const cutoff = Date.now() - TOMBSTONE_DAYS * 86400000;
+    const map = new Map();
+    for (const d of items) {
+      if (!d || !d.id || !validDateString(d.deletedAt) || Date.parse(d.deletedAt) < cutoff) continue;
+      const item = { id: safeText(d.id, 100), deletedAt: d.deletedAt };
+      const old = map.get(item.id);
+      if (!old || Date.parse(item.deletedAt) > Date.parse(old.deletedAt)) map.set(item.id, item);
+    }
+    return [...map.values()];
   }
 
   function loadState() {
     try { return normalizeState(JSON.parse(localStorage.getItem(STORAGE_KEY))); }
     catch (_) { return defaultState(); }
   }
-
-  function saveState({ sync = true, rerender = true } = {}) {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
-    if (rerender) render();
-    if (sync && dbx.connected) scheduleSync();
-  }
-
   function loadDropbox() {
     try {
       const parsed = JSON.parse(localStorage.getItem(DROPBOX_KEY));
       return parsed && typeof parsed === 'object' ? { connected: false, ...parsed } : { connected: false };
     } catch (_) { return { connected: false }; }
   }
-
-  function saveDropbox() {
-    localStorage.setItem(DROPBOX_KEY, JSON.stringify(dbx));
-    updateDropboxUI();
-  }
-
   function loadPrefs() {
     try {
       const parsed = JSON.parse(localStorage.getItem(PREFS_KEY));
       return parsed && typeof parsed === 'object' ? { tmdbCredential: '', ...parsed } : { tmdbCredential: '' };
     } catch (_) { return { tmdbCredential: '' }; }
   }
-
-  function savePrefs() {
-    localStorage.setItem(PREFS_KEY, JSON.stringify(prefs));
-    updateTmdbUI();
-  }
-
-  function safeUrl(value) {
-    const text = String(value || '').trim();
-    if (!text) return '';
+  function loadUi() {
     try {
-      const url = new URL(text);
-      return ['http:', 'https:'].includes(url.protocol) ? url.href : '';
-    } catch (_) { return ''; }
+      const parsed = JSON.parse(localStorage.getItem(UI_KEY));
+      return parsed && typeof parsed === 'object' ? parsed : {};
+    } catch (_) { return {}; }
+  }
+  function saveUi() {
+    ui = { activeView, filters, sort: sortMode };
+    localStorage.setItem(UI_KEY, JSON.stringify(ui));
+  }
+  function savePrefs() { localStorage.setItem(PREFS_KEY, JSON.stringify(prefs)); updateTmdbUI(); }
+  function saveDropbox() { localStorage.setItem(DROPBOX_KEY, JSON.stringify(dbx)); updateDropboxUI(); }
+  function saveState({ sync = true, rerender = true } = {}) {
+    state = normalizeState(state);
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+    if (rerender) render();
+    if (sync && dbx.connected) scheduleSync();
   }
 
-  function validDateString(value) { return typeof value === 'string' && !Number.isNaN(Date.parse(value)); }
-  function numberOrNull(value) {
-    if (value === '' || value === null || value === undefined) return null;
-    const n = Math.max(0, Math.round(Number(value)));
-    return Number.isFinite(n) ? n : null;
+  function emptyFilters() {
+    return { statuses: [], genres: [], episodes: '', time: '', yearFrom: '', yearTo: '', rating: '', favourite: '', networks: [], tags: [] };
   }
-  function integerOrNull(value) {
-    if (value === '' || value === null || value === undefined) return null;
-    const n = Math.round(Number(value));
-    return Number.isFinite(n) && n > 0 ? n : null;
+  function normalizeFilters(raw) {
+    const f = { ...emptyFilters(), ...(raw || {}) };
+    return {
+      statuses: cleanList(f.statuses, 50, 100),
+      genres: cleanGenres(f.genres),
+      episodes: ['','1-6','7-12','13-24','25-49','50+'].includes(f.episodes) ? f.episodes : '',
+      time: ['','under5','under10','10-20','20-40','40+'].includes(f.time) ? f.time : '',
+      yearFrom: /^\d{4}$/.test(String(f.yearFrom || '')) ? String(f.yearFrom) : '',
+      yearTo: /^\d{4}$/.test(String(f.yearTo || '')) ? String(f.yearTo) : '',
+      rating: ['','5','4.5','4','3','unrated'].includes(String(f.rating ?? '')) ? String(f.rating ?? '') : '',
+      favourite: ['','yes','no'].includes(f.favourite) ? f.favourite : '',
+      networks: cleanList(f.networks, 50, 100),
+      tags: cleanTags(f.tags)
+    };
   }
-  function clampRating(value) {
-    const n = Number(value);
-    if (!Number.isFinite(n)) return 0;
-    return Math.max(0, Math.min(5, Math.round(n * 2) / 2));
-  }
-  function cleanTags(tags) {
-    const seen = new Set();
-    return tags.map(t => String(t).trim()).filter(Boolean).map(t => t.slice(0, 40)).filter(t => {
-      const key = t.toLowerCase();
-      if (seen.has(key)) return false;
-      seen.add(key); return true;
-    }).slice(0, 20);
+  function validSort(value) {
+    return ['recent','added','title-asc','title-desc','year-desc','year-asc','rating-desc','rating-asc','episodes-asc','episodes-desc','time-asc','time-desc','network','status'].includes(value);
   }
 
-  function cleanProviders(providers) {
-    if (!Array.isArray(providers)) return [];
-    const seen = new Set();
-    return providers.map(p => String(p || '').trim()).filter(Boolean).map(p => p.slice(0, 80)).filter(p => {
-      const key = p.toLowerCase();
-      if (seen.has(key)) return false;
-      seen.add(key); return true;
-    }).slice(0, 12);
+  function statusFor(show) {
+    if (show.archive === ARCHIVE_WATCHED) return { id: ARCHIVE_WATCHED, name: 'Watched', color: '#77766f', archive: true };
+    if (show.archive === ARCHIVE_ABANDONED) return { id: ARCHIVE_ABANDONED, name: 'Abandoned', color: '#8a7c72', archive: true };
+    return state.columns.find(c => c.id === show.columnId) || state.columns[0];
   }
-
-  function orderedShowsForColumn(columnId) {
-    return state.shows.filter(s => !s.archive && s.columnId === columnId).sort((a, b) => a.order - b.order || a.title.localeCompare(b.title));
-  }
-
-  function activeTag() {
-    return String(els.tagFilter?.value || '').trim().toLowerCase();
-  }
-
-  function isFiltering() {
-    return !!els.searchInput.value.trim() || !!activeTag();
-  }
-
-  function showMatches(show) {
-    const selectedTag = activeTag();
-    if (selectedTag && !show.tags.some(t => t.toLowerCase() === selectedTag)) return false;
-    const q = els.searchInput.value.trim().toLowerCase();
-    if (!q) return true;
-    return show.title.toLowerCase().includes(q) || show.tags.some(t => t.toLowerCase().includes(q)) || show.notes.toLowerCase().includes(q);
-  }
-
-  function renderTagFilter() {
-    if (!els.tagFilter) return;
-    const selected = activeTag();
-    const tags = new Map();
-    for (const show of state.shows) {
-      for (const tag of show.tags) {
-        const key = tag.toLowerCase();
-        const existing = tags.get(key);
-        if (existing) existing.count += 1;
-        else tags.set(key, { label: tag, count: 1 });
-      }
-    }
-    const sorted = [...tags.entries()].sort((a, b) => a[1].label.localeCompare(b[1].label, undefined, { sensitivity: 'base' }));
-    els.tagFilter.replaceChildren();
-    const all = document.createElement('option');
-    all.value = '';
-    all.textContent = sorted.length ? `All tags (${sorted.length})` : 'All tags';
-    els.tagFilter.appendChild(all);
-    for (const [key, info] of sorted) {
-      const option = document.createElement('option');
-      option.value = key;
-      option.textContent = `${info.label} (${info.count})`;
-      els.tagFilter.appendChild(option);
-    }
-    els.tagFilter.value = tags.has(selected) ? selected : '';
-  }
-
-  function selectTag(tag) {
-    const key = String(tag || '').trim().toLowerCase();
-    if (!key || !els.tagFilter) return;
-    renderTagFilter();
-    els.tagFilter.value = key;
-    render();
-  }
-
-  function render() {
-    renderTagFilter();
-    renderTabs();
-    if (activeView === 'board') renderBoard();
-    else renderArchive(activeView);
-    updateDropboxUI();
-  }
-
-  function renderTabs() {
-    document.querySelectorAll('.view-tab').forEach(b => b.classList.toggle('active', b.dataset.view === activeView));
-    const board = state.shows.filter(s => !s.archive).length;
-    const watched = state.shows.filter(s => s.archive === ARCHIVE_WATCHED).length;
-    const abandoned = state.shows.filter(s => s.archive === ARCHIVE_ABANDONED).length;
-    els.boardCount.textContent = board;
-    els.watchedCount.textContent = watched;
-    els.abandonedCount.textContent = abandoned;
-    els.boardView.hidden = activeView !== 'board';
-    els.archiveView.hidden = activeView === 'board';
-    els.columnsButton.hidden = activeView !== 'board';
-    els.quickAddColumnButton.hidden = activeView !== 'board';
-  }
-
-  function renderBoard() {
-    els.kanbanBoard.replaceChildren();
-    for (const column of state.columns) {
-      const allShows = orderedShowsForColumn(column.id);
-      const visible = allShows.filter(showMatches);
-      const section = document.createElement('section');
-      section.className = 'kanban-column';
-      section.dataset.columnId = column.id;
-
-      const header = document.createElement('div');
-      header.className = 'column-header';
-      header.draggable = true;
-      header.title = 'Drag to reorder this column';
-      const title = document.createElement('span'); title.className = 'column-title'; title.textContent = column.name;
-      const headerActions = document.createElement('span'); headerActions.className = 'column-header-actions';
-      const handle = document.createElement('span'); handle.className = 'column-drag-handle'; handle.textContent = '⠿'; handle.setAttribute('aria-hidden', 'true');
-      const count = document.createElement('span'); count.className = 'column-count'; count.textContent = allShows.length;
-      headerActions.append(handle, count);
-      header.append(title, headerActions);
-      attachDragColumn(header, section, column.id);
-
-      const body = document.createElement('div');
-      body.className = 'column-body';
-      body.dataset.columnId = column.id;
-      attachDropZone(body, column.id);
-      if (!visible.length) {
-        const empty = document.createElement('div'); empty.className = 'column-empty';
-        empty.textContent = allShows.length ? 'No matches in this column' : 'Drop a show here or add one';
-        body.appendChild(empty);
-      } else {
-        for (const show of visible) body.appendChild(showCard(show, { draggable: true }));
-      }
-      section.append(header, body);
-      els.kanbanBoard.appendChild(section);
-    }
-  }
-
-  function renderArchive(kind) {
-    const isWatched = kind === ARCHIVE_WATCHED;
-    els.archiveEyebrow.textContent = 'ARCHIVE';
-    els.archiveTitle.textContent = isWatched ? 'Watched' : 'Abandoned';
-    els.archiveEmptyText.textContent = isWatched ? 'Shows you finish will collect here.' : 'Shows you decide not to continue will collect here.';
-    let shows = state.shows.filter(s => s.archive === kind && showMatches(s));
-    const sort = els.archiveSort.value;
-    if (sort === 'title') shows.sort((a, b) => a.title.localeCompare(b.title));
-    else if (sort === 'rating') shows.sort((a, b) => b.rating - a.rating || a.title.localeCompare(b.title));
-    else shows.sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt));
-    els.archiveGrid.replaceChildren();
-    if (!shows.length && isFiltering()) els.archiveEmptyText.textContent = 'No shows in this archive match the current search or tag filter.';
-    else els.archiveEmptyText.textContent = isWatched ? 'Shows you finish will collect here.' : 'Shows you decide not to continue will collect here.';
-    els.archiveEmpty.hidden = shows.length > 0;
-    for (const show of shows) els.archiveGrid.appendChild(showCard(show, { draggable: false }));
-  }
-
-  function showCard(show, { draggable }) {
-    const card = document.createElement('article');
-    card.className = 'show-card';
-    card.dataset.showId = show.id;
-    const canDrag = !!draggable && !isFiltering();
-    card.draggable = false;
-    card.tabIndex = 0;
-    card.setAttribute('role', 'button');
-    card.setAttribute('aria-label', `Edit ${show.title}`);
-
-    const posterWrap = document.createElement('div'); posterWrap.className = 'poster-wrap';
-    const placeholder = document.createElement('div'); placeholder.className = 'poster-placeholder'; placeholder.textContent = initials(show.title);
-    posterWrap.appendChild(placeholder);
-    if (show.poster) {
-      const img = document.createElement('img'); img.src = show.poster; img.alt = `${show.title} header artwork`; img.loading = 'lazy';
-      img.addEventListener('error', () => img.remove(), { once: true });
-      posterWrap.appendChild(img);
-    }
-
-    const body = document.createElement('div'); body.className = 'card-body';
-    const titleRow = document.createElement('div'); titleRow.className = 'card-title-row';
-    const h3 = document.createElement('h3'); h3.textContent = show.title;
-    const titleActions = document.createElement('div'); titleActions.className = 'card-title-actions';
-    if (show.rating > 0) {
-      const rating = document.createElement('div'); rating.className = 'rating-line'; rating.textContent = ratingStars(show.rating); rating.title = `${show.rating} out of 5`; titleActions.appendChild(rating);
-    }
-    const handle = document.createElement('button');
-    handle.type = 'button';
-    handle.className = 'card-drag-handle';
-    handle.hidden = !canDrag;
-    handle.draggable = canDrag;
-    handle.title = 'Drag to move';
-    handle.setAttribute('aria-label', `Drag ${show.title}`);
-    handle.addEventListener('click', e => { e.preventDefault(); e.stopPropagation(); });
-    handle.addEventListener('pointerdown', e => e.stopPropagation());
-    titleActions.appendChild(handle);
-    titleRow.append(h3, titleActions);
-    body.appendChild(titleRow);
-
-    const metaText = showMeta(show);
-    if (metaText) { const meta = document.createElement('p'); meta.className = 'card-meta'; meta.textContent = metaText; body.appendChild(meta); }
-
-    if (show.tags.length) {
-      const tags = document.createElement('div'); tags.className = 'tag-list';
-      for (const text of show.tags.slice(0, 3)) {
-        const tag = document.createElement('button');
-        tag.type = 'button';
-        tag.className = 'tag tag-button';
-        tag.textContent = text;
-        tag.title = `Show all “${text}” titles in this view`;
-        tag.addEventListener('click', e => { e.preventDefault(); e.stopPropagation(); selectTag(text); });
-        tags.appendChild(tag);
-      }
-      body.appendChild(tags);
-    }
-
-    if (show.providers.length) {
-      const watch = document.createElement('div'); watch.className = 'watch-line';
-      const label = document.createElement('strong'); label.textContent = 'Watch';
-      const services = document.createElement('span'); services.textContent = show.providers.join(' · ');
-      watch.append(label, services); body.appendChild(watch);
-    }
-
-    if (show.metacritic || show.notes) {
-      const footer = document.createElement('div'); footer.className = 'card-footer';
-      if (show.metacritic) {
-        const link = document.createElement('a'); link.className = 'metacritic-link'; link.href = show.metacritic; link.target = '_blank'; link.rel = 'noopener noreferrer'; link.textContent = 'Metacritic ↗';
-        link.addEventListener('click', e => e.stopPropagation()); footer.appendChild(link);
-      } else footer.appendChild(document.createElement('span'));
-      if (show.notes) { const notes = document.createElement('span'); notes.className = 'card-notes-indicator'; notes.textContent = 'Notes'; footer.appendChild(notes); }
-      body.appendChild(footer);
-    }
-
-    card.append(posterWrap, body);
-    card.addEventListener('click', () => openShowDialog(show));
-    card.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openShowDialog(show); } });
-    if (canDrag) attachDragCard(card, show, handle);
-    return card;
-  }
-
-  function initials(title) {
-    const parts = title.trim().split(/\s+/).filter(Boolean);
-    return parts.slice(0, 2).map(x => x[0]?.toUpperCase() || '').join('') || 'TV';
-  }
-
-  function showMeta(show) {
-    const parts = [];
-    if (show.seasons !== null) parts.push(`${show.seasons} ${show.seasons === 1 ? 'season' : 'seasons'}`);
-    if (show.episodes !== null) parts.push(`${show.episodes} ${show.episodes === 1 ? 'episode' : 'episodes'}`);
-    return parts.join(' · ');
-  }
-
-  function ratingStars(rating) {
-    const whole = Math.floor(rating);
-    const half = rating % 1 >= .5;
-    return '★'.repeat(whole) + (half ? '½' : '');
-  }
-
-  function attachDragColumn(header, section, columnId) {
-    header.addEventListener('dragstart', e => {
-      if (draggedShowId) { e.preventDefault(); return; }
-      draggedColumnId = columnId;
-      section.classList.add('column-dragging');
-      e.dataTransfer.effectAllowed = 'move';
-      e.dataTransfer.setData('text/plain', `column:${columnId}`);
-      try { e.dataTransfer.setDragImage(section, Math.min(e.offsetX, section.offsetWidth - 10), 24); } catch (_) {}
-    });
-
-    header.addEventListener('dragend', () => {
-      draggedColumnId = null;
-      document.querySelectorAll('.kanban-column').forEach(c => c.classList.remove('column-dragging', 'column-drop-before', 'column-drop-after'));
-    });
-
-    section.addEventListener('dragover', e => {
-      if (!draggedColumnId || draggedColumnId === columnId) return;
-      e.preventDefault();
-      e.dataTransfer.dropEffect = 'move';
-      const rect = section.getBoundingClientRect();
-      const after = e.clientX >= rect.left + rect.width / 2;
-      section.classList.toggle('column-drop-before', !after);
-      section.classList.toggle('column-drop-after', after);
-    });
-
-    section.addEventListener('dragleave', e => {
-      if (!draggedColumnId) return;
-      if (!section.contains(e.relatedTarget)) section.classList.remove('column-drop-before', 'column-drop-after');
-    });
-
-    section.addEventListener('drop', e => {
-      if (!draggedColumnId || draggedColumnId === columnId) return;
-      e.preventDefault();
-      e.stopPropagation();
-      const rect = section.getBoundingClientRect();
-      const after = e.clientX >= rect.left + rect.width / 2;
-      reorderColumnByDrop(draggedColumnId, columnId, after);
-    });
-  }
-
-  function reorderColumnByDrop(movingId, targetId, insertAfter) {
-    if (!movingId || !targetId || movingId === targetId) return;
-    const from = state.columns.findIndex(c => c.id === movingId);
-    const targetBeforeRemoval = state.columns.findIndex(c => c.id === targetId);
-    if (from < 0 || targetBeforeRemoval < 0) return;
-
-    const [moving] = state.columns.splice(from, 1);
-    const target = state.columns.findIndex(c => c.id === targetId);
-    if (target < 0) { state.columns.splice(from, 0, moving); return; }
-    const to = target + (insertAfter ? 1 : 0);
-    state.columns.splice(to, 0, moving);
-    draggedColumnId = null;
-    stampColumnOrder();
-    saveState();
-  }
-
-  function clearCardDropIndicators() {
-    document.querySelectorAll('.show-card').forEach(c => c.classList.remove('card-drop-before', 'card-drop-after'));
-    document.querySelectorAll('.column-body').forEach(b => b.classList.remove('card-drop-end'));
-    document.querySelectorAll('.kanban-column').forEach(c => c.classList.remove('drag-over'));
-  }
-
-  function attachDragCard(card, show, handle) {
-    handle.addEventListener('dragstart', e => {
-      draggedShowId = show.id;
-      card.classList.add('dragging');
-      clearCardDropIndicators();
-      e.dataTransfer.effectAllowed = 'move';
-      e.dataTransfer.setData('text/plain', show.id);
-      try { e.dataTransfer.setDragImage(card, Math.min(card.offsetWidth - 24, 36), 24); } catch (_) {}
-    });
-    handle.addEventListener('dragend', () => {
-      draggedShowId = null;
-      card.classList.remove('dragging');
-      clearCardDropIndicators();
-    });
-    card.addEventListener('dragover', e => {
-      if (!draggedShowId || draggedShowId === show.id || isFiltering()) return;
-      e.preventDefault();
-      e.stopPropagation();
-      e.dataTransfer.dropEffect = 'move';
-      clearCardDropIndicators();
-      const rect = card.getBoundingClientRect();
-      const after = e.clientY >= rect.top + rect.height / 2;
-      card.classList.toggle('card-drop-before', !after);
-      card.classList.toggle('card-drop-after', after);
-      card.closest('.kanban-column')?.classList.add('drag-over');
-    });
-    card.addEventListener('dragleave', e => {
-      if (!card.contains(e.relatedTarget)) card.classList.remove('card-drop-before', 'card-drop-after');
-    });
-    card.addEventListener('drop', e => {
-      if (!draggedShowId || draggedShowId === show.id || isFiltering()) return;
-      e.preventDefault(); e.stopPropagation();
-      const rect = card.getBoundingClientRect();
-      const after = e.clientY >= rect.top + rect.height / 2;
-      const movingId = draggedShowId;
-      clearCardDropIndicators();
-      if (after) moveShowAfter(movingId, show.id, show.columnId);
-      else moveShowBefore(movingId, show.id, show.columnId);
-    });
-  }
-
-  function attachDropZone(body, columnId) {
-    body.addEventListener('dragover', e => {
-      if (!draggedShowId || isFiltering()) return;
-      if (e.target.closest?.('.show-card')) return;
-      e.preventDefault(); e.dataTransfer.dropEffect = 'move';
-      clearCardDropIndicators();
-      body.closest('.kanban-column')?.classList.add('drag-over');
-      body.classList.add('card-drop-end');
-    });
-    body.addEventListener('dragleave', e => {
-      if (!body.contains(e.relatedTarget)) {
-        body.closest('.kanban-column')?.classList.remove('drag-over');
-        body.classList.remove('card-drop-end');
-      }
-    });
-    body.addEventListener('drop', e => {
-      if (!draggedShowId || isFiltering()) return;
-      if (e.target.closest?.('.show-card')) return;
-      e.preventDefault();
-      const movingId = draggedShowId;
-      clearCardDropIndicators();
-      moveShowToEnd(movingId, columnId);
-    });
-  }
-
-  function moveShowBefore(showId, targetId, columnId) {
-    const moving = state.shows.find(s => s.id === showId);
-    if (!moving) return;
-    const oldColumn = moving.columnId;
-    const wasArchived = !!moving.archive;
-    moving.archive = null;
-    moving.columnId = columnId;
-    const ordered = orderedShowsForColumn(columnId).filter(s => s.id !== showId);
-    const targetIndex = ordered.findIndex(s => s.id === targetId);
-    ordered.splice(targetIndex < 0 ? ordered.length : targetIndex, 0, moving);
-    rewriteOrder(columnId, ordered);
-    if (!wasArchived && oldColumn && oldColumn !== columnId) normalizeColumnOrder(oldColumn);
-    saveState();
-  }
-
-  function moveShowAfter(showId, targetId, columnId) {
-    const moving = state.shows.find(s => s.id === showId);
-    if (!moving) return;
-    const oldColumn = moving.columnId;
-    const wasArchived = !!moving.archive;
-    moving.archive = null;
-    moving.columnId = columnId;
-    const ordered = orderedShowsForColumn(columnId).filter(s => s.id !== showId);
-    const targetIndex = ordered.findIndex(s => s.id === targetId);
-    ordered.splice(targetIndex < 0 ? ordered.length : targetIndex + 1, 0, moving);
-    rewriteOrder(columnId, ordered);
-    if (!wasArchived && oldColumn && oldColumn !== columnId) normalizeColumnOrder(oldColumn);
-    saveState();
-  }
-
-  function moveShowToEnd(showId, columnId) {
-    const moving = state.shows.find(s => s.id === showId);
-    if (!moving) return;
-    const oldColumn = moving.columnId;
-    moving.archive = null;
-    moving.columnId = columnId;
-    moving.updatedAt = nowIso();
-    if (oldColumn !== columnId) normalizeColumnOrder(oldColumn);
-    normalizeColumnOrder(columnId, showId);
-    saveState();
-  }
-
-  function rewriteOrder(columnId, ordered) {
-    const t = nowIso();
-    ordered.forEach((s, i) => { s.columnId = columnId; s.archive = null; s.order = i; s.updatedAt = t; });
-  }
-
-  function normalizeColumnOrder(columnId, forceLastId = null) {
-    if (!columnId) return;
-    let ordered = orderedShowsForColumn(columnId);
-    if (forceLastId) {
-      const index = ordered.findIndex(s => s.id === forceLastId);
-      if (index >= 0) ordered.push(ordered.splice(index, 1)[0]);
-    }
-    rewriteOrder(columnId, ordered);
-  }
-
-  function populateLocationSelect(selectedShow = null) {
-    els.showLocation.replaceChildren();
-    const activeGroup = document.createElement('optgroup'); activeGroup.label = 'Board';
-    for (const column of state.columns) {
-      const option = document.createElement('option'); option.value = `column:${column.id}`; option.textContent = column.name; activeGroup.appendChild(option);
-    }
-    const archiveGroup = document.createElement('optgroup'); archiveGroup.label = 'Archive';
-    const watched = document.createElement('option'); watched.value = 'archive:watched'; watched.textContent = 'Watched';
-    const abandoned = document.createElement('option'); abandoned.value = 'archive:abandoned'; abandoned.textContent = 'Abandoned';
-    archiveGroup.append(watched, abandoned);
-    els.showLocation.append(activeGroup, archiveGroup);
-
-    if (selectedShow) els.showLocation.value = selectedShow.archive ? `archive:${selectedShow.archive}` : `column:${selectedShow.columnId}`;
-    else els.showLocation.value = `column:${state.columns[0].id}`;
-  }
-
-  function clearLookupUI() {
-    if (lookupController) { lookupController.abort(); lookupController = null; }
-    els.lookupResults.replaceChildren();
-    els.lookupResults.hidden = true;
-    els.lookupStatus.hidden = true;
-    els.lookupStatus.textContent = '';
-    els.lookupShowButton.disabled = false;
-    els.lookupShowButton.textContent = 'Find details';
-  }
-
-  function setLookupStatus(text) {
-    els.lookupStatus.textContent = text;
-    els.lookupStatus.hidden = !text;
-  }
-
-  function lookupSubtitle(show) {
-    const year = show.premiered ? String(show.premiered).slice(0, 4) : '';
-    const channel = show.network?.name || show.webChannel?.name || '';
-    const country = show.network?.country?.name || show.webChannel?.country?.name || '';
-    return [year, channel, country].filter(Boolean).join(' · ') || 'TV series';
-  }
-
-  function sanitizeTmdbCredential(value) {
-    return String(value || '').trim().replace(/^Bearer\s+/i, '').replace(/^["']|["']$/g, '').trim();
-  }
-
-  function tmdbCredentialLooksLikeApiKey(value) {
-    return /^[a-f0-9]{32}$/i.test(sanitizeTmdbCredential(value));
-  }
-
-  async function tmdbFetch(path, params = {}, credential = prefs.tmdbCredential) {
-    const cred = sanitizeTmdbCredential(credential);
-    if (!cred) throw new Error('TMDB is not configured');
-    const url = new URL(`https://api.themoviedb.org/3${path}`);
-    for (const [key, value] of Object.entries(params)) if (value !== null && value !== undefined && value !== '') url.searchParams.set(key, String(value));
-    const headers = { 'Accept': 'application/json' };
-    if (tmdbCredentialLooksLikeApiKey(cred)) url.searchParams.set('api_key', cred);
-    else headers.Authorization = `Bearer ${cred}`;
-    const response = await fetch(url, { headers });
-    if (!response.ok) {
-      let detail = '';
-      try {
-        const body = await response.json();
-        detail = body?.status_message ? `: ${body.status_message}` : '';
-      } catch (_) {}
-      const error = new Error(`TMDB returned ${response.status}${detail}`);
-      error.status = response.status;
-      throw error;
-    }
-    return response.json();
-  }
-
-  function normalizedTitle(value) {
-    return String(value || '').trim().toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim();
-  }
-
-  async function resolveTmdbId(meta) {
-    if (integerOrNull(meta.tmdbId)) return integerOrNull(meta.tmdbId);
-    const imdbId = String(meta.imdbId || '').trim();
-    if (imdbId) {
-      const found = await tmdbFetch(`/find/${encodeURIComponent(imdbId)}`, { external_source: 'imdb_id' });
-      const tv = Array.isArray(found.tv_results) ? found.tv_results : [];
-      if (tv.length === 1) return integerOrNull(tv[0].id);
-      if (tv.length > 1) {
-        const exact = tv.find(r => normalizedTitle(r.name) === normalizedTitle(meta.title));
-        if (exact) return integerOrNull(exact.id);
-      }
-    }
-
-    const search = await tmdbFetch('/search/tv', { query: meta.title, language: 'en-CA' });
-    const results = Array.isArray(search.results) ? search.results : [];
-    const exact = results.filter(r => normalizedTitle(r.name) === normalizedTitle(meta.title) || normalizedTitle(r.original_name) === normalizedTitle(meta.title));
-    if (meta.firstAirYear) {
-      const sameYear = exact.find(r => String(r.first_air_date || '').slice(0, 4) === String(meta.firstAirYear));
-      if (sameYear) return integerOrNull(sameYear.id);
-    }
-    if (exact.length === 1) return integerOrNull(exact[0].id);
+  function effectiveTotalMinutes(show) {
+    if (Number.isFinite(show.totalMinutes) && show.totalMinutes > 0) return show.totalMinutes;
+    if (Number.isFinite(show.episodes) && show.episodes > 0 && Number.isFinite(show.runtime) && show.runtime > 0) return show.episodes * show.runtime;
     return null;
   }
-
-  async function fetchCanadianProviders(meta) {
-    const tmdbId = await resolveTmdbId(meta);
-    if (!tmdbId) return { resolved: false, tmdbId: null, providers: [], providerLink: '', providersUpdatedAt: null };
-    const data = await tmdbFetch(`/tv/${tmdbId}/watch/providers`);
-    const ca = data?.results?.CA || null;
-    const providers = cleanProviders((ca?.flatrate || []).map(p => p?.provider_name));
-    return {
-      resolved: true,
-      tmdbId,
-      providers,
-      providerLink: safeUrl(ca?.link || ''),
-      providersUpdatedAt: nowIso()
-    };
+  function formatDuration(minutes) {
+    if (!Number.isFinite(minutes) || minutes <= 0) return '';
+    const h = Math.floor(minutes / 60);
+    const m = Math.round(minutes % 60);
+    if (h < 1) return `${m}m`;
+    return m ? `${h}h ${m}m` : `${h}h`;
+  }
+  function formatRating(rating) {
+    if (!rating) return 'Unrated';
+    const whole = Math.floor(rating);
+    const half = rating % 1 ? '½' : '';
+    return `${whole}${half} ★`;
+  }
+  function showNetworkLabel(show) {
+    return show.network || (show.providers && show.providers[0]) || '';
+  }
+  function allNetworkValues(show) {
+    return cleanList([show.network, ...(show.providers || [])].filter(Boolean), 30, 100);
   }
 
-  function updateStreamingPreview(meta = draftMeta) {
-    const checked = validDateString(meta?.providersUpdatedAt);
-    const providers = cleanProviders(meta?.providers);
-    if (!checked && !providers.length) {
-      els.streamingPreview.hidden = true;
-      return;
-    }
-    els.streamingPreview.hidden = false;
-    els.streamingProvidersText.textContent = providers.length ? providers.join(' · ') : 'No subscription service found';
-    els.streamingProvidersNote.textContent = checked ? 'Canada only · subscription services only · availability via JustWatch/TMDB' : '';
-  }
-
-
-  function metacriticSlug(title) {
-    return String(title || '')
-      .normalize('NFKD')
-      .replace(/[\u0300-\u036f]/g, '')
-      .toLowerCase()
-      .replace(/&/g, ' ')
-      .replace(/[’'`]/g, '')
-      .replace(/[^a-z0-9]+/g, '-')
-      .replace(/^-+|-+$/g, '');
-  }
-
-  function likelyMetacriticUrl(title) {
-    const slug = metacriticSlug(title);
-    return slug ? `https://www.metacritic.com/tv/${slug}/` : '';
-  }
-
-  async function lookupShows() {
-    const query = els.showTitle.value.trim();
-    if (!query) { setLookupStatus('Type a show title first.'); els.showTitle.focus(); return; }
-    if (lookupController) lookupController.abort();
-    lookupController = new AbortController();
-    els.lookupResults.replaceChildren();
-    els.lookupResults.hidden = true;
-    els.lookupShowButton.disabled = true;
-    els.lookupShowButton.textContent = 'Searching…';
-    setLookupStatus('Searching TVmaze…');
-    try {
-      const response = await fetch(`https://api.tvmaze.com/search/shows?q=${encodeURIComponent(query)}`, { signal: lookupController.signal });
-      if (!response.ok) throw new Error(`TVmaze search returned ${response.status}`);
-      const results = (await response.json()).slice(0, 7);
-      if (!results.length) { setLookupStatus('No matches found. You can still enter the show manually.'); return; }
-      setLookupStatus('Choose the correct show:');
-      for (const result of results) {
-        const show = result.show;
-        const button = document.createElement('button');
-        button.type = 'button'; button.className = 'lookup-result';
-        const thumb = document.createElement('span'); thumb.className = 'lookup-thumb'; thumb.textContent = initials(show.name || 'TV');
-        if (show.image?.medium) {
-          const img = document.createElement('img'); img.src = show.image.medium; img.alt = ''; img.loading = 'lazy';
-          img.addEventListener('error', () => img.remove(), { once: true }); thumb.appendChild(img);
-        }
-        const copy = document.createElement('span'); copy.className = 'lookup-copy';
-        const strong = document.createElement('strong'); strong.textContent = show.name;
-        const meta = document.createElement('span'); meta.textContent = lookupSubtitle(show);
-        copy.append(strong, meta);
-        const use = document.createElement('span'); use.className = 'lookup-use'; use.textContent = 'Use';
-        button.append(thumb, copy, use);
-        button.addEventListener('click', () => applyTvmazeShow(show));
-        els.lookupResults.appendChild(button);
-      }
-      els.lookupResults.hidden = false;
-    } catch (err) {
-      if (err.name !== 'AbortError') {
-        console.error(err);
-        setLookupStatus('Could not reach TVmaze. You can still enter the show manually.');
-      }
-    } finally {
-      els.lookupShowButton.disabled = false;
-      els.lookupShowButton.textContent = 'Find details';
-      lookupController = null;
-    }
-  }
-
-  function imageArea(image) {
-    const r = image?.resolutions?.original;
-    return (Number(r?.width) || 0) * (Number(r?.height) || 0);
-  }
-
-  function chooseWideArtwork(images, fallbackShow) {
-    const pick = (type) => images.filter(i => i?.type === type && i?.resolutions?.original?.url).sort((a, b) => imageArea(b) - imageArea(a))[0];
-    const selected = pick('background') || pick('banner');
-    return selected?.resolutions?.original?.url || fallbackShow.image?.original || fallbackShow.image?.medium || '';
-  }
-
-  async function applyTvmazeShow(show) {
-    els.lookupResults.hidden = true;
-    els.lookupShowButton.disabled = true;
-    els.lookupShowButton.textContent = 'Loading…';
-    setLookupStatus(`Loading details for ${show.name}…`);
-    try {
-      const [episodesResponse, imagesResponse] = await Promise.all([
-        fetch(`https://api.tvmaze.com/shows/${show.id}/episodes`),
-        fetch(`https://api.tvmaze.com/shows/${show.id}/images`)
-      ]);
-      const episodes = episodesResponse.ok ? await episodesResponse.json() : [];
-      const images = imagesResponse.ok ? await imagesResponse.json() : [];
-      const seasons = new Set(episodes.map(e => Number(e.season)).filter(n => Number.isFinite(n) && n > 0));
-
-      els.showTitle.value = show.name || els.showTitle.value;
-      if (seasons.size) els.showSeasons.value = seasons.size;
-      if (episodes.length) els.showEpisodes.value = episodes.length;
-      const artwork = chooseWideArtwork(images, show);
-      if (artwork) els.showPoster.value = artwork;
-      if (Array.isArray(show.genres) && show.genres.length) {
-        const existing = cleanTags(els.showTags.value.split(','));
-        els.showTags.value = cleanTags([...existing, ...show.genres]).join(', ');
-      }
-
-      const generatedMetacriticUrl = likelyMetacriticUrl(show.name);
-      if (!els.showMetacritic.value.trim() || els.showMetacritic.value.trim() === draftMeta.autoMetacriticUrl) {
-        els.showMetacritic.value = generatedMetacriticUrl;
-      }
-
-      draftMeta = {
-        ...draftMeta,
-        tvmazeId: integerOrNull(show.id),
-        imdbId: String(show.externals?.imdb || '').trim(),
-        firstAirYear: integerOrNull(String(show.premiered || '').slice(0, 4)),
-        autoMetacriticUrl: generatedMetacriticUrl
-      };
-
-      let streamingMessage = '';
-      if (prefs.tmdbCredential) {
-        setLookupStatus(`Details added. Checking Canadian streaming for ${show.name}…`);
-        try {
-          const streaming = await fetchCanadianProviders({ title: show.name, ...draftMeta });
-          if (streaming.resolved) {
-            draftMeta = { ...draftMeta, ...streaming };
-            updateStreamingPreview();
-            streamingMessage = streaming.providers.length
-              ? ` Streaming: ${streaming.providers.join(', ')}.`
-              : ' No Canadian subscription service was found.';
-          } else streamingMessage = ' Streaming could not be matched automatically.';
-        } catch (err) {
-          console.error(err);
-          streamingMessage = ' Streaming availability could not be checked.';
-        }
-      }
-      setLookupStatus(`Details added.${streamingMessage} A likely Metacritic link was filled in automatically; you can edit it if needed. Add your tags, rating, or notes if you want them.`);
-    } catch (err) {
-      console.error(err);
-      setLookupStatus('Some show details could not be loaded. You can fill in anything missing manually.');
-    } finally {
-      els.lookupShowButton.disabled = false;
-      els.lookupShowButton.textContent = 'Find details';
-    }
-  }
-
-  function closeShowDialog() {
-    clearLookupUI();
-    draftMeta = {};
-    updateStreamingPreview();
-    if (els.showDialog.open) els.showDialog.close('cancel');
-  }
-
-  function openShowDialog(show = null, columnId = null) {
-    clearLookupUI();
-    els.showForm.reset();
-    draftMeta = show ? {
-      tvmazeId: show.tvmazeId, imdbId: show.imdbId, tmdbId: show.tmdbId, firstAirYear: show.firstAirYear,
-      providers: [...show.providers], providersUpdatedAt: show.providersUpdatedAt, providerLink: show.providerLink
-    } : {};
-    updateStreamingPreview();
-    populateLocationSelect(show);
-    if (show) {
-      els.showDialogTitle.textContent = 'Edit Show';
-      els.showId.value = show.id;
-      els.showTitle.value = show.title;
-      els.showRating.value = String(show.rating || 0);
-      els.showPoster.value = show.poster || '';
-      els.showMetacritic.value = show.metacritic || '';
-      els.showSeasons.value = show.seasons ?? '';
-      els.showEpisodes.value = show.episodes ?? '';
-      els.showTags.value = show.tags.join(', ');
-      els.showNotes.value = show.notes || '';
-      els.deleteShowButton.hidden = false;
-    } else {
-      els.showDialogTitle.textContent = 'Add Show';
-      els.showId.value = '';
-      els.deleteShowButton.hidden = true;
-      if (columnId && state.columns.some(c => c.id === columnId)) els.showLocation.value = `column:${columnId}`;
-      else if (activeView === ARCHIVE_WATCHED || activeView === ARCHIVE_ABANDONED) els.showLocation.value = `archive:${activeView}`;
-    }
-    els.showDialog.showModal();
-    setTimeout(() => els.showTitle.focus(), 50);
-  }
-
-  function readLocation(value) {
-    if (value.startsWith('archive:')) return { archive: value.slice(8), columnId: state.columns[0].id };
-    return { archive: null, columnId: value.slice(7) || state.columns[0].id };
-  }
-
-  function upsertShow() {
-    const title = els.showTitle.value.trim();
-    if (!title) return false;
-    const id = els.showId.value;
-    const location = readLocation(els.showLocation.value);
-    const fields = {
-      title,
-      columnId: location.columnId,
-      archive: location.archive,
-      poster: safeUrl(els.showPoster.value),
-      metacritic: safeUrl(els.showMetacritic.value),
-      seasons: numberOrNull(els.showSeasons.value),
-      episodes: numberOrNull(els.showEpisodes.value),
-      tags: cleanTags(els.showTags.value.split(',')),
-      rating: clampRating(els.showRating.value),
-      notes: els.showNotes.value.trim().slice(0, 2000),
-      tvmazeId: integerOrNull(draftMeta.tvmazeId),
-      imdbId: String(draftMeta.imdbId || '').trim().slice(0, 30),
-      tmdbId: integerOrNull(draftMeta.tmdbId),
-      firstAirYear: integerOrNull(draftMeta.firstAirYear),
-      providers: cleanProviders(draftMeta.providers),
-      providersUpdatedAt: validDateString(draftMeta.providersUpdatedAt) ? draftMeta.providersUpdatedAt : null,
-      providerLink: safeUrl(draftMeta.providerLink || ''),
-      updatedAt: nowIso()
-    };
-
-    if (els.showPoster.value.trim() && !fields.poster) { showToast('Artwork URL must begin with http:// or https://'); return false; }
-    if (els.showMetacritic.value.trim() && !fields.metacritic) { showToast('Metacritic URL must begin with http:// or https://'); return false; }
-
-    if (id) {
-      const show = state.shows.find(s => s.id === id);
-      if (!show) return false;
-      const oldColumn = show.columnId;
-      const oldArchive = show.archive;
-      const oldOrder = show.order;
-      Object.assign(show, fields);
-      const movedToDifferentActiveColumn = !show.archive && (oldArchive || oldColumn !== show.columnId);
-      if (movedToDifferentActiveColumn) {
-        const peers = orderedShowsForColumn(show.columnId).filter(s => s.id !== show.id);
-        show.order = (peers.at(-1)?.order ?? -1) + 1;
-      } else {
-        show.order = oldOrder;
-      }
-      if (!oldArchive && oldColumn && oldColumn !== show.columnId) normalizeColumnOrder(oldColumn);
-      showToast('Show updated');
-    } else {
-      const peers = state.shows.filter(s => !s.archive && s.columnId === fields.columnId);
-      state.shows.push({ id: uuid(), ...fields, order: (Math.max(-1, ...peers.map(s => Number(s.order) || 0)) + 1) });
-      showToast('Show added');
-    }
-    saveState();
+  function baseViewMatch(show) {
+    if (activeView === 'all') return true;
+    if (activeView === 'favourites') return show.favourite;
+    if (activeView === ARCHIVE_WATCHED) return show.archive === ARCHIVE_WATCHED;
+    if (activeView === ARCHIVE_ABANDONED) return show.archive === ARCHIVE_ABANDONED;
+    if (activeView.startsWith('status:')) return !show.archive && show.columnId === activeView.slice(7);
+    if (activeView.startsWith('saved:')) return true;
     return true;
   }
 
-  function deleteCurrentShow() {
-    const id = els.showId.value;
-    const show = state.shows.find(s => s.id === id);
-    if (!show || !confirm(`Delete “${show.title}”?`)) return;
-    state.shows = state.shows.filter(s => s.id !== id);
-    state.deleted = state.deleted.filter(d => d.id !== id);
-    state.deleted.push({ id, deletedAt: nowIso() });
-    if (!show.archive) normalizeColumnOrder(show.columnId);
-    saveState();
-    els.showDialog.close();
-    showToast('Show deleted');
+  function searchMatch(show) {
+    const q = els.searchInput.value.trim().toLowerCase();
+    if (!q) return true;
+    const haystack = [show.title, show.network, show.country, show.seriesStatus, ...(show.genres || []), ...(show.providers || []), ...(show.tags || []), show.notes].join(' ').toLowerCase();
+    return haystack.includes(q);
   }
 
-  function openColumnManagerForAdd() {
-    renderColumnManager();
-    els.columnsDialog.showModal();
-    setTimeout(() => els.newColumnName.focus(), 0);
+  function filtersMatch(show, f = filters) {
+    if (f.statuses.length && !f.statuses.includes(statusFor(show).id)) return false;
+    if (f.genres.length && !f.genres.some(g => show.genres.some(sg => sg.toLowerCase() === g.toLowerCase()))) return false;
+    if (f.networks.length) {
+      const values = allNetworkValues(show).map(x => x.toLowerCase());
+      if (!f.networks.some(n => values.includes(n.toLowerCase()))) return false;
+    }
+    if (f.tags.length && !f.tags.some(t => show.tags.some(st => st.toLowerCase() === t.toLowerCase()))) return false;
+    if (f.episodes) {
+      const n = show.episodes;
+      if (!Number.isFinite(n)) return false;
+      if (f.episodes === '1-6' && !(n >= 1 && n <= 6)) return false;
+      if (f.episodes === '7-12' && !(n >= 7 && n <= 12)) return false;
+      if (f.episodes === '13-24' && !(n >= 13 && n <= 24)) return false;
+      if (f.episodes === '25-49' && !(n >= 25 && n <= 49)) return false;
+      if (f.episodes === '50+' && !(n >= 50)) return false;
+    }
+    if (f.time) {
+      const minutes = effectiveTotalMinutes(show);
+      if (!Number.isFinite(minutes)) return false;
+      if (f.time === 'under5' && !(minutes < 300)) return false;
+      if (f.time === 'under10' && !(minutes < 600)) return false;
+      if (f.time === '10-20' && !(minutes >= 600 && minutes <= 1200)) return false;
+      if (f.time === '20-40' && !(minutes > 1200 && minutes <= 2400)) return false;
+      if (f.time === '40+' && !(minutes > 2400)) return false;
+    }
+    if (f.yearFrom && (!show.firstAirYear || show.firstAirYear < Number(f.yearFrom))) return false;
+    if (f.yearTo && (!show.firstAirYear || show.firstAirYear > Number(f.yearTo))) return false;
+    if (f.rating === 'unrated' && show.rating !== 0) return false;
+    if (f.rating && f.rating !== 'unrated' && show.rating < Number(f.rating)) return false;
+    if (f.favourite === 'yes' && !show.favourite) return false;
+    if (f.favourite === 'no' && show.favourite) return false;
+    return true;
   }
 
-  function renderColumnManager() {
-    els.columnManager.replaceChildren();
-    state.columns.forEach((column, index) => {
-      const row = document.createElement('div'); row.className = 'column-manager-row';
-      const order = document.createElement('span'); order.className = 'column-order'; order.textContent = String(index + 1);
-      const input = document.createElement('input'); input.type = 'text'; input.maxLength = 50; input.value = column.name; input.setAttribute('aria-label', `Column ${index + 1} name`);
-      input.addEventListener('change', () => renameColumn(column.id, input.value));
-      const up = document.createElement('button'); up.type = 'button'; up.className = 'small-icon-button'; up.textContent = '↑'; up.title = 'Move column left'; up.disabled = index === 0; up.addEventListener('click', () => moveColumn(index, index - 1));
-      const down = document.createElement('button'); down.type = 'button'; down.className = 'small-icon-button'; down.textContent = '↓'; down.title = 'Move column right'; down.disabled = index === state.columns.length - 1; down.addEventListener('click', () => moveColumn(index, index + 1));
-      const del = document.createElement('button'); del.type = 'button'; del.className = 'small-icon-button delete'; del.textContent = 'Delete'; del.title = 'Delete column'; del.disabled = state.columns.length <= 1; del.addEventListener('click', () => deleteColumn(column.id));
-      row.append(order, input, up, down, del);
-      els.columnManager.appendChild(row);
+  function sortShows(shows) {
+    const sorted = [...shows];
+    const nvl = (n, fallback) => Number.isFinite(n) ? n : fallback;
+    sorted.sort((a,b) => {
+      switch (sortMode) {
+        case 'added': return Date.parse(b.createdAt) - Date.parse(a.createdAt) || a.title.localeCompare(b.title);
+        case 'title-asc': return a.title.localeCompare(b.title, undefined, { sensitivity: 'base' });
+        case 'title-desc': return b.title.localeCompare(a.title, undefined, { sensitivity: 'base' });
+        case 'year-desc': return nvl(b.firstAirYear, -1) - nvl(a.firstAirYear, -1) || a.title.localeCompare(b.title);
+        case 'year-asc': return nvl(a.firstAirYear, 9999) - nvl(b.firstAirYear, 9999) || a.title.localeCompare(b.title);
+        case 'rating-desc': return b.rating - a.rating || a.title.localeCompare(b.title);
+        case 'rating-asc': return a.rating - b.rating || a.title.localeCompare(b.title);
+        case 'episodes-asc': return nvl(a.episodes, 999999) - nvl(b.episodes, 999999) || a.title.localeCompare(b.title);
+        case 'episodes-desc': return nvl(b.episodes, -1) - nvl(a.episodes, -1) || a.title.localeCompare(b.title);
+        case 'time-asc': return nvl(effectiveTotalMinutes(a), 9999999) - nvl(effectiveTotalMinutes(b), 9999999) || a.title.localeCompare(b.title);
+        case 'time-desc': return nvl(effectiveTotalMinutes(b), -1) - nvl(effectiveTotalMinutes(a), -1) || a.title.localeCompare(b.title);
+        case 'network': return showNetworkLabel(a).localeCompare(showNetworkLabel(b), undefined, { sensitivity: 'base' }) || a.title.localeCompare(b.title);
+        case 'status': return statusFor(a).name.localeCompare(statusFor(b).name) || a.title.localeCompare(b.title);
+        case 'recent':
+        default: return Date.parse(b.updatedAt) - Date.parse(a.updatedAt) || a.title.localeCompare(b.title);
+      }
+    });
+    return sorted;
+  }
+
+  function currentShows() {
+    return sortShows(state.shows.filter(show => baseViewMatch(show) && searchMatch(show) && filtersMatch(show)));
+  }
+
+  function currentViewInfo() {
+    if (activeView === 'all') return ['All Shows', 'Every show in your TV library.'];
+    if (activeView === 'favourites') return ['Favourites', 'Shows you have marked as favourites.'];
+    if (activeView === ARCHIVE_WATCHED) return ['Watched', 'Shows you have finished.'];
+    if (activeView === ARCHIVE_ABANDONED) return ['Abandoned', 'Shows you stopped watching.'];
+    if (activeView.startsWith('status:')) {
+      const c = state.columns.find(x => x.id === activeView.slice(7));
+      return [c?.name || 'Status', `Shows currently marked ${c?.name || 'with this status'}.`];
+    }
+    if (activeView.startsWith('saved:')) {
+      const v = state.savedViews.find(x => x.id === activeView.slice(6));
+      return [v?.name || 'Saved View', 'A saved combination of filters and sorting.'];
+    }
+    return ['All Shows', 'Every show in your TV library.'];
+  }
+
+  function render() {
+    state = normalizeState(state);
+    if (activeView.startsWith('status:') && !state.columns.some(c => c.id === activeView.slice(7))) activeView = 'all';
+    if (activeView.startsWith('saved:') && !state.savedViews.some(v => v.id === activeView.slice(6))) activeView = 'all';
+    saveUi();
+    renderNavigation();
+    renderHeader();
+    renderActiveFilters();
+    renderShowList();
+    updateDropboxUI();
+    updateTmdbUI();
+    renderIcons();
+  }
+
+  function renderNavigation() {
+    const activeShows = state.shows.filter(s => !s.archive);
+    els.allCount.textContent = state.shows.length;
+    els.favouritesCount.textContent = state.shows.filter(s => s.favourite).length;
+    els.watchedCount.textContent = state.shows.filter(s => s.archive === ARCHIVE_WATCHED).length;
+    els.abandonedCount.textContent = state.shows.filter(s => s.archive === ARCHIVE_ABANDONED).length;
+
+    els.statusNav.replaceChildren();
+    state.columns.forEach(c => {
+      const btn = document.createElement('button');
+      btn.className = 'nav-item'; btn.dataset.view = `status:${c.id}`;
+      btn.innerHTML = `<span class="nav-icon">${iconSvg('bookmark')}</span><span></span><span class="nav-count">${activeShows.filter(s => s.columnId === c.id).length}</span>`;
+      btn.children[1].textContent = c.name;
+      els.statusNav.appendChild(btn);
+    });
+
+    els.savedViewsNav.replaceChildren();
+    if (!state.savedViews.length) {
+      const empty = document.createElement('div');
+      empty.style.cssText = 'padding:3px 9px;color:#9a968d;font-size:10px;';
+      empty.textContent = 'No saved views yet';
+      els.savedViewsNav.appendChild(empty);
+    } else {
+      state.savedViews.forEach(v => {
+        const btn = document.createElement('button');
+        btn.className = 'nav-item saved-view'; btn.dataset.view = `saved:${v.id}`;
+        btn.innerHTML = `<span class="nav-icon">${iconSvg('filter')}</span><span></span>`;
+        btn.children[1].textContent = v.name;
+        els.savedViewsNav.appendChild(btn);
+      });
+    }
+
+    document.querySelectorAll('.nav-item[data-view]').forEach(btn => {
+      btn.classList.toggle('active', btn.dataset.view === activeView);
+      btn.onclick = () => switchView(btn.dataset.view);
     });
   }
 
-  function stampColumnOrder(t = nowIso()) {
-    state.columns.forEach((column, index) => { column.order = index; column.updatedAt = t; });
-    state.columnsUpdatedAt = t;
-  }
-  function renameColumn(id, name) {
-    const cleaned = name.trim().slice(0, 50);
-    const column = state.columns.find(c => c.id === id);
-    if (!column) return;
-    if (!cleaned) { renderColumnManager(); showToast('Column name cannot be blank'); return; }
-    const t = nowIso();
-    column.name = cleaned; column.updatedAt = t; state.columnsUpdatedAt = t; saveState(); renderColumnManager();
-  }
-  function moveColumn(from, to) {
-    if (to < 0 || to >= state.columns.length) return;
-    state.columns.splice(to, 0, state.columns.splice(from, 1)[0]);
-    stampColumnOrder(); saveState(); renderColumnManager();
-  }
-  function addColumn(name) {
-    const cleaned = name.trim().slice(0, 50);
-    if (!cleaned) return;
-    const t = nowIso();
-    state.columns.push({ id: uuid(), name: cleaned, order: state.columns.length, updatedAt: t });
-    state.columnsUpdatedAt = t; saveState(); renderColumnManager();
-  }
-  function deleteColumn(id) {
-    if (state.columns.length <= 1) return;
-    const column = state.columns.find(c => c.id === id);
-    if (!column) return;
-    const fallback = state.columns.find(c => c.id !== id);
-    const affected = state.shows.filter(s => !s.archive && s.columnId === id);
-    const message = affected.length
-      ? `Delete “${column.name}”? Its ${affected.length} ${affected.length === 1 ? 'show' : 'shows'} will move to “${fallback.name}”.`
-      : `Delete “${column.name}”?`;
-    if (!confirm(message)) return;
-    const t = nowIso();
-    for (const show of affected) { show.columnId = fallback.id; show.updatedAt = t; }
-    state.columns = state.columns.filter(c => c.id !== id);
-    state.columnDeleted = Array.isArray(state.columnDeleted) ? state.columnDeleted : [];
-    const prior = state.columnDeleted.find(d => d.id === id);
-    if (prior) prior.deletedAt = t; else state.columnDeleted.push({ id, deletedAt: t });
-    stampColumnOrder(t); normalizeColumnOrder(fallback.id); saveState(); renderColumnManager();
+  function switchView(view) {
+    activeView = view;
+    if (view.startsWith('saved:')) {
+      const saved = state.savedViews.find(v => v.id === view.slice(6));
+      if (saved) {
+        filters = normalizeFilters(saved.filters);
+        sortMode = validSort(saved.sort) ? saved.sort : 'recent';
+        els.sortSelect.value = sortMode;
+      }
+    } else {
+      filters = emptyFilters();
+      sortMode = ui.sort && validSort(ui.sort) ? ui.sort : sortMode;
+    }
+    closeMobileNav();
+    render();
   }
 
-  function showToast(message) {
-    clearTimeout(toastTimer);
-    els.toast.textContent = message;
-    els.toast.classList.add('show');
-    toastTimer = setTimeout(() => els.toast.classList.remove('show'), 2200);
+  function renderHeader() {
+    const [title] = currentViewInfo();
+    const shows = currentShows();
+    els.viewTitle.textContent = title;
+    els.viewSubtitle.textContent = `${shows.length} ${shows.length === 1 ? 'show' : 'shows'}`;
+    els.sortSelect.value = sortMode;
+    const count = filterCount(filters);
+    els.filterBadge.hidden = count === 0;
+    els.filterBadge.textContent = count;
   }
 
-  function setSyncStatus(kind, text) {
-    els.statusDot.className = `status-dot${kind ? ` ${kind}` : ''}`;
-    els.syncLabel.textContent = text;
-  }
-  function relativeTime(iso) {
-    const ms = Date.now() - new Date(iso).getTime();
-    if (ms < 60000) return 'just now';
-    if (ms < 3600000) return `${Math.floor(ms / 60000)}m ago`;
-    if (ms < 86400000) return `${Math.floor(ms / 3600000)}h ago`;
-    return `${Math.floor(ms / 86400000)}d ago`;
-  }
-  function getRedirectUri() {
-    if (!/^https?:$/.test(location.protocol)) return '';
-    return location.origin + location.pathname;
-  }
-
-  function setTmdbTestMessage(kind, text) {
-    if (!els.tmdbTestMessage) return;
-    els.tmdbTestMessage.hidden = !text;
-    els.tmdbTestMessage.className = `tmdb-test-message${kind ? ` ${kind}` : ''}`;
-    els.tmdbTestMessage.textContent = text || '';
-  }
-
-  function updateTmdbUI() {
-    const configured = !!prefs.tmdbCredential;
-    els.tmdbStatus.textContent = configured ? 'Configured' : 'Not configured';
-    if (document.activeElement !== els.tmdbCredential) els.tmdbCredential.value = prefs.tmdbCredential || '';
-    els.refreshProvidersButton.disabled = !configured || providerRefreshRunning;
-  }
-
-  async function saveAndTestTmdb() {
-    const credential = sanitizeTmdbCredential(els.tmdbCredential.value);
-    if (!credential) {
-      prefs.tmdbCredential = '';
-      savePrefs();
-      setTmdbTestMessage('', 'TMDB credential removed.');
-      showToast('TMDB credential removed');
+  function renderShowList() {
+    const shows = currentShows();
+    els.showList.replaceChildren();
+    els.showList.hidden = shows.length === 0;
+    els.emptyState.hidden = shows.length !== 0;
+    if (!shows.length) {
+      const anyLibrary = state.shows.length > 0;
+      els.emptyTitle.textContent = anyLibrary ? 'No shows match this view.' : 'No shows here yet.';
+      els.emptyText.textContent = anyLibrary ? 'Try clearing a filter or searching for something else.' : 'Add a show to start building your TV library.';
       return;
     }
-    els.saveTmdbButton.disabled = true;
-    els.saveTmdbButton.textContent = 'Testing…';
-    setTmdbTestMessage('testing', 'Testing your TMDB credential…');
-    try {
-      await tmdbFetch('/authentication', {}, credential);
-      prefs.tmdbCredential = credential;
-      savePrefs();
-      setTmdbTestMessage('success', 'Connected to TMDB successfully. You can now refresh Canadian subscription availability.');
-      showToast('TMDB connected');
-      refreshAllProviders({ interactive: false, includeUnlinked: false });
-    } catch (err) {
-      console.error(err);
-      const suffix = err?.status ? ` (${err.status})` : '';
-      setTmdbTestMessage('error', `TMDB did not accept this credential${suffix}. Paste either the 32-character v3 API Key or the API Read Access Token from your TMDB API settings.`);
-      showToast('TMDB credential was not accepted');
-    } finally {
-      els.saveTmdbButton.disabled = false;
-      els.saveTmdbButton.textContent = 'Save & test';
-      updateTmdbUI();
+    for (const show of shows) els.showList.appendChild(buildShowRow(show));
+  }
+
+  function buildShowRow(show) {
+    const row = document.createElement('button');
+    row.type = 'button'; row.className = 'show-row'; row.dataset.showId = show.id;
+    const status = statusFor(show);
+    const poster = document.createElement('div'); poster.className = 'row-poster';
+    if (show.poster) {
+      const img = new Image(); img.src = show.poster; img.alt = ''; img.loading = 'lazy';
+      img.onerror = () => { poster.replaceChildren(); poster.innerHTML = `<div class="poster-fallback">${iconSvg('tv')}</div>`; };
+      poster.appendChild(img);
+    } else poster.innerHTML = `<div class="poster-fallback">${iconSvg('tv')}</div>`;
+
+    const main = document.createElement('div'); main.className = 'row-main';
+    const titleLine = document.createElement('div'); titleLine.className = 'row-title-line';
+    const title = document.createElement('div'); title.className = 'row-title'; title.textContent = show.title;
+    titleLine.appendChild(title);
+    if (show.favourite) { const heart = document.createElement('span'); heart.className = 'heart'; heart.innerHTML = iconSvg('heart'); titleLine.appendChild(heart); }
+    main.appendChild(titleLine);
+    const subParts = [showNetworkLabel(show), show.firstAirYear, ...show.genres.slice(0,3)].filter(Boolean);
+    const sub = document.createElement('div'); sub.className = 'row-sub'; sub.textContent = subParts.join(' · '); main.appendChild(sub);
+    const meta = document.createElement('div'); meta.className = 'row-meta';
+    if (show.seasons !== null) meta.appendChild(metaSpan('library', `${show.seasons} ${show.seasons === 1 ? 'season' : 'seasons'}`));
+    if (show.episodes !== null) meta.appendChild(metaSpan('tv', `${show.episodes} ${show.episodes === 1 ? 'episode' : 'episodes'}`));
+    const duration = formatDuration(effectiveTotalMinutes(show));
+    if (duration) meta.appendChild(metaSpan('clock', `~${duration}`));
+    if (show.country) meta.appendChild(metaSpan('calendar', show.country));
+    main.appendChild(meta);
+
+    const personal = document.createElement('div'); personal.className = 'row-personal';
+    const rating = document.createElement('div'); rating.className = 'rating-text'; rating.textContent = formatRating(show.rating); personal.appendChild(rating);
+    if (show.tags.length) {
+      const tags = document.createElement('div'); tags.className = 'tags-mini';
+      show.tags.slice(0,4).forEach(t => { const tag = document.createElement('span'); tag.className = 'tag-mini'; tag.textContent = t; tags.appendChild(tag); });
+      personal.appendChild(tags);
     }
+
+    const pill = document.createElement('span'); pill.className = `status-pill${status.archive ? ' archive' : ''}`; pill.textContent = status.name;
+    if (!status.archive) { pill.style.background = hexAlpha(status.color, .12); pill.style.color = status.color; }
+    row.append(poster, main, personal, pill);
+    row.addEventListener('click', () => openShowDialog(show));
+    return row;
+  }
+  function metaSpan(icon, text) { const span = document.createElement('span'); span.innerHTML = `${iconSvg(icon)}<b></b>`; span.querySelector('b').style.fontWeight = '500'; span.querySelector('b').textContent = text; return span; }
+
+  function filterCount(f) {
+    return f.statuses.length + f.genres.length + f.networks.length + f.tags.length + [f.episodes, f.time, f.yearFrom, f.yearTo, f.rating, f.favourite].filter(Boolean).length;
   }
 
-  async function refreshAllProviders({ interactive = true, includeUnlinked = true } = {}) {
-    if (!prefs.tmdbCredential || providerRefreshRunning) return;
-    providerRefreshRunning = true;
-    updateTmdbUI();
-    const shows = state.shows.filter(show => includeUnlinked || show.tmdbId || show.imdbId);
-    let refreshed = 0, unmatched = 0, failed = 0;
-    try {
-      for (const show of shows) {
-        try {
-          const streaming = await fetchCanadianProviders(show);
-          if (!streaming.resolved) { unmatched++; continue; }
-          const before = JSON.stringify([show.tmdbId, show.providers, show.providerLink]);
-          show.tmdbId = streaming.tmdbId;
-          show.providers = streaming.providers;
-          show.providerLink = streaming.providerLink;
-          show.providersUpdatedAt = streaming.providersUpdatedAt;
-          if (JSON.stringify([show.tmdbId, show.providers, show.providerLink]) !== before) show.updatedAt = nowIso();
-          refreshed++;
-        } catch (err) { console.error(err); failed++; }
-      }
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
-      render();
-      if (dbx.connected && refreshed) scheduleSync();
-      if (interactive) {
-        const parts = [`${refreshed} ${refreshed === 1 ? 'show' : 'shows'} checked`];
-        if (unmatched) parts.push(`${unmatched} not matched`);
-        if (failed) parts.push(`${failed} failed`);
-        showToast(parts.join(' · '));
-      }
-    } finally {
-      providerRefreshRunning = false;
-      updateTmdbUI();
-    }
-  }
-
-  function maybeAutoRefreshProviders() {
-    if (!prefs.tmdbCredential || providerRefreshRunning) return;
-    const cutoff = Date.now() - 7 * 86400000;
-    const stale = state.shows.some(show => (show.tmdbId || show.imdbId) && (!show.providersUpdatedAt || new Date(show.providersUpdatedAt).getTime() < cutoff));
-    if (stale) refreshAllProviders({ interactive: false, includeUnlinked: false });
-  }
-
-  function updateDropboxUI() {
-    const connected = !!dbx.connected;
-    els.dropboxSetup.hidden = connected;
-    els.dropboxConnected.hidden = !connected;
-    els.dropboxStatus.textContent = connected ? 'Connected' : 'Not connected';
-    els.dropboxAppKey.value = dbx.appKey || '';
-    const redirect = getRedirectUri();
-    els.redirectUriText.textContent = redirect || 'Available after the app is hosted on HTTPS';
-    els.connectDropboxButton.disabled = !redirect;
-    if (connected) {
-      setSyncStatus('connected', dbx.lastSync ? `Dropbox · synced ${relativeTime(dbx.lastSync)}` : 'Dropbox connected');
-      els.footerMessage.textContent = 'Your TV board is saved locally and synced with your private Dropbox app folder.';
-    } else {
-      setSyncStatus('', 'Saved on this device');
-      els.footerMessage.textContent = 'Your TV board is stored only in this browser.';
-    }
-  }
-
-  function base64Url(bytes) {
-    let binary = '';
-    new Uint8Array(bytes).forEach(b => binary += String.fromCharCode(b));
-    return btoa(binary).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
-  }
-  function randomString(size = 64) { const bytes = new Uint8Array(size); crypto.getRandomValues(bytes); return base64Url(bytes); }
-  async function sha256(text) { return crypto.subtle.digest('SHA-256', new TextEncoder().encode(text)); }
-
-  async function connectDropbox() {
-    const appKey = els.dropboxAppKey.value.trim();
-    if (!appKey) { showToast('Paste your Dropbox App Key first'); return; }
-    const redirect = getRedirectUri();
-    if (!redirect) { showToast('Host the app on HTTPS before connecting Dropbox'); return; }
-    dbx.appKey = appKey; saveDropbox();
-    const verifier = randomString(64);
-    const challenge = base64Url(await sha256(verifier));
-    const stateValue = randomString(24);
-    localStorage.setItem(PKCE_KEY, JSON.stringify({ verifier, state: stateValue, appKey, startedAt: Date.now() }));
-    const params = new URLSearchParams({
-      client_id: appKey,
-      response_type: 'code',
-      redirect_uri: redirect,
-      code_challenge: challenge,
-      code_challenge_method: 'S256',
-      token_access_type: 'offline',
-      state: stateValue
+  function renderActiveFilters() {
+    els.activeFilters.replaceChildren();
+    const chips = [];
+    filters.statuses.forEach(id => chips.push([`status:${id}`, statusName(id)]));
+    filters.genres.forEach(v => chips.push([`genre:${v}`, v]));
+    filters.networks.forEach(v => chips.push([`network:${v}`, v]));
+    filters.tags.forEach(v => chips.push([`tag:${v}`, `#${v}`]));
+    if (filters.episodes) chips.push(['episodes', episodeLabel(filters.episodes)]);
+    if (filters.time) chips.push(['time', timeLabel(filters.time)]);
+    if (filters.yearFrom) chips.push(['yearFrom', `From ${filters.yearFrom}`]);
+    if (filters.yearTo) chips.push(['yearTo', `To ${filters.yearTo}`]);
+    if (filters.rating) chips.push(['rating', ratingFilterLabel(filters.rating)]);
+    if (filters.favourite) chips.push(['favourite', filters.favourite === 'yes' ? 'Favourites' : 'Not favourites']);
+    chips.forEach(([key,label]) => {
+      const chip = document.createElement('span'); chip.className = 'filter-chip';
+      const text = document.createElement('span'); text.textContent = label;
+      const x = document.createElement('button'); x.type = 'button'; x.textContent = '×'; x.setAttribute('aria-label', `Remove ${label} filter`); x.onclick = () => removeFilter(key);
+      chip.append(text,x); els.activeFilters.appendChild(chip);
     });
-    location.assign(`https://www.dropbox.com/oauth2/authorize?${params.toString()}`);
   }
-
-  async function handleOAuthReturn() {
-    const params = new URLSearchParams(location.search);
-    const code = params.get('code');
-    const returnedState = params.get('state');
-    const error = params.get('error_description') || params.get('error');
-    if (error) {
-      history.replaceState({}, '', getRedirectUri() || location.pathname);
-      showToast(`Dropbox: ${error}`); return;
-    }
-    if (!code) return;
-    let pkce; try { pkce = JSON.parse(localStorage.getItem(PKCE_KEY)); } catch (_) {}
-    if (!pkce || !pkce.verifier || !pkce.appKey || returnedState !== pkce.state) {
-      history.replaceState({}, '', getRedirectUri() || location.pathname);
-      showToast('Dropbox connection could not be verified'); return;
-    }
-    setSyncStatus('syncing', 'Connecting Dropbox…');
-    try {
-      const body = new URLSearchParams({ code, grant_type: 'authorization_code', redirect_uri: getRedirectUri(), client_id: pkce.appKey, code_verifier: pkce.verifier });
-      const response = await fetch('https://api.dropboxapi.com/oauth2/token', { method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, body });
-      if (!response.ok) throw new Error(await response.text());
-      const token = await response.json();
-      dbx = { connected: true, appKey: pkce.appKey, accessToken: token.access_token, refreshToken: token.refresh_token || null,
-        expiresAt: Date.now() + ((token.expires_in || 14400) * 1000) - 60000, accountId: token.account_id || null, lastSync: null };
-      saveDropbox(); localStorage.removeItem(PKCE_KEY); history.replaceState({}, '', getRedirectUri());
-      await syncWithDropbox({ announce: true });
-    } catch (err) {
-      console.error(err); history.replaceState({}, '', getRedirectUri() || location.pathname);
-      setSyncStatus('error', 'Dropbox connection failed'); showToast('Could not connect Dropbox. Check the app key and redirect URI.');
-    }
+  function removeFilter(key) {
+    if (key.startsWith('status:')) filters.statuses = filters.statuses.filter(x => x !== key.slice(7));
+    else if (key.startsWith('genre:')) filters.genres = filters.genres.filter(x => x !== key.slice(6));
+    else if (key.startsWith('network:')) filters.networks = filters.networks.filter(x => x !== key.slice(8));
+    else if (key.startsWith('tag:')) filters.tags = filters.tags.filter(x => x !== key.slice(4));
+    else filters[key] = '';
+    render();
   }
-
-  async function validAccessToken() {
-    if (!dbx.connected || !dbx.accessToken) throw new Error('Dropbox is not connected');
-    if (!dbx.expiresAt || Date.now() < dbx.expiresAt) return dbx.accessToken;
-    if (!dbx.refreshToken) throw new Error('Dropbox authorization expired. Reconnect Dropbox.');
-    const body = new URLSearchParams({ grant_type: 'refresh_token', refresh_token: dbx.refreshToken, client_id: dbx.appKey });
-    const response = await fetch('https://api.dropboxapi.com/oauth2/token', { method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, body });
-    if (!response.ok) throw new Error(await response.text());
-    const token = await response.json(); dbx.accessToken = token.access_token; dbx.expiresAt = Date.now() + ((token.expires_in || 14400) * 1000) - 60000; saveDropbox();
-    return dbx.accessToken;
+  function statusName(id) {
+    if (id === ARCHIVE_WATCHED) return 'Watched';
+    if (id === ARCHIVE_ABANDONED) return 'Abandoned';
+    return state.columns.find(c => c.id === id)?.name || id;
   }
+  function episodeLabel(v) { return ({'1-6':'1–6 episodes','7-12':'7–12 episodes','13-24':'13–24 episodes','25-49':'25–49 episodes','50+':'50+ episodes'})[v] || v; }
+  function timeLabel(v) { return ({under5:'Under 5h',under10:'Under 10h','10-20':'10–20h','20-40':'20–40h','40+':'40h+'})[v] || v; }
+  function ratingFilterLabel(v) { if (v === 'unrated') return 'Unrated'; return `${v}★+`; }
 
-  async function dropboxDownload() {
-    const token = await validAccessToken();
-    const response = await fetch('https://content.dropboxapi.com/2/files/download', {
-      method: 'POST', headers: { 'Authorization': `Bearer ${token}`, 'Dropbox-API-Arg': JSON.stringify({ path: DATA_PATH }) }
+  function openFilterDrawer() {
+    filterDraft = clone(filters);
+    renderFilterControls();
+    els.filterDrawer.classList.add('open'); els.drawerScrim.classList.add('open'); els.filterDrawer.setAttribute('aria-hidden','false');
+    document.body.style.overflow = 'hidden';
+  }
+  function closeFilterDrawer() {
+    els.filterDrawer.classList.remove('open'); els.drawerScrim.classList.remove('open'); els.filterDrawer.setAttribute('aria-hidden','true');
+    document.body.style.overflow = '';
+  }
+  function renderFilterControls() {
+    filterDraft = normalizeFilters(filterDraft);
+    els.filterStatuses.replaceChildren();
+    [...state.columns.map(c => ({ id:c.id, name:c.name })), {id:ARCHIVE_WATCHED,name:'Watched'}, {id:ARCHIVE_ABANDONED,name:'Abandoned'}].forEach(item => {
+      const label = document.createElement('label'); label.className = 'check-option';
+      const cb = document.createElement('input'); cb.type='checkbox'; cb.checked = filterDraft.statuses.includes(item.id);
+      cb.onchange = () => toggleDraftArray('statuses', item.id, cb.checked);
+      const span = document.createElement('span'); span.textContent = item.name; label.append(cb,span); els.filterStatuses.appendChild(label);
     });
-    if (response.status === 409) return null;
-    if (!response.ok) throw new Error(await response.text());
-    return JSON.parse(await response.text());
+    const genres = uniqueSorted(state.shows.flatMap(s => s.genres || []));
+    renderChoicePills(els.filterGenres, genres, filterDraft.genres, 'genres');
+    const networks = uniqueSorted(state.shows.flatMap(s => allNetworkValues(s)));
+    renderChoicePills(els.filterNetworks, networks, filterDraft.networks, 'networks');
+    const tags = uniqueSorted(state.shows.flatMap(s => s.tags || []));
+    renderChoicePills(els.filterTags, tags, filterDraft.tags, 'tags');
+    els.filterEpisodes.value = filterDraft.episodes;
+    els.filterTime.value = filterDraft.time;
+    els.filterYearFrom.value = filterDraft.yearFrom;
+    els.filterYearTo.value = filterDraft.yearTo;
+    els.filterRating.value = filterDraft.rating;
+    els.filterFavourite.value = filterDraft.favourite;
+    els.saveViewButton.textContent = activeView.startsWith('saved:') ? 'Update View' : 'Save View';
   }
-
-  async function dropboxUpload(data) {
-    const token = await validAccessToken();
-    const response = await fetch('https://content.dropboxapi.com/2/files/upload', {
-      method: 'POST',
-      headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/octet-stream',
-        'Dropbox-API-Arg': JSON.stringify({ path: DATA_PATH, mode: 'overwrite', autorename: false, mute: true }) },
-      body: JSON.stringify({ ...data, version: 1, syncedAt: nowIso() }, null, 2)
+  function renderChoicePills(container, values, selected, key) {
+    container.replaceChildren();
+    if (!values.length) { const span = document.createElement('span'); span.className='helper'; span.textContent='No values yet'; container.appendChild(span); return; }
+    values.forEach(value => {
+      const btn = document.createElement('button'); btn.type='button'; btn.className = `choice-pill${selected.some(x => x.toLowerCase() === value.toLowerCase()) ? ' selected' : ''}`; btn.textContent = value;
+      btn.onclick = () => { const has = filterDraft[key].some(x => x.toLowerCase() === value.toLowerCase()); toggleDraftArray(key, value, !has); renderFilterControls(); };
+      container.appendChild(btn);
     });
-    if (!response.ok) throw new Error(await response.text());
   }
+  function uniqueSorted(values) {
+    const map = new Map();
+    values.filter(Boolean).forEach(v => { const s=String(v).trim(); const k=s.toLowerCase(); if (s && !map.has(k)) map.set(k,s); });
+    return [...map.values()].sort((a,b)=>a.localeCompare(b,undefined,{sensitivity:'base'}));
+  }
+  function toggleDraftArray(key, value, checked) {
+    const current = filterDraft[key] || [];
+    if (checked && !current.some(x => x.toLowerCase() === value.toLowerCase())) filterDraft[key] = [...current,value];
+    if (!checked) filterDraft[key] = current.filter(x => x.toLowerCase() !== value.toLowerCase());
+  }
+  function readDraftScalarFilters() {
+    filterDraft.episodes = els.filterEpisodes.value;
+    filterDraft.time = els.filterTime.value;
+    filterDraft.yearFrom = els.filterYearFrom.value.trim();
+    filterDraft.yearTo = els.filterYearTo.value.trim();
+    filterDraft.rating = els.filterRating.value;
+    filterDraft.favourite = els.filterFavourite.value;
+    filterDraft = normalizeFilters(filterDraft);
+  }
+  function applyFilters() { readDraftScalarFilters(); filters = clone(filterDraft); closeFilterDrawer(); render(); }
+  function clearFilterDraft() { filterDraft = emptyFilters(); renderFilterControls(); }
 
-  function mergeStates(localRaw, remoteRaw) {
-    const local = normalizeState(localRaw);
-    if (!remoteRaw || !Array.isArray(remoteRaw.shows)) return local;
-    const remote = normalizeState(remoteRaw);
-
-    const columnTombstones = new Map();
-    for (const d of [...(remote.columnDeleted || []), ...(local.columnDeleted || [])]) {
-      const old = columnTombstones.get(d.id);
-      if (!old || new Date(d.deletedAt) > new Date(old.deletedAt)) columnTombstones.set(d.id, d);
+  function saveCurrentView() {
+    readDraftScalarFilters();
+    const t = nowIso();
+    if (activeView.startsWith('saved:')) {
+      const id = activeView.slice(6); const v = state.savedViews.find(x => x.id === id);
+      if (!v) return;
+      v.filters = clone(filterDraft); v.sort = sortMode; v.updatedAt = t; state.savedViewsUpdatedAt = t;
+      filters = clone(filterDraft); saveState(); closeFilterDrawer(); showToast(`Updated “${v.name}”`); return;
     }
-
-    const columnMap = new Map();
-    for (const c of [...remote.columns, ...local.columns]) {
-      const old = columnMap.get(c.id);
-      if (!old || new Date(c.updatedAt || 0) >= new Date(old.updatedAt || 0)) columnMap.set(c.id, { ...c });
-    }
-    for (const [id, deleted] of columnTombstones.entries()) {
-      const c = columnMap.get(id);
-      if (!c || new Date(deleted.deletedAt) >= new Date(c.updatedAt || 0)) columnMap.delete(id);
-      else columnTombstones.delete(id);
-    }
-
-    let columns = [...columnMap.values()].sort((a, b) => a.order - b.order || new Date(a.updatedAt || 0) - new Date(b.updatedAt || 0) || a.name.localeCompare(b.name));
-    if (!columns.length) columns = defaultState().columns;
-    columns.forEach((c, index) => { c.order = index; });
-    const columnsUpdatedAt = [local.columnsUpdatedAt, remote.columnsUpdatedAt, ...columns.map(c => c.updatedAt)]
-      .filter(validDateString).sort().pop() || nowIso();
-    const validIds = new Set(columns.map(c => c.id));
-    const fallbackId = columns[0].id;
-    const shows = new Map();
-    const tombstones = new Map();
-
-    for (const d of [...remote.deleted, ...local.deleted]) {
-      const old = tombstones.get(d.id);
-      if (!old || new Date(d.deletedAt) > new Date(old.deletedAt)) tombstones.set(d.id, d);
-    }
-    for (const s of [...remote.shows, ...local.shows]) {
-      const normalized = { ...s, columnId: validIds.has(s.columnId) ? s.columnId : fallbackId };
-      const old = shows.get(s.id);
-      if (!old || new Date(normalized.updatedAt || 0) > new Date(old.updatedAt || 0)) shows.set(s.id, normalized);
-    }
-    for (const [id, deleted] of tombstones.entries()) {
-      const s = shows.get(id);
-      if (!s || new Date(deleted.deletedAt) >= new Date(s.updatedAt || 0)) shows.delete(id);
-      else tombstones.delete(id);
-    }
-    const cutoff = Date.now() - 180 * 86400000;
-    const deleted = [...tombstones.values()].filter(d => new Date(d.deletedAt).getTime() >= cutoff);
-    const columnDeleted = [...columnTombstones.values()].filter(d => new Date(d.deletedAt).getTime() >= cutoff);
-    return normalizeState({ version: 1, columns, columnsUpdatedAt, columnDeleted, shows: [...shows.values()], deleted });
+    const name = prompt('Name this saved view:');
+    if (!name || !name.trim()) return;
+    const view = { id: uuid(), name: name.trim().slice(0,60), filters: clone(filterDraft), sort: sortMode, updatedAt: t };
+    state.savedViews.push(view); state.savedViewsUpdatedAt = t; filters = clone(filterDraft); activeView = `saved:${view.id}`; saveState(); closeFilterDrawer(); showToast('Saved view created');
   }
 
-  function scheduleSync() {
-    clearTimeout(syncTimer); setSyncStatus('syncing', 'Dropbox · saving…');
-    syncTimer = setTimeout(() => syncWithDropbox(), 500);
-  }
-  async function syncWithDropbox({ announce = false } = {}) {
-    if (!dbx.connected) return;
-    setSyncStatus('syncing', 'Dropbox · syncing…');
-    try {
-      const remote = await dropboxDownload();
-      state = mergeStates(state, remote); localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
-      await dropboxUpload(state); dbx.lastSync = nowIso(); saveDropbox(); render();
-      if (announce) showToast('Dropbox connected and synced');
-    } catch (err) {
-      console.error(err); setSyncStatus('error', 'Dropbox · sync problem'); showToast('Dropbox sync failed. Your board is still saved on this device.');
-    }
-  }
-  function disconnectDropbox() {
-    if (!confirm('Disconnect Dropbox on this device? Your local TV board will remain.')) return;
-    const appKey = dbx.appKey || ''; dbx = { connected: false, appKey }; saveDropbox(); showToast('Dropbox disconnected');
+  function renderSavedViewManager() {
+    els.savedViewManager.replaceChildren();
+    if (!state.savedViews.length) { const p=document.createElement('p');p.className='modal-intro';p.style.margin='4px 0';p.textContent='No saved views yet.';els.savedViewManager.appendChild(p);return; }
+    state.savedViews.forEach(v => {
+      const row=document.createElement('div');row.className='manager-row';
+      const name=document.createElement('input');name.value=v.name;name.maxLength=60;name.onchange=()=>{ const val=name.value.trim(); if(!val){name.value=v.name;return;} v.name=val;v.updatedAt=nowIso();state.savedViewsUpdatedAt=v.updatedAt;saveState();renderSavedViewManager(); };
+      const actions=document.createElement('div');actions.className='manager-actions';
+      const del=document.createElement('button');del.type='button';del.title='Delete view';del.textContent='×';del.onclick=()=>{ if(!confirm(`Delete saved view “${v.name}”?`))return; state.savedViews=state.savedViews.filter(x=>x.id!==v.id);state.savedViewsUpdatedAt=nowIso();if(activeView===`saved:${v.id}`){activeView='all';filters=emptyFilters();}saveState();renderSavedViewManager(); };
+      actions.append(del);row.append(name,actions);els.savedViewManager.appendChild(row);
+    });
   }
 
-  function localDateStamp() {
-    const d = new Date();
-    return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+  function renderStatusManager() {
+    els.statusManager.replaceChildren();
+    state.columns.forEach((c,index) => {
+      const row=document.createElement('div'); row.className='manager-row';
+      const left=document.createElement('div');left.style.cssText='display:grid;grid-template-columns:36px minmax(0,1fr);gap:7px;align-items:center;';
+      const color=document.createElement('input');color.type='color';color.value=safeColour(c.color,index);color.title='Status colour';color.style.cssText='width:34px;height:30px;padding:2px;border:1px solid var(--line);border-radius:7px;background:#fff;';
+      color.onchange=()=>{c.color=color.value;c.updatedAt=nowIso();state.columnsUpdatedAt=c.updatedAt;saveState();};
+      const name=document.createElement('input');name.value=c.name;name.maxLength=50;name.onchange=()=>{const val=name.value.trim();if(!val){name.value=c.name;return;}c.name=val;c.updatedAt=nowIso();state.columnsUpdatedAt=c.updatedAt;saveState();renderStatusManager();};
+      left.append(color,name);
+      const actions=document.createElement('div');actions.className='manager-actions';
+      const up=document.createElement('button');up.type='button';up.textContent='↑';up.disabled=index===0;up.onclick=()=>moveStatus(index,-1);
+      const down=document.createElement('button');down.type='button';down.textContent='↓';down.disabled=index===state.columns.length-1;down.onclick=()=>moveStatus(index,1);
+      const del=document.createElement('button');del.type='button';del.textContent='×';del.title='Delete status';del.disabled=state.columns.length===1;del.onclick=()=>deleteStatus(c.id);
+      actions.append(up,down,del);row.append(left,actions);els.statusManager.appendChild(row);
+    });
   }
-  function exportBackup() {
-    const blob = new Blob([JSON.stringify(state, null, 2)], { type: 'application/json' });
-    const url = URL.createObjectURL(blob); const a = document.createElement('a');
-    a.href = url; a.download = `tv-board-backup-${localDateStamp()}.json`; document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
-    showToast('Backup exported');
+  function moveStatus(index,delta) {
+    const target=index+delta;if(target<0||target>=state.columns.length)return;
+    [state.columns[index],state.columns[target]]=[state.columns[target],state.columns[index]];
+    const t=nowIso();state.columns.forEach((c,i)=>{c.order=i;c.updatedAt=t;});state.columnsUpdatedAt=t;saveState();renderStatusManager();
   }
-  async function importBackup(file) {
-    try {
-      const incoming = JSON.parse(await file.text());
-      if (!incoming || !Array.isArray(incoming.shows) || !Array.isArray(incoming.columns)) throw new Error('Invalid backup');
-      state = mergeStates(state, incoming); saveState(); showToast('Backup imported');
-    } catch (_) { showToast('That file is not a valid TV Board backup'); }
-    finally { els.importInput.value = ''; }
+  function deleteStatus(id) {
+    const c=state.columns.find(x=>x.id===id);if(!c||state.columns.length===1)return;
+    const count=state.shows.filter(s=>!s.archive&&s.columnId===id).length;
+    const replacement=state.columns.find(x=>x.id!==id);
+    const msg=count?`Delete “${c.name}”? Its ${count} ${count===1?'show':'shows'} will move to “${replacement.name}”.`:`Delete status “${c.name}”?`;
+    if(!confirm(msg))return;
+    const t=nowIso();state.shows.forEach(s=>{if(!s.archive&&s.columnId===id){s.columnId=replacement.id;s.updatedAt=t;}});
+    state.columns=state.columns.filter(x=>x.id!==id);state.columns.forEach((x,i)=>x.order=i);state.columnDeleted.push({id,deletedAt:t});state.columnsUpdatedAt=t;
+    if(activeView===`status:${id}`)activeView='all';saveState();renderStatusManager();
+  }
+  function addStatus(name) {
+    const text=name.trim();if(!text)return;
+    if(state.columns.some(c=>c.name.toLowerCase()===text.toLowerCase())){showToast('That status already exists');return;}
+    const t=nowIso();const base=slugify(text)||'status';let id=base;let i=2;while(state.columns.some(c=>c.id===id))id=`${base}-${i++}`;
+    state.columns.push({id,name:text.slice(0,50),order:state.columns.length,color:defaultColour(state.columns.length),updatedAt:t});state.columnsUpdatedAt=t;saveState();renderStatusManager();
   }
 
-  document.querySelectorAll('.view-tab').forEach(button => button.addEventListener('click', () => { activeView = button.dataset.view; render(); }));
-  els.searchInput.addEventListener('input', render);
-  els.tagFilter.addEventListener('change', render);
-  els.archiveSort.addEventListener('change', render);
-  els.addButton.addEventListener('click', () => openShowDialog());
-  els.lookupShowButton.addEventListener('click', lookupShows);
-  els.showTitle.addEventListener('keydown', e => {
-    if (e.key === 'Enter' && !els.lookupResults.hidden) { e.preventDefault(); }
-  });
-  els.showForm.addEventListener('submit', e => {
-    e.preventDefault(); if (upsertShow()) els.showDialog.close();
-  });
-  els.closeShowButton.addEventListener('click', closeShowDialog);
-  els.cancelShowButton.addEventListener('click', closeShowDialog);
-  els.showDialog.addEventListener('cancel', () => { clearLookupUI(); draftMeta = {}; });
-  els.showDialog.addEventListener('close', () => { clearLookupUI(); draftMeta = {}; });
-  els.showDialog.addEventListener('click', e => {
-    const rect = els.showDialog.getBoundingClientRect();
-    const outside = e.clientX < rect.left || e.clientX > rect.right || e.clientY < rect.top || e.clientY > rect.bottom;
-    if (outside) closeShowDialog();
-  });
-  els.deleteShowButton.addEventListener('click', deleteCurrentShow);
+  function fillLocationOptions(selected) {
+    els.showLocation.replaceChildren();
+    state.columns.forEach(c=>{const o=document.createElement('option');o.value=`status:${c.id}`;o.textContent=c.name;els.showLocation.appendChild(o);});
+    const w=document.createElement('option');w.value=ARCHIVE_WATCHED;w.textContent='Watched';els.showLocation.appendChild(w);
+    const a=document.createElement('option');a.value=ARCHIVE_ABANDONED;a.textContent='Abandoned';els.showLocation.appendChild(a);
+    els.showLocation.value=selected&&[...els.showLocation.options].some(o=>o.value===selected)?selected:`status:${state.columns[0].id}`;
+  }
 
-  els.columnsButton.addEventListener('click', () => { renderColumnManager(); els.columnsDialog.showModal(); });
-  els.quickAddColumnButton.addEventListener('click', openColumnManagerForAdd);
-  els.closeColumnsButton.addEventListener('click', () => els.columnsDialog.close());
-  els.addColumnForm.addEventListener('submit', e => { e.preventDefault(); addColumn(els.newColumnName.value); els.newColumnName.value = ''; els.newColumnName.focus(); });
+  function openShowDialog(show=null) {
+    draftMeta = show ? clone(show) : { providers: [], providerLink:'', providersUpdatedAt:null, tvmazeId:null, imdbId:'', tmdbId:null };
+    els.showDialogTitle.textContent = show ? 'Edit Show' : 'Add Show';
+    els.showId.value=show?.id||'';els.showTitle.value=show?.title||'';els.showRating.value=String(show?.rating||0);els.showPoster.value=show?.poster||'';
+    const location=show?.archive||`status:${show?.columnId||state.columns[0].id}`;fillLocationOptions(location);
+    setFavourite(Boolean(show?.favourite));
+    els.showYear.value=show?.firstAirYear||'';els.showSeasons.value=show?.seasons??'';els.showEpisodes.value=show?.episodes??'';els.showRuntime.value=show?.runtime??'';els.showTotalMinutes.value=show?.totalMinutes??'';
+    els.showSeriesStatus.value=show?.seriesStatus||'';els.showNetwork.value=show?.network||'';els.showCountry.value=show?.country||'';els.showGenres.value=(show?.genres||[]).join(', ');els.showMetacritic.value=show?.metacritic||'';
+    els.showTags.value=(show?.tags||[]).join(', ');els.showNotes.value=show?.notes||'';els.lookupStatus.textContent='Find details uses TVmaze to fill artwork, genres, year, network, seasons, episodes and runtime.';els.lookupResults.hidden=true;els.lookupResults.replaceChildren();
+    els.deleteShowButton.style.visibility=show?'visible':'hidden';updatePosterPreview();renderStreamingPreview();
+    if(!els.showDialog.open)els.showDialog.showModal();
+    setTimeout(()=>els.showTitle.focus(),30);
+  }
+  function closeShowDialog(){if(els.showDialog.open)els.showDialog.close(); if(lookupController){lookupController.abort();lookupController=null;}}
+  function setFavourite(value){draftMeta.favourite=Boolean(value);els.showFavourite.classList.toggle('active',draftMeta.favourite);els.showFavourite.setAttribute('aria-pressed',String(draftMeta.favourite));els.showFavouriteText.textContent=draftMeta.favourite?'Favourite':'Not favourite';}
+  function updatePosterPreview(){const url=safeUrl(els.showPoster.value);els.posterPreview.replaceChildren();if(url){const img=new Image();img.src=url;img.alt='';img.onerror=()=>{els.posterPreview.innerHTML=`<div class="poster-fallback">${iconSvg('tv')}</div>`;};els.posterPreview.appendChild(img);}else els.posterPreview.innerHTML=`<div class="poster-fallback">${iconSvg('tv')}</div>`;}
+  function renderStreamingPreview(){els.streamingProvidersText.replaceChildren();const providers=cleanProviders(draftMeta.providers);if(providers.length){providers.forEach(p=>{const s=document.createElement('span');s.className='provider-pill';s.textContent=p;els.streamingProvidersText.appendChild(s);});els.streamingProvidersNote.textContent=draftMeta.providersUpdatedAt?`Updated ${new Date(draftMeta.providersUpdatedAt).toLocaleDateString()}`:'Subscription services in Canada';}else{els.streamingProvidersNote.textContent=prefs.tmdbCredential?'No subscription services found in Canada.':'Requires a TMDB credential in Settings.';}}
 
-  els.settingsButton.addEventListener('click', () => { updateDropboxUI(); updateTmdbUI(); els.settingsDialog.showModal(); });
-  els.closeSettingsButton.addEventListener('click', () => els.settingsDialog.close());
-  els.saveTmdbButton.addEventListener('click', saveAndTestTmdb);
-  els.refreshProvidersButton.addEventListener('click', () => refreshAllProviders({ interactive: true, includeUnlinked: true }));
-  els.copyRedirectButton.addEventListener('click', async () => {
-    const redirect = getRedirectUri();
-    if (!redirect) { showToast('Host the app on HTTPS first'); return; }
-    try { await navigator.clipboard.writeText(redirect); showToast('Redirect URI copied'); }
-    catch (_) { showToast('Could not copy automatically'); }
-  });
-  els.connectDropboxButton.addEventListener('click', connectDropbox);
-  els.syncNowButton.addEventListener('click', () => syncWithDropbox({ announce: true }));
-  els.disconnectDropboxButton.addEventListener('click', disconnectDropbox);
-  els.exportButton.addEventListener('click', exportBackup);
-  els.importInput.addEventListener('change', () => { if (els.importInput.files?.[0]) importBackup(els.importInput.files[0]); });
+  async function lookupShows() {
+    const q=els.showTitle.value.trim();if(!q){els.lookupStatus.textContent='Enter a title first.';return;}
+    if(lookupController)lookupController.abort();lookupController=new AbortController();
+    els.lookupShowButton.disabled=true;els.lookupStatus.textContent='Searching TVmaze…';els.lookupResults.hidden=true;els.lookupResults.replaceChildren();
+    try{
+      const res=await fetch(`https://api.tvmaze.com/search/shows?q=${encodeURIComponent(q)}`,{signal:lookupController.signal});if(!res.ok)throw new Error('TVmaze search failed');const results=await res.json();
+      if(!results.length){els.lookupStatus.textContent='No TVmaze matches found. You can enter the details manually.';return;}
+      els.lookupStatus.textContent='Choose the correct show:';els.lookupResults.hidden=false;
+      results.slice(0,8).forEach(result=>{
+        const show=result.show;const btn=document.createElement('div');btn.className='lookup-result';
+        const img=document.createElement('img');img.alt='';img.src=show.image?.medium||show.image?.original||'';
+        const info=document.createElement('div');const strong=document.createElement('strong');strong.textContent=show.name;const meta=document.createElement('span');const yr=show.premiered?show.premiered.slice(0,4):'';const network=show.network?.name||show.webChannel?.name||'';meta.textContent=[yr,network,show.genres?.slice(0,2).join(', ')].filter(Boolean).join(' · ');info.append(strong,meta);
+        const choose=document.createElement('button');choose.type='button';choose.className='secondary-button';choose.textContent='Use';choose.onclick=()=>applyTvmazeShow(show);
+        btn.append(img,info,choose);els.lookupResults.appendChild(btn);
+      });
+    }catch(err){if(err.name!=='AbortError'){console.error(err);els.lookupStatus.textContent='TVmaze search failed. You can still enter details manually.';}}
+    finally{els.lookupShowButton.disabled=false;}
+  }
 
-  window.addEventListener('focus', () => { if (dbx.connected) syncWithDropbox(); });
-  document.addEventListener('visibilitychange', () => { if (!document.hidden && dbx.connected) syncWithDropbox(); });
+  async function applyTvmazeShow(show) {
+    els.lookupStatus.textContent='Loading episodes and seasons…';els.lookupResults.hidden=true;
+    try{
+      const [seasonsRes,episodesRes]=await Promise.all([fetch(`https://api.tvmaze.com/shows/${show.id}/seasons`),fetch(`https://api.tvmaze.com/shows/${show.id}/episodes`)]);
+      const seasons=seasonsRes.ok?await seasonsRes.json():[];const episodes=episodesRes.ok?await episodesRes.json():[];
+      els.showTitle.value=show.name||els.showTitle.value;els.showPoster.value=show.image?.original||show.image?.medium||els.showPoster.value;
+      els.showYear.value=show.premiered?show.premiered.slice(0,4):'';els.showGenres.value=(show.genres||[]).join(', ');
+      els.showNetwork.value=show.network?.name||show.webChannel?.name||'';els.showCountry.value=show.network?.country?.name||show.webChannel?.country?.name||'';els.showSeriesStatus.value=show.status||'';
+      els.showSeasons.value=seasons.length||'';els.showEpisodes.value=episodes.length||'';const runtime=show.averageRuntime||show.runtime||medianRuntime(episodes);els.showRuntime.value=runtime||'';
+      const total=episodes.reduce((sum,e)=>sum+(Number(e.runtime)||0),0);els.showTotalMinutes.value=total||((runtime&&episodes.length)?runtime*episodes.length:'');
+      if(!els.showMetacritic.value)els.showMetacritic.value=`https://www.metacritic.com/tv/${slugify(show.name)}/`;
+      draftMeta.tvmazeId=show.id;draftMeta.imdbId=show.externals?.imdb||'';draftMeta.tmdbId=null;updatePosterPreview();
+      els.lookupStatus.textContent='Details added from TVmaze. You can edit anything before saving.';
+      if(prefs.tmdbCredential)await refreshDraftProviders();
+    }catch(err){console.error(err);els.lookupStatus.textContent='Basic TVmaze details were found, but episode details could not be loaded.';}
+  }
+  function medianRuntime(episodes){const vals=episodes.map(e=>Number(e.runtime)).filter(n=>Number.isFinite(n)&&n>0).sort((a,b)=>a-b);if(!vals.length)return null;return vals[Math.floor(vals.length/2)];}
 
-  if ('serviceWorker' in navigator && location.protocol.startsWith('http')) navigator.serviceWorker.register('./service-worker.js').catch(() => {});
+  function formShowObject(existing) {
+    const t=nowIso();const location=els.showLocation.value;const archive=[ARCHIVE_WATCHED,ARCHIVE_ABANDONED].includes(location)?location:null;const selectedColumn=location.startsWith('status:')?location.slice(7):(existing?.columnId||state.columns[0].id);
+    const order=existing?.order??Math.max(-1,...state.shows.filter(s=>!s.archive&&s.columnId===selectedColumn).map(s=>Number(s.order)||0))+1;
+    return {
+      ...(existing||{}),...draftMeta,
+      id:existing?.id||uuid(),title:els.showTitle.value.trim().slice(0,120),columnId:state.columns.some(c=>c.id===selectedColumn)?selectedColumn:state.columns[0].id,archive,
+      poster:safeUrl(els.showPoster.value),metacritic:safeUrl(els.showMetacritic.value),seasons:integerOrNull(els.showSeasons.value),episodes:integerOrNull(els.showEpisodes.value),runtime:integerOrNull(els.showRuntime.value),totalMinutes:integerOrNull(els.showTotalMinutes.value),
+      genres:cleanGenres(splitComma(els.showGenres.value)),network:safeText(els.showNetwork.value,100),country:safeText(els.showCountry.value,80),seriesStatus:safeText(els.showSeriesStatus.value,50),favourite:Boolean(draftMeta.favourite),
+      rating:clampRating(els.showRating.value),tags:cleanTags(splitComma(els.showTags.value)),notes:String(els.showNotes.value||'').slice(0,4000),firstAirYear:positiveIntegerOrNull(els.showYear.value),providers:cleanProviders(draftMeta.providers),providerLink:safeUrl(draftMeta.providerLink||''),providersUpdatedAt:validDateString(draftMeta.providersUpdatedAt)?draftMeta.providersUpdatedAt:null,
+      tvmazeId:positiveIntegerOrNull(draftMeta.tvmazeId),imdbId:safeText(draftMeta.imdbId,40),tmdbId:positiveIntegerOrNull(draftMeta.tmdbId),order,createdAt:existing?.createdAt||t,updatedAt:t
+    };
+  }
+  function saveShowFromForm(event){event.preventDefault();const title=els.showTitle.value.trim();if(!title){els.showTitle.focus();return;}const id=els.showId.value;const index=state.shows.findIndex(s=>s.id===id);const existing=index>=0?state.shows[index]:null;const obj=formShowObject(existing);if(index>=0)state.shows[index]=obj;else state.shows.push(obj);saveState();closeShowDialog();showToast(existing?'Show updated':'Show added');}
+  function deleteCurrentShow(){const id=els.showId.value;if(!id)return;const show=state.shows.find(s=>s.id===id);if(!show||!confirm(`Delete “${show.title}”?`))return;const t=nowIso();state.shows=state.shows.filter(s=>s.id!==id);state.deleted.push({id,deletedAt:t});saveState();closeShowDialog();showToast('Show deleted');}
 
-  render();
-  updateTmdbUI();
-  handleOAuthReturn().then(() => {
-    if (dbx.connected && !new URLSearchParams(location.search).get('code')) syncWithDropbox();
-    setTimeout(maybeAutoRefreshProviders, 700);
-  });
+  function tmdbAuthOptions(url) {
+    const credential=String(prefs.tmdbCredential||'').trim();if(!credential)throw new Error('TMDB is not configured');
+    if(/^[a-f0-9]{32}$/i.test(credential)){url.searchParams.set('api_key',credential);return {headers:{Accept:'application/json'}};}
+    return {headers:{Accept:'application/json',Authorization:`Bearer ${credential}`}};
+  }
+  async function tmdbRequest(path, params={}) {
+    const url=new URL(`https://api.themoviedb.org/3${path}`);Object.entries(params).forEach(([k,v])=>{if(v!==null&&v!==undefined&&v!=='')url.searchParams.set(k,String(v));});const opts=tmdbAuthOptions(url);const res=await fetch(url,opts);if(!res.ok)throw new Error(`TMDB ${res.status}`);return res.json();
+  }
+  async function resolveTmdbId(meta) {
+    if(meta.tmdbId)return meta.tmdbId;
+    if(meta.imdbId){try{const found=await tmdbRequest(`/find/${encodeURIComponent(meta.imdbId)}`,{external_source:'imdb_id'});if(found.tv_results?.[0]?.id)return found.tv_results[0].id;}catch(_){} }
+    const title=els.showDialog.open?els.showTitle.value.trim():meta.title; if(!title)return null;
+    const data=await tmdbRequest('/search/tv',{query:title,language:'en-US',page:1});if(!data.results?.length)return null;
+    const year=Number(els.showDialog.open?els.showYear.value:meta.firstAirYear)||null;const best=(year&&data.results.find(r=>r.first_air_date?.startsWith(String(year))))||data.results[0];return best?.id||null;
+  }
+  async function fetchProvidersFor(meta) {
+    const tmdbId=await resolveTmdbId(meta);if(!tmdbId)return {tmdbId:null,providers:[],providerLink:'',providersUpdatedAt:nowIso()};
+    const data=await tmdbRequest(`/tv/${tmdbId}/watch/providers`);const ca=data.results?.CA||{};const providers=cleanProviders((ca.flatrate||[]).map(p=>p.provider_name));return {tmdbId,providers,providerLink:safeUrl(ca.link||''),providersUpdatedAt:nowIso()};
+  }
+  async function refreshDraftProviders(){if(!prefs.tmdbCredential){showToast('Add a TMDB credential in Settings first');return;}els.streamingProvidersNote.textContent='Checking subscription services…';els.refreshShowStreamingButton.disabled=true;try{const result=await fetchProvidersFor({...draftMeta,title:els.showTitle.value,firstAirYear:positiveIntegerOrNull(els.showYear.value)});Object.assign(draftMeta,result);renderStreamingPreview();}catch(err){console.error(err);els.streamingProvidersNote.textContent='Could not refresh streaming availability.';}finally{els.refreshShowStreamingButton.disabled=false;}}
+  async function testTmdb(){const credential=els.tmdbCredential.value.trim();prefs.tmdbCredential=credential;if(!credential){savePrefs();els.tmdbTestMessage.textContent='TMDB credential removed.';return;}els.saveTmdbButton.disabled=true;els.tmdbTestMessage.textContent='Testing…';try{await tmdbRequest('/configuration');savePrefs();els.tmdbTestMessage.textContent='TMDB connected.';showToast('TMDB connected');}catch(err){console.error(err);els.tmdbTestMessage.textContent='That TMDB credential did not work.';}finally{els.saveTmdbButton.disabled=false;}}
+  async function refreshAllProviders(){if(providerRefreshRunning)return;if(!prefs.tmdbCredential){showToast('Add a TMDB credential first');return;}providerRefreshRunning=true;els.refreshProvidersButton.textContent='Refreshing…';let changed=0;try{for(let i=0;i<state.shows.length;i++){const show=state.shows[i];try{const result=await fetchProvidersFor(show);Object.assign(show,result,{updatedAt:nowIso()});changed++;els.refreshProvidersButton.textContent=`Refreshing ${i+1}/${state.shows.length}…`;}catch(err){console.warn('Provider refresh failed',show.title,err);}}saveState();showToast(`Streaming refreshed for ${changed} ${changed===1?'show':'shows'}`);}finally{providerRefreshRunning=false;els.refreshProvidersButton.textContent='Refresh all shows';}}
+  function updateTmdbUI(){if(!els.tmdbCredential)return;els.tmdbCredential.value=prefs.tmdbCredential||'';els.tmdbStatus.textContent=prefs.tmdbCredential?'Configured':'Not configured';}
+
+  function getRedirectUri(){return `${location.origin}${location.pathname}`;}
+  function base64Url(bytes){return btoa(String.fromCharCode(...new Uint8Array(bytes))).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');}
+  function randomVerifier(){const bytes=new Uint8Array(48);crypto.getRandomValues(bytes);return base64Url(bytes);}
+  async function sha256(text){return crypto.subtle.digest('SHA-256',new TextEncoder().encode(text));}
+  async function connectDropbox(){const appKey=els.dropboxAppKey.value.trim();if(!appKey){showToast('Enter your Dropbox App Key');return;}const verifier=randomVerifier();const challenge=base64Url(await sha256(verifier));const oauthState=uuid();localStorage.setItem(PKCE_KEY,JSON.stringify({verifier,appKey,state:oauthState,createdAt:Date.now()}));dbx.appKey=appKey;saveDropbox();const url=new URL('https://www.dropbox.com/oauth2/authorize');url.searchParams.set('client_id',appKey);url.searchParams.set('response_type','code');url.searchParams.set('redirect_uri',getRedirectUri());url.searchParams.set('code_challenge',challenge);url.searchParams.set('code_challenge_method','S256');url.searchParams.set('token_access_type','offline');url.searchParams.set('state',oauthState);location.assign(url.toString());}
+  async function handleDropboxCallback(){const params=new URLSearchParams(location.search);const code=params.get('code');const error=params.get('error');if(error){history.replaceState({},'',getRedirectUri());showToast('Dropbox connection was cancelled');return;}if(!code)return;try{const pkce=JSON.parse(localStorage.getItem(PKCE_KEY)||'null');if(!pkce?.verifier||!pkce?.appKey)throw new Error('Missing Dropbox authorization state');if(pkce.state&&params.get('state')!==pkce.state)throw new Error('Dropbox authorization state mismatch');const body=new URLSearchParams({code,grant_type:'authorization_code',client_id:pkce.appKey,redirect_uri:getRedirectUri(),code_verifier:pkce.verifier});const res=await fetch('https://api.dropboxapi.com/oauth2/token',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body});if(!res.ok)throw new Error(await res.text());const token=await res.json();dbx={...dbx,connected:true,appKey:pkce.appKey,accessToken:token.access_token,refreshToken:token.refresh_token||dbx.refreshToken||'',expiresAt:Date.now()+((token.expires_in||14400)*1000)-60000,lastSync:null};localStorage.removeItem(PKCE_KEY);saveDropbox();history.replaceState({},'',getRedirectUri());await syncWithDropbox({announce:true});}catch(err){console.error(err);history.replaceState({},'',getRedirectUri());setSyncStatus('error','Dropbox connection failed');showToast('Could not connect Dropbox. Check the app key and redirect URI.');}}
+  async function validAccessToken(){if(!dbx.connected||!dbx.accessToken)throw new Error('Dropbox is not connected');if(!dbx.expiresAt||Date.now()<dbx.expiresAt)return dbx.accessToken;if(!dbx.refreshToken)throw new Error('Dropbox authorization expired. Reconnect Dropbox.');const body=new URLSearchParams({grant_type:'refresh_token',refresh_token:dbx.refreshToken,client_id:dbx.appKey});const res=await fetch('https://api.dropboxapi.com/oauth2/token',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body});if(!res.ok)throw new Error(await res.text());const token=await res.json();dbx.accessToken=token.access_token;dbx.expiresAt=Date.now()+((token.expires_in||14400)*1000)-60000;saveDropbox();return dbx.accessToken;}
+  async function dropboxDownload(){const token=await validAccessToken();const res=await fetch('https://content.dropboxapi.com/2/files/download',{method:'POST',headers:{Authorization:`Bearer ${token}`,'Dropbox-API-Arg':JSON.stringify({path:DATA_PATH})}});if(res.status===409)return null;if(!res.ok)throw new Error(await res.text());return JSON.parse(await res.text());}
+  async function dropboxUpload(data){const token=await validAccessToken();const res=await fetch('https://content.dropboxapi.com/2/files/upload',{method:'POST',headers:{Authorization:`Bearer ${token}`,'Content-Type':'application/octet-stream','Dropbox-API-Arg':JSON.stringify({path:DATA_PATH,mode:'overwrite',autorename:false,mute:true})},body:JSON.stringify({...data,version:2,syncedAt:nowIso()},null,2)});if(!res.ok)throw new Error(await res.text());}
+
+  function mergeStates(localRaw,remoteRaw){
+    const local=normalizeState(localRaw);if(!remoteRaw||!Array.isArray(remoteRaw.shows))return local;const remote=normalizeState(remoteRaw);
+    const columnTombs=latestTombstones([...local.columnDeleted,...remote.columnDeleted]);const colTombMap=new Map(columnTombs.map(d=>[d.id,d]));
+    const columnMap=new Map();for(const c of [...local.columns,...remote.columns]){const old=columnMap.get(c.id);if(!old||Date.parse(c.updatedAt)>Date.parse(old.updatedAt))columnMap.set(c.id,clone(c));}
+    let columns=[...columnMap.values()].filter(c=>{const tomb=colTombMap.get(c.id);return !tomb||Date.parse(c.updatedAt)>Date.parse(tomb.deletedAt);}).sort((a,b)=>a.order-b.order||a.name.localeCompare(b.name));
+    if(!columns.length)columns=defaultState().columns;columns.forEach((c,i)=>{c.order=i;c.color=safeColour(c.color,i);});
+
+    const tombs=latestTombstones([...local.deleted,...remote.deleted]);const tombMap=new Map(tombs.map(d=>[d.id,d]));const showMap=new Map();
+    for(const s of [...local.shows,...remote.shows]){const old=showMap.get(s.id);if(!old||Date.parse(s.updatedAt)>Date.parse(old.updatedAt))showMap.set(s.id,clone(s));}
+    const validCols=new Set(columns.map(c=>c.id));const first=columns[0].id;const shows=[...showMap.values()].filter(s=>{const tomb=tombMap.get(s.id);return !tomb||Date.parse(s.updatedAt)>Date.parse(tomb.deletedAt);}).map(s=>({...s,columnId:validCols.has(s.columnId)?s.columnId:first}));
+
+    const localViewsTime=Date.parse(local.savedViewsUpdatedAt||0)||0;const remoteViewsTime=Date.parse(remote.savedViewsUpdatedAt||0)||0;const savedViews=clone(remoteViewsTime>localViewsTime?remote.savedViews:local.savedViews);const savedViewsUpdatedAt=remoteViewsTime>localViewsTime?remote.savedViewsUpdatedAt:local.savedViewsUpdatedAt;
+    return normalizeState({version:2,columnsUpdatedAt:new Date(Math.max(Date.parse(local.columnsUpdatedAt)||0,Date.parse(remote.columnsUpdatedAt)||0)).toISOString(),columns,columnDeleted:columnTombs,shows,deleted:tombs,savedViews,savedViewsUpdatedAt});
+  }
+
+  function scheduleSync(){clearTimeout(syncTimer);syncTimer=setTimeout(()=>syncWithDropbox(),900);}
+  async function syncWithDropbox({announce=false}={}){if(!dbx.connected)return;setSyncStatus('syncing','Dropbox · syncing…');try{const remote=await dropboxDownload();state=mergeStates(state,remote);localStorage.setItem(STORAGE_KEY,JSON.stringify(state));await dropboxUpload(state);dbx.lastSync=nowIso();saveDropbox();render();setSyncStatus('connected','Dropbox · synced');if(announce)showToast('Dropbox connected and synced');}catch(err){console.error(err);setSyncStatus('error','Dropbox · sync problem');showToast('Dropbox sync failed. Your TV library is still saved on this device.');}}
+  function disconnectDropbox(){if(!confirm('Disconnect Dropbox on this device? Your local TV library will remain here.'))return;dbx={connected:false,appKey:dbx.appKey||''};saveDropbox();setSyncStatus('local','Saved on this device');showToast('Dropbox disconnected');}
+  function setSyncStatus(kind,label){els.statusDot.className='status-dot';if(kind==='connected')els.statusDot.classList.add('connected');if(kind==='syncing')els.statusDot.classList.add('syncing');if(kind==='error')els.statusDot.classList.add('error');els.syncLabel.textContent=label;}
+  function updateDropboxUI(){if(!els.dropboxAppKey)return;els.redirectUriText.value=getRedirectUri();els.dropboxAppKey.value=dbx.appKey||'';els.dropboxSetup.hidden=!!dbx.connected;els.dropboxConnected.hidden=!dbx.connected;els.dropboxStatus.textContent=dbx.connected?'Connected':'Not connected';if(dbx.connected)setSyncStatus('connected',dbx.lastSync?'Dropbox · synced':'Dropbox · connected');else setSyncStatus('local','Saved on this device');}
+
+  function exportBackup(){const blob=new Blob([JSON.stringify({...state,version:2,exportedAt:nowIso()},null,2)],{type:'application/json'});const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download=`tv-backup-${new Date().toISOString().slice(0,10)}.json`;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),500);showToast('Backup exported');}
+  async function importBackup(file){try{const incoming=JSON.parse(await file.text());if(!incoming||!Array.isArray(incoming.shows)||!Array.isArray(incoming.columns))throw new Error('Invalid backup');state=mergeStates(state,incoming);saveState();showToast('Backup imported');}catch(err){console.error(err);showToast('That file is not a valid TV backup');}finally{els.importInput.value='';}}
+
+  function openSettings(){updateDropboxUI();updateTmdbUI();els.settingsDialog.showModal();}
+  function showToast(message){clearTimeout(toastTimer);els.toast.textContent=message;els.toast.classList.add('show');toastTimer=setTimeout(()=>els.toast.classList.remove('show'),2600);}
+  function openMobileNav(){els.sidebar.classList.add('open');els.sidebarScrim.classList.add('open');document.body.style.overflow='hidden';}
+  function closeMobileNav(){els.sidebar.classList.remove('open');els.sidebarScrim.classList.remove('open');if(!els.filterDrawer.classList.contains('open'))document.body.style.overflow='';}
+
+  function bindEvents(){
+    els.mobileMenuButton.onclick=openMobileNav;els.sidebarScrim.onclick=closeMobileNav;
+    els.addShowButton.onclick=()=>openShowDialog();els.emptyAddButton.onclick=()=>openShowDialog();
+    els.searchInput.oninput=render;els.sortSelect.onchange=()=>{sortMode=els.sortSelect.value;render();};
+    els.filterButton.onclick=openFilterDrawer;els.closeFilterButton.onclick=closeFilterDrawer;els.drawerScrim.onclick=closeFilterDrawer;els.applyFiltersButton.onclick=applyFilters;els.clearFiltersButton.onclick=clearFilterDraft;els.saveViewButton.onclick=saveCurrentView;
+    [els.filterEpisodes,els.filterTime,els.filterYearFrom,els.filterYearTo,els.filterRating,els.filterFavourite].forEach(el=>{el.addEventListener('change',readDraftScalarFilters);});
+    els.showForm.onsubmit=saveShowFromForm;els.closeShowButton.onclick=closeShowDialog;els.cancelShowButton.onclick=closeShowDialog;els.deleteShowButton.onclick=deleteCurrentShow;els.lookupShowButton.onclick=lookupShows;els.showPoster.oninput=updatePosterPreview;els.showFavourite.onclick=()=>setFavourite(!draftMeta.favourite);els.refreshShowStreamingButton.onclick=refreshDraftProviders;
+    els.settingsButton.onclick=openSettings;els.closeSettingsButton.onclick=()=>els.settingsDialog.close();els.openStatusesButton.onclick=()=>{renderStatusManager();els.statusesDialog.showModal();};els.closeStatusesButton.onclick=()=>els.statusesDialog.close();
+    els.addStatusForm.onsubmit=e=>{e.preventDefault();addStatus(els.newStatusName.value);els.newStatusName.value='';};
+    els.manageSavedViewsButton.onclick=()=>{renderSavedViewManager();els.savedViewsDialog.showModal();};els.closeSavedViewsButton.onclick=()=>els.savedViewsDialog.close();
+    els.exportButton.onclick=exportBackup;els.importInput.onchange=()=>{const file=els.importInput.files?.[0];if(file)importBackup(file);};
+    els.saveTmdbButton.onclick=testTmdb;els.refreshProvidersButton.onclick=refreshAllProviders;
+    els.connectDropboxButton.onclick=connectDropbox;els.syncNowButton.onclick=()=>syncWithDropbox({announce:true});els.disconnectDropboxButton.onclick=disconnectDropbox;els.copyRedirectButton.onclick=async()=>{try{await navigator.clipboard.writeText(getRedirectUri());showToast('Redirect URI copied');}catch(_){els.redirectUriText.select();document.execCommand('copy');showToast('Redirect URI copied');}};
+    document.addEventListener('keydown',e=>{if(e.key==='Escape'){if(els.filterDrawer.classList.contains('open'))closeFilterDrawer();closeMobileNav();}});
+  }
+
+  async function init(){
+    renderIcons();bindEvents();els.sortSelect.value=sortMode;
+    await handleDropboxCallback();
+    if(activeView.startsWith('saved:')){const v=state.savedViews.find(x=>x.id===activeView.slice(6));if(v){filters=normalizeFilters(v.filters);sortMode=v.sort;}else activeView='all';}
+    render();
+    if('serviceWorker' in navigator && location.protocol.startsWith('http'))navigator.serviceWorker.register('./service-worker.js').catch(()=>{});
+    if(dbx.connected)syncWithDropbox().catch(()=>{});
+  }
+
+  init();
 })();

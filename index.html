@@ -4,288 +4,264 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="theme-color" content="#f4f1ea">
-  <meta name="description" content="A private Kanban board for deciding what to watch next.">
-  <title>TV Board</title>
-  <link rel="manifest" href="./manifest.webmanifest">
-  <link rel="icon" href="./icon-192.png" sizes="192x192">
-  <link rel="apple-touch-icon" href="./icon-192.png">
-  <link rel="stylesheet" href="./styles.css">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="TV">
+  <title>TV</title>
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="apple-touch-icon" href="icon-192.png">
+  <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-  <main class="app-shell">
-    <header class="topbar">
-      <div class="brand-block">
-        <p class="eyebrow">TV KANBAN</p>
-        <h1>TV Board</h1>
-      </div>
-      <div class="topbar-actions">
-        <button class="icon-button" id="columnsButton" type="button" aria-label="Manage columns" title="Manage columns">
-          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h6v14H4V5Zm10 0h6v8h-6V5Zm0 12h6v2h-6v-2Z"/></svg>
-        </button>
-        <button class="icon-button" id="settingsButton" type="button" aria-label="Open settings" title="Settings">
-          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 8.5A3.5 3.5 0 1 0 12 15.5 3.5 3.5 0 0 0 12 8.5Zm8.1 4.35c.04-.28.06-.56.06-.85s-.02-.57-.06-.85l1.82-1.42-1.72-2.98-2.25.9a8.1 8.1 0 0 0-1.47-.85L16.14 4h-3.44l-.34 2.8c-.52.22-1.01.5-1.47.85l-2.25-.9-1.72 2.98 1.82 1.42c-.04.28-.06.56-.06.85s.02.57.06.85l-1.82 1.42 1.72 2.98 2.25-.9c.46.35.95.63 1.47.85l.34 2.8h3.44l.34-2.8c.52-.22 1.01-.5 1.47-.85l2.25.9 1.72-2.98-1.82-1.42Z"/></svg>
-        </button>
-      </div>
-    </header>
-
-    <nav class="view-tabs" aria-label="TV Board views">
-      <button class="view-tab active" data-view="board" type="button">Board <span id="boardCount" class="tab-count">0</span></button>
-      <button class="view-tab" data-view="watched" type="button">Watched <span id="watchedCount" class="tab-count">0</span></button>
-      <button class="view-tab" data-view="abandoned" type="button">Abandoned <span id="abandonedCount" class="tab-count">0</span></button>
-    </nav>
-
-    <section class="toolbar" aria-label="TV controls">
-      <div class="toolbar-left">
-        <div class="search-wrap">
-          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m21 20-4.35-4.35a7.5 7.5 0 1 0-1 1L20 21l1-1ZM5 11a6 6 0 1 1 12 0 6 6 0 0 1-12 0Z"/></svg>
-          <input id="searchInput" type="search" placeholder="Search shows or tags" autocomplete="off">
+  <div class="app-shell">
+    <aside class="sidebar" id="sidebar" aria-label="TV navigation">
+      <div class="brand-row">
+        <div class="brand-mark" aria-hidden="true">
+          <svg viewBox="0 0 24 24"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="m8 2 4 3 4-3"/></svg>
         </div>
-        <label class="tag-filter-wrap">
-          <span class="tag-filter-label">Tag</span>
-          <select id="tagFilter" aria-label="Filter shows by tag">
-            <option value="">All tags</option>
-          </select>
-        </label>
-      </div>
-      <div class="toolbar-right">
-        <div class="sync-chip" id="syncChip" title="Storage status">
-          <span class="status-dot" id="statusDot"></span>
-          <span id="syncLabel">Saved on this device</span>
-        </div>
-        <button class="secondary-button board-only-action" id="quickAddColumnButton" type="button">+ Add Column</button>
-        <button class="primary-button" id="addButton" type="button">+ Add Show</button>
-      </div>
-    </section>
-
-    <section id="boardView" class="board-view" aria-live="polite">
-      <div id="kanbanBoard" class="kanban-board"></div>
-    </section>
-
-    <section id="archiveView" class="archive-view" hidden aria-live="polite">
-      <div class="archive-heading">
         <div>
-          <p class="eyebrow" id="archiveEyebrow">ARCHIVE</p>
-          <h2 id="archiveTitle">Watched</h2>
+          <div class="brand-title">TV</div>
+          <div class="brand-sub">Your television library</div>
         </div>
-        <label class="sort-control">
-          <span>Sort</span>
-          <select id="archiveSort">
-            <option value="recent">Recently updated</option>
-            <option value="rating">Rating</option>
-            <option value="title">Title</option>
-          </select>
-        </label>
       </div>
-      <div id="archiveGrid" class="archive-grid"></div>
-      <div id="archiveEmpty" class="empty-state compact" hidden>
-        <div class="empty-icon">▣</div>
-        <h2>Nothing here yet.</h2>
-        <p id="archiveEmptyText">Shows you finish will collect here.</p>
-      </div>
-    </section>
 
-    <footer>
-      <span id="footerMessage">Your TV board is stored only in this browser.</span>
-      <span class="footer-tip">Tip: click any tag to filter by it. Drag column headers to reorder columns and use each card’s grab handle to move shows. <a href="https://www.tvmaze.com/" target="_blank" rel="noopener noreferrer">TV data &amp; artwork via TVmaze</a>.</span>
-    </footer>
-  </main>
-
-  <dialog id="showDialog" class="dialog-card show-dialog">
-    <form id="showForm" method="dialog">
-      <div class="dialog-heading">
-        <div>
-          <p class="eyebrow">SHOW</p>
-          <h2 id="showDialogTitle">Add Show</h2>
+      <nav class="nav-scroll">
+        <div class="nav-section">
+          <div class="nav-label">Library</div>
+          <button class="nav-item active" data-view="all"><span class="nav-icon" data-icon="library"></span><span>All Shows</span><span class="nav-count" id="allCount">0</span></button>
+          <div id="statusNav"></div>
         </div>
-        <button class="icon-button close-button" id="closeShowButton" type="button" aria-label="Close">×</button>
+
+        <div class="nav-section">
+          <div class="nav-label">My TV</div>
+          <button class="nav-item" data-view="favourites"><span class="nav-icon" data-icon="heart"></span><span>Favourites</span><span class="nav-count" id="favouritesCount">0</span></button>
+          <div class="nav-label nav-label-inline"><span>Saved Views</span><button class="tiny-icon" id="manageSavedViewsButton" title="Manage saved views" aria-label="Manage saved views">•••</button></div>
+          <div id="savedViewsNav"></div>
+        </div>
+
+        <div class="nav-section">
+          <div class="nav-label">Archive</div>
+          <button class="nav-item" data-view="watched"><span class="nav-icon" data-icon="check"></span><span>Watched</span><span class="nav-count" id="watchedCount">0</span></button>
+          <button class="nav-item" data-view="abandoned"><span class="nav-icon" data-icon="archive"></span><span>Abandoned</span><span class="nav-count" id="abandonedCount">0</span></button>
+        </div>
+      </nav>
+
+      <div class="sidebar-footer">
+        <button class="nav-item" id="settingsButton"><span class="nav-icon" data-icon="settings"></span><span>Settings</span></button>
+        <div class="version">TV v2.0.0</div>
       </div>
+    </aside>
 
-      <input type="hidden" id="showId">
+    <div class="sidebar-scrim" id="sidebarScrim"></div>
 
-      <div class="form-grid">
-        <div class="span-2 show-lookup-block">
-          <div class="show-lookup-row">
-            <label class="show-title-label">
-              <span>Title</span>
-              <input id="showTitle" type="text" maxlength="120" placeholder="Slow Horses" required autocomplete="off">
-            </label>
-            <button class="secondary-button lookup-button" id="lookupShowButton" type="button">Find details</button>
+    <main class="main">
+      <header class="main-header">
+        <div class="title-wrap">
+          <button class="mobile-menu" id="mobileMenuButton" aria-label="Open navigation"><span data-icon="menu"></span></button>
+          <div>
+            <h1 id="viewTitle">All Shows</h1>
+            <div class="view-subtitle" id="viewSubtitle">0 shows</div>
           </div>
-          <small>Find details searches TVmaze for artwork, genres, seasons, and episode count, and fills in a likely Metacritic link. You can still edit everything manually.</small>
-          <div id="lookupStatus" class="lookup-status" hidden></div>
-          <div id="lookupResults" class="lookup-results" hidden></div>
         </div>
-
-        <label>
-          <span>Location</span>
-          <select id="showLocation"></select>
-        </label>
-
-        <label>
-          <span>Your rating</span>
-          <select id="showRating">
-            <option value="0">Not rated</option>
-            <option value="0.5">½ star</option>
-            <option value="1">★</option>
-            <option value="1.5">★½</option>
-            <option value="2">★★</option>
-            <option value="2.5">★★½</option>
-            <option value="3">★★★</option>
-            <option value="3.5">★★★½</option>
-            <option value="4">★★★★</option>
-            <option value="4.5">★★★★½</option>
-            <option value="5">★★★★★</option>
-          </select>
-        </label>
-
-        <label class="span-2">
-          <span>Header artwork URL</span>
-          <input id="showPoster" type="url" maxlength="1000" placeholder="https://…" autocomplete="off" inputmode="url">
-          <small>Wide landscape images work best. “Find details” will choose a TVmaze background image when one is available.</small>
-        </label>
-
-        <label class="span-2">
-          <span>Metacritic page</span>
-          <input id="showMetacritic" type="url" maxlength="1000" placeholder="https://www.metacritic.com/tv/…" autocomplete="off" inputmode="url">
-          <small>Filled automatically from the show title when you use “Find details.” Because Metacritic has occasional naming exceptions, this remains editable.</small>
-        </label>
-
-        <label>
-          <span>Seasons</span>
-          <input id="showSeasons" type="number" min="0" max="999" step="1" placeholder="3" inputmode="numeric">
-        </label>
-
-        <label>
-          <span>Episodes</span>
-          <input id="showEpisodes" type="number" min="0" max="99999" step="1" placeholder="24" inputmode="numeric">
-        </label>
-
-        <div id="streamingPreview" class="streaming-preview span-2" hidden>
-          <span class="small-label">Subscription streaming in Canada</span>
-          <strong id="streamingProvidersText"></strong>
-          <small id="streamingProvidersNote"></small>
+        <div class="header-actions">
+          <div class="sync-chip" id="syncChip"><span class="status-dot" id="statusDot"></span><span id="syncLabel">Saved on this device</span></div>
+          <button class="primary-button" id="addShowButton"><span data-icon="plus"></span>Add Show</button>
         </div>
+      </header>
 
-        <label class="span-2">
-          <span>Tags</span>
-          <input id="showTags" type="text" maxlength="300" placeholder="British, spy, drama, Apple TV+" autocomplete="off">
-          <small>Separate tags with commas.</small>
+      <section class="toolbar" aria-label="Show controls">
+        <label class="search-wrap">
+          <span data-icon="search"></span>
+          <input id="searchInput" type="search" placeholder="Search shows, networks, genres, tags, notes…" autocomplete="off">
         </label>
+        <button class="toolbar-button" id="filterButton"><span data-icon="filter"></span>Filter <span class="filter-badge" id="filterBadge" hidden>0</span></button>
+        <label class="sort-wrap"><span data-icon="sort"></span><select id="sortSelect" aria-label="Sort shows">
+          <option value="recent">Recently updated</option>
+          <option value="added">Recently added</option>
+          <option value="title-asc">Title A–Z</option>
+          <option value="title-desc">Title Z–A</option>
+          <option value="year-desc">Year — Newest</option>
+          <option value="year-asc">Year — Oldest</option>
+          <option value="rating-desc">My rating — Highest</option>
+          <option value="rating-asc">My rating — Lowest</option>
+          <option value="episodes-asc">Episodes — Fewest</option>
+          <option value="episodes-desc">Episodes — Most</option>
+          <option value="time-asc">Total time — Shortest</option>
+          <option value="time-desc">Total time — Longest</option>
+          <option value="network">Network / service</option>
+          <option value="status">Status</option>
+        </select></label>
+      </section>
 
-        <label class="span-2">
-          <span>Notes</span>
-          <textarea id="showNotes" rows="4" maxlength="2000" placeholder="Why it caught your eye, where you left off, who recommended it…"></textarea>
-        </label>
+      <div class="active-filters" id="activeFilters"></div>
+
+      <section class="show-list" id="showList" aria-live="polite"></section>
+      <section class="empty-state" id="emptyState" hidden>
+        <div class="empty-icon"><span data-icon="tv"></span></div>
+        <h2 id="emptyTitle">No shows here yet.</h2>
+        <p id="emptyText">Add a show to start building your library.</p>
+        <button class="secondary-button" id="emptyAddButton">Add a show</button>
+      </section>
+
+      <footer class="main-footer">
+        <span id="footerMessage">TV data & artwork via TVmaze.</span>
+      </footer>
+    </main>
+  </div>
+
+  <aside class="filter-drawer" id="filterDrawer" aria-hidden="true">
+    <div class="drawer-header">
+      <div><div class="eyebrow">LIBRARY</div><h2>Filter Shows</h2></div>
+      <button class="icon-button" id="closeFilterButton" aria-label="Close filters">×</button>
+    </div>
+    <div class="drawer-body">
+      <div class="filter-section">
+        <div class="filter-heading">Status</div>
+        <div class="check-grid" id="filterStatuses"></div>
       </div>
+      <div class="filter-section">
+        <div class="filter-heading">Genre</div>
+        <div class="choice-list" id="filterGenres"></div>
+      </div>
+      <div class="filter-section two-col">
+        <label><span>Episode count</span><select id="filterEpisodes"><option value="">Any</option><option value="1-6">1–6</option><option value="7-12">7–12</option><option value="13-24">13–24</option><option value="25-49">25–49</option><option value="50+">50+</option></select></label>
+        <label><span>Total time</span><select id="filterTime"><option value="">Any</option><option value="under5">Under 5 hours</option><option value="under10">Under 10 hours</option><option value="10-20">10–20 hours</option><option value="20-40">20–40 hours</option><option value="40+">40+ hours</option></select></label>
+      </div>
+      <div class="filter-section two-col">
+        <label><span>Year from</span><input id="filterYearFrom" type="number" min="1900" max="2100" placeholder="Any"></label>
+        <label><span>Year to</span><input id="filterYearTo" type="number" min="1900" max="2100" placeholder="Any"></label>
+      </div>
+      <div class="filter-section two-col">
+        <label><span>My rating</span><select id="filterRating"><option value="">Any</option><option value="5">5 stars</option><option value="4.5">4½ stars+</option><option value="4">4 stars+</option><option value="3">3 stars+</option><option value="unrated">Unrated</option></select></label>
+        <label><span>Favourite</span><select id="filterFavourite"><option value="">Either</option><option value="yes">Favourites only</option><option value="no">Non-favourites</option></select></label>
+      </div>
+      <div class="filter-section">
+        <div class="filter-heading">Network / Service</div>
+        <div class="choice-list" id="filterNetworks"></div>
+      </div>
+      <div class="filter-section">
+        <div class="filter-heading">Tags</div>
+        <div class="choice-list" id="filterTags"></div>
+      </div>
+    </div>
+    <div class="drawer-footer">
+      <button class="text-button" id="clearFiltersButton">Clear filters</button>
+      <div class="drawer-footer-actions">
+        <button class="secondary-button" id="saveViewButton">Save View</button>
+        <button class="primary-button" id="applyFiltersButton">Show Results</button>
+      </div>
+    </div>
+  </aside>
+  <div class="drawer-scrim" id="drawerScrim"></div>
 
-      <div class="dialog-actions split-actions">
-        <button class="danger-button" id="deleteShowButton" type="button" hidden>Delete</button>
-        <div class="right-actions">
-          <button class="secondary-button" id="cancelShowButton" type="button">Cancel</button>
-          <button class="primary-button" id="saveShowButton" value="default" type="submit">Save</button>
+  <dialog id="showDialog" class="modal show-modal">
+    <form method="dialog" id="showForm">
+      <div class="modal-header">
+        <div><div class="eyebrow">SHOW</div><h2 id="showDialogTitle">Add Show</h2></div>
+        <button type="button" class="icon-button" id="closeShowButton" aria-label="Close">×</button>
+      </div>
+      <input type="hidden" id="showId">
+      <div class="show-edit-layout">
+        <div class="poster-editor">
+          <div class="poster-preview" id="posterPreview"><div class="poster-fallback"><span data-icon="tv"></span></div></div>
+          <label><span>Poster image URL</span><input id="showPoster" type="url" placeholder="https://…"></label>
         </div>
+        <div class="show-fields">
+          <div class="lookup-row">
+            <label class="grow"><span>Title</span><input id="showTitle" required maxlength="120" autocomplete="off"></label>
+            <button type="button" class="secondary-button lookup-button" id="lookupShowButton">Find details</button>
+          </div>
+          <div class="helper" id="lookupStatus">Find details uses TVmaze to fill artwork, genres, year, network, seasons, episodes and runtime.</div>
+          <div class="lookup-results" id="lookupResults" hidden></div>
+
+          <div class="field-grid three">
+            <label><span>Status</span><select id="showLocation"></select></label>
+            <label><span>My rating</span><select id="showRating"><option value="0">Not rated</option><option value="0.5">½ star</option><option value="1">★</option><option value="1.5">★½</option><option value="2">★★</option><option value="2.5">★★½</option><option value="3">★★★</option><option value="3.5">★★★½</option><option value="4">★★★★</option><option value="4.5">★★★★½</option><option value="5">★★★★★</option></select></label>
+            <label class="favourite-field"><span>Favourite</span><button type="button" class="favourite-toggle" id="showFavourite" aria-pressed="false"><span data-icon="heart"></span><span id="showFavouriteText">Not favourite</span></button></label>
+          </div>
+
+          <div class="field-grid three">
+            <label><span>Year</span><input id="showYear" type="number" min="1900" max="2100"></label>
+            <label><span>Seasons</span><input id="showSeasons" type="number" min="0"></label>
+            <label><span>Episodes</span><input id="showEpisodes" type="number" min="0"></label>
+          </div>
+          <div class="field-grid three">
+            <label><span>Typical episode (min)</span><input id="showRuntime" type="number" min="0"></label>
+            <label><span>Total runtime (min)</span><input id="showTotalMinutes" type="number" min="0"></label>
+            <label><span>Series status</span><input id="showSeriesStatus" maxlength="50" placeholder="Running / Ended"></label>
+          </div>
+          <div class="field-grid two">
+            <label><span>Network / service</span><input id="showNetwork" maxlength="100"></label>
+            <label><span>Country</span><input id="showCountry" maxlength="80"></label>
+          </div>
+          <label><span>Genres</span><input id="showGenres" placeholder="Drama, Crime, Thriller"><small>Separate genres with commas.</small></label>
+          <label><span>Metacritic page</span><input id="showMetacritic" type="url" placeholder="https://www.metacritic.com/tv/…"></label>
+
+          <div class="stream-box">
+            <div class="setting-title-row"><div><strong>Subscription streaming in Canada</strong><div class="helper" id="streamingProvidersNote">Requires a TMDB credential in Settings.</div></div><button type="button" class="text-button" id="refreshShowStreamingButton">Refresh</button></div>
+            <div id="streamingProvidersText" class="provider-pills"></div>
+          </div>
+
+          <label><span>Tags</span><input id="showTags" placeholder="British, family, comfort"><small>Separate tags with commas.</small></label>
+          <label><span>Notes</span><textarea id="showNotes" rows="5" maxlength="4000"></textarea></label>
+        </div>
+      </div>
+      <div class="modal-footer split">
+        <button type="button" class="danger-button" id="deleteShowButton">Delete</button>
+        <div><button type="button" class="secondary-button" id="cancelShowButton">Cancel</button><button type="submit" class="primary-button">Save</button></div>
       </div>
     </form>
   </dialog>
 
-  <dialog id="columnsDialog" class="dialog-card columns-dialog">
-    <div class="dialog-heading">
-      <div>
-        <p class="eyebrow">BOARD</p>
-        <h2>Manage Columns</h2>
-      </div>
-      <button class="icon-button close-button" id="closeColumnsButton" type="button" aria-label="Close">×</button>
-    </div>
-
-    <p class="dialog-intro">These are your active viewing columns. Watched and Abandoned stay separate as archives.</p>
-    <div id="columnManager" class="column-manager"></div>
-
-    <form id="addColumnForm" class="add-column-form">
-      <input id="newColumnName" type="text" maxlength="50" placeholder="Add another column" autocomplete="off" required>
-      <button class="primary-button" type="submit">Add</button>
-    </form>
+  <dialog id="statusesDialog" class="modal compact-modal">
+    <div class="modal-header"><div><div class="eyebrow">LIBRARY</div><h2>Manage Statuses</h2></div><button class="icon-button" id="closeStatusesButton" aria-label="Close">×</button></div>
+    <p class="modal-intro">These are the statuses inherited from your former TV Board columns. Rename, reorder or add them here.</p>
+    <div id="statusManager" class="manager-list"></div>
+    <form id="addStatusForm" class="inline-form"><input id="newStatusName" maxlength="50" placeholder="New status"><button class="secondary-button">Add</button></form>
   </dialog>
 
-  <dialog id="settingsDialog" class="dialog-card settings-dialog">
-    <div class="dialog-heading">
-      <div>
-        <p class="eyebrow">SETTINGS</p>
-        <h2>Storage, Sync & Streaming</h2>
-      </div>
-      <button class="icon-button close-button" id="closeSettingsButton" type="button" aria-label="Close">×</button>
-    </div>
-
-    <section class="settings-section">
-      <h3>This device</h3>
-      <p>Your board always works locally in this browser. Exporting a backup gives you a plain JSON copy of all shows and columns.</p>
-      <div class="settings-actions">
-        <button class="secondary-button" id="exportButton" type="button">Export backup</button>
-        <label class="secondary-button file-button">
-          Import backup
-          <input id="importInput" type="file" accept="application/json,.json">
-        </label>
-      </div>
-    </section>
-
-    <section class="settings-section streaming-section">
-      <div class="setting-title-row">
-        <h3>Canadian Streaming</h3>
-        <span class="mini-status" id="tmdbStatus">Not configured</span>
-      </div>
-      <p>Show subscription streaming services available in Canada. TV Board keeps TVmaze for artwork and show details, and uses TMDB’s JustWatch-powered availability data only for streaming.</p>
-      <label>
-        <span>TMDB API Read Access Token or API Key</span>
-        <input id="tmdbCredential" type="password" placeholder="Paste your TMDB credential" autocomplete="off" autocapitalize="off" spellcheck="false">
-      </label>
-      <p class="helper-text">The credential is stored only in this browser, never in Dropbox or GitHub. Subscription services only: rental, purchase, free, and ad-supported listings are ignored.</p>
-      <div class="settings-actions">
-        <button class="secondary-button" id="saveTmdbButton" type="button">Save &amp; test</button>
-        <button class="secondary-button" id="refreshProvidersButton" type="button">Refresh all shows</button>
-      </div>
-      <p class="tmdb-test-message" id="tmdbTestMessage" aria-live="polite" hidden></p>
-      <div class="api-credits">
-        <a class="tmdb-credit" href="https://www.themoviedb.org/" target="_blank" rel="noopener noreferrer" aria-label="TMDB">
-          <img src="https://www.themoviedb.org/assets/2/v4/logos/v2/blue_square_1-5bdc75aaebeb75dc7ae79426ddd9be3b2be1e342510f8202baf6bffa71d7f5c4.svg" alt="TMDB">
-        </a>
-        <p>This product uses the TMDB API but is not endorsed or certified by TMDB. Streaming availability data is provided by JustWatch via TMDB.</p>
-      </div>
-    </section>
-
-    <section class="settings-section dropbox-section">
-      <div class="setting-title-row">
-        <h3>Dropbox Sync</h3>
-        <span class="mini-status" id="dropboxStatus">Not connected</span>
-      </div>
-      <p>Use Dropbox to keep the same board on your devices. The data file is stored privately in your Dropbox app folder.</p>
-
-      <div id="dropboxSetup">
-        <label>
-          <span>Dropbox App Key</span>
-          <input id="dropboxAppKey" type="text" placeholder="Paste your app key" autocomplete="off" autocapitalize="off" spellcheck="false">
-        </label>
-        <div class="redirect-box">
-          <span class="small-label">Redirect URI to add in Dropbox</span>
-          <code id="redirectUriText"></code>
-          <button id="copyRedirectButton" class="text-button" type="button">Copy</button>
-        </div>
-        <p class="helper-text">You can reuse the Dropbox app you created for Days Until: add this site’s redirect URI to that app, then paste the same App key here. It will use a separate <code>/tv-board.json</code> file.</p>
-        <button class="dropbox-button" id="connectDropboxButton" type="button">Connect Dropbox</button>
-      </div>
-
-      <div id="dropboxConnected" hidden>
-        <p class="connected-message">Dropbox is connected. Changes are synced to <code>/tv-board.json</code> in the app folder.</p>
-        <div class="settings-actions">
-          <button class="secondary-button" id="syncNowButton" type="button">Sync now</button>
-          <button class="danger-button" id="disconnectDropboxButton" type="button">Disconnect</button>
-        </div>
-      </div>
-    </section>
-
-    <p class="settings-note">The website never stores your Dropbox password. Authorization tokens remain in this browser.</p>
+  <dialog id="savedViewsDialog" class="modal compact-modal">
+    <div class="modal-header"><div><div class="eyebrow">MY TV</div><h2>Saved Views</h2></div><button class="icon-button" id="closeSavedViewsButton" aria-label="Close">×</button></div>
+    <p class="modal-intro">Saved views remember a set of filters and a sort order. They do not duplicate shows.</p>
+    <div id="savedViewManager" class="manager-list"></div>
   </dialog>
 
-  <div id="toast" class="toast" role="status" aria-live="polite"></div>
+  <dialog id="settingsDialog" class="modal settings-modal">
+    <div class="modal-header"><div><div class="eyebrow">TV</div><h2>Settings</h2></div><button class="icon-button" id="closeSettingsButton" aria-label="Close">×</button></div>
+    <div class="settings-sections">
+      <section class="settings-card">
+        <div class="setting-title-row"><div><h3>Statuses</h3><p>Manage Watching, Next, Someday and any other active statuses.</p></div><button class="secondary-button" id="openStatusesButton">Manage</button></div>
+      </section>
+      <section class="settings-card">
+        <h3>This device</h3>
+        <p>TV always works locally in this browser. Export a JSON backup at any time.</p>
+        <div class="button-row"><button class="secondary-button" id="exportButton">Export backup</button><label class="secondary-button file-button">Import backup<input type="file" id="importInput" accept="application/json,.json" hidden></label></div>
+      </section>
+      <section class="settings-card">
+        <div class="setting-title-row"><div><h3>Canadian Streaming</h3><p>TMDB provides JustWatch-powered subscription availability in Canada.</p></div><span class="settings-status" id="tmdbStatus">Not configured</span></div>
+        <label><span>TMDB API Read Access Token or API Key</span><input id="tmdbCredential" type="password" autocomplete="off" placeholder="Stored only in this browser"></label>
+        <div class="button-row"><button class="secondary-button" id="saveTmdbButton">Save & test</button><button class="text-button" id="refreshProvidersButton">Refresh all shows</button></div>
+        <div class="helper" id="tmdbTestMessage"></div>
+        <p class="legal-note">This product uses the TMDB API but is not endorsed or certified by TMDB. Streaming availability data is provided by JustWatch via TMDB.</p>
+      </section>
+      <section class="settings-card">
+        <div class="setting-title-row"><div><h3>Dropbox Sync</h3><p>Keep the same TV library on your devices using the existing private <code>/tv-board.json</code> file.</p></div><span class="settings-status" id="dropboxStatus">Not connected</span></div>
+        <div id="dropboxSetup">
+          <label><span>Dropbox App Key</span><input id="dropboxAppKey" autocomplete="off"></label>
+          <label><span>Redirect URI to add in Dropbox</span><div class="copy-field"><input id="redirectUriText" readonly><button class="secondary-button" id="copyRedirectButton">Copy</button></div></label>
+          <p class="helper">You can reuse the same Dropbox app you used with TV Board. TV continues using <code>/tv-board.json</code>.</p>
+          <button class="dropbox-button" id="connectDropboxButton">Connect Dropbox</button>
+        </div>
+        <div id="dropboxConnected" hidden>
+          <p class="helper">Dropbox is connected. Existing TV Board data and the redesigned TV library use the same data file.</p>
+          <div class="button-row"><button class="secondary-button" id="syncNowButton">Sync now</button><button class="text-button danger-text" id="disconnectDropboxButton">Disconnect</button></div>
+        </div>
+      </section>
+    </div>
+    <div class="settings-footer">TV v2.0.0</div>
+  </dialog>
 
-  <script src="./app.js" defer></script>
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+  <script src="app.js"></script>
 </body>
 </html>

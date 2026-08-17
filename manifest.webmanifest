@@ -1,7 +1,7 @@
 {
-  "name": "TV Board",
-  "short_name": "TV Board",
-  "description": "A private Kanban board for deciding what to watch next.",
+  "name": "TV",
+  "short_name": "TV",
+  "description": "A private visual library for deciding what to watch next.",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",
