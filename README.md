@@ -1,4 +1,4 @@
-# TV v2.3.0
+# TV v2.4.0
 
 TV is the redesigned successor to TV Board. It keeps the existing data/storage contracts while replacing the Kanban board with a scalable visual list library.
 
@@ -22,7 +22,7 @@ Opening TV on a browser that already used TV Board will migrate the existing rec
 - Sorting by title, date, year, rating, episode count, total time, network/service and status
 - Saved filter views
 - Editable/reorderable statuses with status colours
-- Compact 4:3 landscape artwork rows for large libraries
+- Compact 16:9 landscape artwork rows for large libraries
 - “With P”–style legacy columns migrate to Watching + a “Watching with” filter
 - Persistent Small / Standard / Large / Extra Large font-size selector
 - Mobile off-canvas navigation and filter drawer
@@ -50,3 +50,14 @@ Export a backup from the current TV Board app. The redesign is migration-compati
 - Alphabetical title sorting ignores leading The, A and An.
 - More generous sidebar section spacing.
 - Export/Import backup controls now match visually at every font size.
+
+
+## v2.4.0 additions
+- Q opens Add Show when you are not typing in a field.
+- TVmaze search results are directly clickable; the separate Use button is removed.
+- New shows default to Unsorted, which is available as a Library view and filter.
+- Duplicate detection warns by TVmaze ID or title/year before adding another copy.
+- All Shows includes an A–Z jump index; Filter includes Title begins with for letter-only views.
+- Font sizes now extend through XXL and XXXL.
+- Main cast names and character names load from TVmaze.
+- Import and Export backup controls use one matched layout.

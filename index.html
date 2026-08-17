@@ -53,7 +53,7 @@
 
       <div class="sidebar-footer">
         <button class="nav-item" id="settingsButton"><span class="nav-icon" data-icon="settings"></span><span>Settings</span></button>
-        <div class="version">TV v2.3.0</div>
+        <div class="version">TV v2.4.0</div>
       </div>
     </aside>
 
@@ -70,7 +70,7 @@
         </div>
         <div class="header-actions">
           <div class="sync-chip" id="syncChip"><span class="status-dot" id="statusDot"></span><span id="syncLabel">Saved on this device</span></div>
-          <button class="primary-button" id="addShowButton"><span data-icon="plus"></span>Add Show</button>
+          <button class="primary-button" id="addShowButton" title="Add Show (Q)"><span data-icon="plus"></span>Add Show <kbd class="shortcut-key">Q</kbd></button>
         </div>
       </header>
 
@@ -99,6 +99,7 @@
       </section>
 
       <div class="active-filters" id="activeFilters"></div>
+      <nav class="alphabet-jump" id="alphabetJump" aria-label="Jump to title letter" hidden></nav>
 
       <section class="show-list" id="showList" aria-live="polite"></section>
       <section class="empty-state" id="emptyState" hidden>
@@ -123,6 +124,10 @@
       <div class="filter-section">
         <div class="filter-heading">Status</div>
         <div class="check-grid" id="filterStatuses"></div>
+      </div>
+      <div class="filter-section">
+        <div class="filter-heading">Title begins with</div>
+        <div class="choice-list alphabet-filter" id="filterLetters"></div>
       </div>
       <div class="filter-section">
         <div class="filter-heading">Watching With</div>
@@ -238,6 +243,13 @@
             <div class="episode-guide" id="episodeGuide"></div>
           </section>
 
+          <section class="cast-card" id="castCard">
+            <div class="setting-title-row cast-heading">
+              <div><strong>Cast</strong><div class="helper" id="castStatus">Main cast from TVmaze.</div></div>
+            </div>
+            <div class="cast-list" id="castList"></div>
+          </section>
+
           <label><span>Tags</span>
             <input id="showTags" type="hidden">
             <details class="multi-picker" id="tagsPicker">
@@ -284,13 +296,15 @@
           <button type="button" data-font-size="small">Small</button>
           <button type="button" data-font-size="standard">Standard</button>
           <button type="button" data-font-size="large">Large</button>
-          <button type="button" data-font-size="extra-large">Extra Large</button>
+          <button type="button" data-font-size="extra-large">XL</button>
+          <button type="button" data-font-size="xx-large">XXL</button>
+          <button type="button" data-font-size="xxx-large">XXXL</button>
         </div>
       </section>
       <section class="settings-card">
         <h3>This device</h3>
         <p>TV always works locally in this browser. Export a JSON backup at any time.</p>
-        <div class="button-row"><button class="secondary-button" id="exportButton">Export backup</button><label class="secondary-button file-button">Import backup<input type="file" id="importInput" accept="application/json,.json" hidden></label></div>
+        <div class="button-row backup-buttons"><button class="secondary-button" id="exportButton">Export backup</button><label class="secondary-button file-button">Import backup<input type="file" id="importInput" accept="application/json,.json" hidden></label></div>
       </section>
       <section class="settings-card">
         <div class="setting-title-row"><div><h3>Canadian Streaming</h3><p>TMDB provides JustWatch-powered subscription availability in Canada.</p></div><span class="settings-status" id="tmdbStatus">Not configured</span></div>
@@ -313,7 +327,7 @@
         </div>
       </section>
     </div>
-    <div class="settings-footer">TV v2.3.0</div>
+    <div class="settings-footer">TV v2.4.0</div>
   </dialog>
 
   <div class="toast" id="toast" role="status" aria-live="polite"></div>
