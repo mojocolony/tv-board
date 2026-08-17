@@ -1,7 +1,7 @@
 (() => {
   'use strict';
 
-  const APP_VERSION = '2.6.0';
+  const APP_VERSION = '2.6.1';
   const STORAGE_KEY = 'tvBoard.state.v1';
   const DROPBOX_KEY = 'tvBoard.dropbox.v1';
   const PKCE_KEY = 'tvBoard.pkce.v1';
@@ -18,7 +18,7 @@
     sidebar: $('sidebar'), sidebarScrim: $('sidebarScrim'), mobileMenuButton: $('mobileMenuButton'),
     statusNav: $('statusNav'), watchingWithSection: $('watchingWithSection'), watchingWithNav: $('watchingWithNav'), savedViewsNav: $('savedViewsNav'), allCount: $('allCount'), watchingNowCount: $('watchingNowCount'), favouritesCount: $('favouritesCount'), watchedCount: $('watchedCount'), abandonedCount: $('abandonedCount'),
     alphabetJump: $('alphabetJump'),
-    manageSavedViewsButton: $('manageSavedViewsButton'), settingsButton: $('settingsButton'),
+    manageSavedViewsButton: $('manageSavedViewsButton'), settingsButton: $('settingsButton'), backFilterButton: $('backFilterButton'), backShowButton: $('backShowButton'), backStatusesButton: $('backStatusesButton'),
     viewTitle: $('viewTitle'), viewSubtitle: $('viewSubtitle'), syncChip: $('syncChip'), statusDot: $('statusDot'), syncLabel: $('syncLabel'),
     addShowButton: $('addShowButton'), emptyAddButton: $('emptyAddButton'), searchInput: $('searchInput'), filterButton: $('filterButton'), filterBadge: $('filterBadge'), sortSelect: $('sortSelect'),
     activeFilters: $('activeFilters'), showList: $('showList'), emptyState: $('emptyState'), emptyTitle: $('emptyTitle'), emptyText: $('emptyText'), footerMessage: $('footerMessage'),
@@ -32,8 +32,8 @@
     streamingProvidersText: $('streamingProvidersText'), streamingProvidersNote: $('streamingProvidersNote'), refreshShowStreamingButton: $('refreshShowStreamingButton'), showTags: $('showTags'), showNotes: $('showNotes'),
     deleteShowButton: $('deleteShowButton'), closeShowButton: $('closeShowButton'), cancelShowButton: $('cancelShowButton'),
     statusesDialog: $('statusesDialog'), closeStatusesButton: $('closeStatusesButton'), statusManager: $('statusManager'), addStatusForm: $('addStatusForm'), newStatusName: $('newStatusName'),
-    savedViewsDialog: $('savedViewsDialog'), closeSavedViewsButton: $('closeSavedViewsButton'), savedViewManager: $('savedViewManager'),
-    settingsDialog: $('settingsDialog'), closeSettingsButton: $('closeSettingsButton'), openStatusesButton: $('openStatusesButton'), exportButton: $('exportButton'), importInput: $('importInput'),
+    savedViewsDialog: $('savedViewsDialog'), closeSavedViewsButton: $('closeSavedViewsButton'), backSavedViewsButton: $('backSavedViewsButton'), savedViewManager: $('savedViewManager'),
+    settingsDialog: $('settingsDialog'), closeSettingsButton: $('closeSettingsButton'), backSettingsButton: $('backSettingsButton'), openStatusesButton: $('openStatusesButton'), exportButton: $('exportButton'), importInput: $('importInput'),
     tmdbStatus: $('tmdbStatus'), tmdbCredential: $('tmdbCredential'), tmdbTestMessage: $('tmdbTestMessage'), saveTmdbButton: $('saveTmdbButton'), refreshProvidersButton: $('refreshProvidersButton'),
     dropboxStatus: $('dropboxStatus'), dropboxSetup: $('dropboxSetup'), dropboxConnected: $('dropboxConnected'), dropboxAppKey: $('dropboxAppKey'), redirectUriText: $('redirectUriText'), copyRedirectButton: $('copyRedirectButton'),
     connectDropboxButton: $('connectDropboxButton'), syncNowButton: $('syncNowButton'), disconnectDropboxButton: $('disconnectDropboxButton'), fontSizeSelector: $('fontSizeSelector'), themeSelector: $('themeSelector'), episodeGuideCard: $('episodeGuideCard'), episodeGuideStatus: $('episodeGuideStatus'), episodeProgressSummary: $('episodeProgressSummary'), episodeGuide: $('episodeGuide'), refreshEpisodesButton: $('refreshEpisodesButton'), castCard: $('castCard'), castStatus: $('castStatus'), castList: $('castList'), toast: $('toast')
@@ -845,15 +845,41 @@
   function timeLabel(v) { return ({under5:'Under 5h',under10:'Under 10h','10-20':'10–20h','20-40':'20–40h','40+':'40h+'})[v] || v; }
   function ratingFilterLabel(v) { if (v === 'unrated') return 'Unrated'; return `${v}★+`; }
 
+  let suppressOverlayPop = false;
+  function pushOverlayState(name) {
+    if (history.state?.tvOverlay === name) return;
+    history.pushState({ ...(history.state || {}), tvOverlay: name }, '', location.href);
+  }
+  function removeOverlayState(name) {
+    if (history.state?.tvOverlay !== name) return;
+    suppressOverlayPop = true;
+    history.back();
+  }
+  function closeTopOverlayDirect() {
+    if (els.statusesDialog.open) { els.statusesDialog.close(); return true; }
+    if (els.savedViewsDialog.open) { els.savedViewsDialog.close(); return true; }
+    if (els.showDialog.open) { closeShowDialog(true); return true; }
+    if (els.settingsDialog.open) { els.settingsDialog.close(); return true; }
+    if (els.filterDrawer.classList.contains('open')) { closeFilterDrawer(true); return true; }
+    if (els.sidebar.classList.contains('open')) { closeMobileNav(); return true; }
+    return false;
+  }
+  function closeDialogWithHistory(dialog, name) {
+    if (dialog.open) dialog.close();
+    removeOverlayState(name);
+  }
+
   function openFilterDrawer() {
+    if (!els.filterDrawer.classList.contains('open')) pushOverlayState('filters');
     filterDraft = clone(filters);
     renderFilterControls();
     els.filterDrawer.classList.add('open'); els.drawerScrim.classList.add('open'); els.filterDrawer.setAttribute('aria-hidden','false');
     document.body.style.overflow = 'hidden';
   }
-  function closeFilterDrawer() {
+  function closeFilterDrawer(skipHistory=false) {
     els.filterDrawer.classList.remove('open'); els.drawerScrim.classList.remove('open'); els.filterDrawer.setAttribute('aria-hidden','true');
     document.body.style.overflow = '';
+    if(!skipHistory) removeOverlayState('filters');
   }
   function renderFilterControls() {
     filterDraft = normalizeFilters(filterDraft);
@@ -1086,10 +1112,10 @@
     els.deleteShowButton.style.visibility=show?'visible':'hidden';updatePosterPreview();renderStreamingPreview();
     prepareEpisodeGuide(show);
     prepareCast(show);
-    if(!els.showDialog.open)els.showDialog.showModal();
+    if(!els.showDialog.open){pushOverlayState('show');els.showDialog.showModal();}
     setTimeout(()=>els.showTitle.focus(),30);
   }
-  function closeShowDialog(){clearTimeout(autocompleteTimer);autocompleteTimer=null;if(els.showDialog.open)els.showDialog.close(); if(lookupController){lookupController.abort();lookupController=null;}els.showTitle.setAttribute('aria-expanded','false');}
+  function closeShowDialog(skipHistory=false){clearTimeout(autocompleteTimer);autocompleteTimer=null;if(els.showDialog.open)els.showDialog.close(); if(lookupController){lookupController.abort();lookupController=null;}els.showTitle.setAttribute('aria-expanded','false');if(!skipHistory)removeOverlayState('show');}
   function setFavourite(value){draftMeta.favourite=Boolean(value);els.showFavourite.classList.toggle('active',draftMeta.favourite);els.showFavourite.setAttribute('aria-pressed',String(draftMeta.favourite));els.showFavouriteText.textContent=draftMeta.favourite?'Favourite':'Not favourite';}
   function updatePosterPreview(){setArtwork(els.posterPreview,els.showPoster.value);}
   function renderStreamingPreview(){els.streamingProvidersText.replaceChildren();const providers=cleanProviders(draftMeta.providers);if(providers.length){providers.forEach(p=>{const s=document.createElement('span');s.className='provider-pill';s.textContent=p;els.streamingProvidersText.appendChild(s);});els.streamingProvidersNote.textContent=draftMeta.providersUpdatedAt?`Updated ${new Date(draftMeta.providersUpdatedAt).toLocaleDateString()}`:'Subscription services in Canada';}else{els.streamingProvidersNote.textContent=prefs.tmdbCredential?'No subscription services found in Canada.':'Requires a TMDB credential in Settings.';}}
@@ -1403,7 +1429,7 @@
   function exportBackup(){const blob=new Blob([JSON.stringify({...state,version:2,exportedAt:nowIso()},null,2)],{type:'application/json'});const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download=`tv-backup-${new Date().toISOString().slice(0,10)}.json`;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),500);showToast('Backup exported');}
   async function importBackup(file){try{const incoming=JSON.parse(await file.text());if(!incoming||!Array.isArray(incoming.shows)||!Array.isArray(incoming.columns))throw new Error('Invalid backup');state=mergeStates(state,incoming);saveState();showToast('Backup imported');}catch(err){console.error(err);showToast('That file is not a valid TV backup');}finally{els.importInput.value='';}}
 
-  function openSettings(){closeMobileNav();updateDropboxUI();updateTmdbUI();applyTheme();els.settingsDialog.showModal();}
+  function openSettings(){closeMobileNav();updateDropboxUI();updateTmdbUI();applyTheme();if(!els.settingsDialog.open){pushOverlayState('settings');els.settingsDialog.showModal();}}
   function showToast(message){clearTimeout(toastTimer);els.toast.textContent=message;els.toast.classList.add('show');toastTimer=setTimeout(()=>els.toast.classList.remove('show'),2600);}
   function openMobileNav(){els.sidebar.classList.add('open');els.sidebarScrim.classList.add('open');document.body.style.overflow='hidden';}
   function closeMobileNav(){els.sidebar.classList.remove('open');els.sidebarScrim.classList.remove('open');if(!els.filterDrawer.classList.contains('open'))document.body.style.overflow='';}
@@ -1412,9 +1438,9 @@
     els.mobileMenuButton.onclick=openMobileNav;els.sidebarScrim.onclick=closeMobileNav;
     els.addShowButton.onclick=()=>openShowDialog();els.emptyAddButton.onclick=()=>openShowDialog();
     els.searchInput.oninput=render;els.sortSelect.onchange=()=>{sortMode=els.sortSelect.value;render();};
-    els.filterButton.onclick=openFilterDrawer;els.closeFilterButton.onclick=closeFilterDrawer;els.drawerScrim.onclick=closeFilterDrawer;els.applyFiltersButton.onclick=applyFilters;els.clearFiltersButton.onclick=clearFilterDraft;els.saveViewButton.onclick=saveCurrentView;
+    els.filterButton.onclick=openFilterDrawer;els.closeFilterButton.onclick=()=>closeFilterDrawer();els.backFilterButton.onclick=()=>closeFilterDrawer();els.drawerScrim.onclick=()=>closeFilterDrawer();els.applyFiltersButton.onclick=applyFilters;els.clearFiltersButton.onclick=clearFilterDraft;els.saveViewButton.onclick=saveCurrentView;
     [els.filterEpisodes,els.filterTime,els.filterYearFrom,els.filterYearTo,els.filterRating,els.filterFavourite,els.filterDateType,els.filterDateFrom,els.filterDateTo].forEach(el=>{el.addEventListener('change',readDraftScalarFilters);});
-    els.showForm.onsubmit=saveShowFromForm;els.closeShowButton.onclick=closeShowDialog;els.cancelShowButton.onclick=closeShowDialog;els.deleteShowButton.onclick=deleteCurrentShow;els.lookupShowButton.onclick=lookupShows;els.showTitle.addEventListener('input',scheduleTitleAutocomplete);els.showTitle.addEventListener('keydown',e=>{if(e.key==='ArrowDown'&&!els.lookupResults.hidden){const first=lookupResultButtons()[0];if(first){e.preventDefault();first.focus();}}else if(e.key==='Enter'&&!els.lookupResults.hidden){const first=lookupResultButtons()[0];if(first){e.preventDefault();first.click();}}});els.showPoster.oninput=updatePosterPreview;els.showFavourite.onclick=()=>setFavourite(!draftMeta.favourite);els.refreshShowStreamingButton.onclick=refreshDraftProviders;els.refreshEpisodesButton.onclick=()=>loadEpisodeGuide(currentEpisodeShow()||draftMeta,true);
+    els.showForm.onsubmit=saveShowFromForm;els.closeShowButton.onclick=()=>closeShowDialog();els.backShowButton.onclick=()=>closeShowDialog();els.cancelShowButton.onclick=()=>closeShowDialog();els.deleteShowButton.onclick=deleteCurrentShow;els.lookupShowButton.onclick=lookupShows;els.showTitle.addEventListener('input',scheduleTitleAutocomplete);els.showTitle.addEventListener('keydown',e=>{if(e.key==='ArrowDown'&&!els.lookupResults.hidden){const first=lookupResultButtons()[0];if(first){e.preventDefault();first.focus();}}else if(e.key==='Enter'&&!els.lookupResults.hidden){const first=lookupResultButtons()[0];if(first){e.preventDefault();first.click();}}});els.showPoster.oninput=updatePosterPreview;els.showFavourite.onclick=()=>setFavourite(!draftMeta.favourite);els.refreshShowStreamingButton.onclick=refreshDraftProviders;els.refreshEpisodesButton.onclick=()=>loadEpisodeGuide(currentEpisodeShow()||draftMeta,true);
     els.genreAddButton.onclick=()=>addPickerValue('genres');els.tagAddButton.onclick=()=>addPickerValue('tags');els.genreAddInput.onkeydown=e=>{if(e.key==='Enter'){e.preventDefault();addPickerValue('genres');}};els.tagAddInput.onkeydown=e=>{if(e.key==='Enter'){e.preventDefault();addPickerValue('tags');}};
     els.showDialog.addEventListener('keydown',e=>{
       if(e.key!=='Enter'||e.defaultPrevented||e.metaKey||e.ctrlKey||e.altKey)return;
@@ -1434,14 +1460,21 @@
       lastShowOpenedByPointer = false;
       if (openedByPointer && trigger?.isConnected) requestAnimationFrame(() => trigger.blur());
     });
-    els.settingsButton.onclick=openSettings;els.closeSettingsButton.onclick=()=>els.settingsDialog.close();els.openStatusesButton.onclick=()=>{renderStatusManager();els.statusesDialog.showModal();};els.closeStatusesButton.onclick=()=>els.statusesDialog.close();
+    els.settingsButton.onclick=openSettings;els.closeSettingsButton.onclick=()=>closeDialogWithHistory(els.settingsDialog,'settings');els.backSettingsButton.onclick=()=>closeDialogWithHistory(els.settingsDialog,'settings');els.openStatusesButton.onclick=()=>{renderStatusManager();if(!els.statusesDialog.open){pushOverlayState('statuses');els.statusesDialog.showModal();}};els.closeStatusesButton.onclick=()=>closeDialogWithHistory(els.statusesDialog,'statuses');els.backStatusesButton.onclick=()=>closeDialogWithHistory(els.statusesDialog,'statuses');
     els.addStatusForm.onsubmit=e=>{e.preventDefault();addStatus(els.newStatusName.value);els.newStatusName.value='';};
-    els.manageSavedViewsButton.onclick=()=>{renderSavedViewManager();els.savedViewsDialog.showModal();};els.closeSavedViewsButton.onclick=()=>els.savedViewsDialog.close();
+    els.manageSavedViewsButton.onclick=()=>{renderSavedViewManager();if(!els.savedViewsDialog.open){pushOverlayState('saved-views');els.savedViewsDialog.showModal();}};els.closeSavedViewsButton.onclick=()=>closeDialogWithHistory(els.savedViewsDialog,'saved-views');els.backSavedViewsButton.onclick=()=>closeDialogWithHistory(els.savedViewsDialog,'saved-views');
     els.exportButton.onclick=exportBackup;els.importInput.onchange=()=>{const file=els.importInput.files?.[0];if(file)importBackup(file);};
     els.saveTmdbButton.onclick=testTmdb;els.refreshProvidersButton.onclick=refreshAllProviders;
     els.connectDropboxButton.onclick=connectDropbox;els.syncNowButton.onclick=()=>syncWithDropbox({announce:true});els.disconnectDropboxButton.onclick=disconnectDropbox;els.copyRedirectButton.onclick=async()=>{try{await navigator.clipboard.writeText(getRedirectUri());showToast('Redirect URI copied');}catch(_){els.redirectUriText.select();document.execCommand('copy');showToast('Redirect URI copied');}};
+    [
+      [els.showDialog,'show'],[els.settingsDialog,'settings'],[els.statusesDialog,'statuses'],[els.savedViewsDialog,'saved-views']
+    ].forEach(([dialog,name])=>dialog.addEventListener('cancel',event=>{event.preventDefault();closeDialogWithHistory(dialog,name);}));
+    window.addEventListener('popstate',()=>{
+      if(suppressOverlayPop){suppressOverlayPop=false;return;}
+      closeTopOverlayDirect();
+    });
     document.addEventListener('keydown',e=>{
-      if(e.key==='Escape'){if(els.filterDrawer.classList.contains('open'))closeFilterDrawer();closeMobileNav();return;}
+      if(e.key==='Escape'){if(history.state?.tvOverlay){history.back();return;}if(closeTopOverlayDirect())return;}
       const target=e.target;const element=target instanceof HTMLElement ? target : null;
       if(e.key==='Enter'&&els.showDialog.open&&!e.defaultPrevented&&!e.metaKey&&!e.ctrlKey&&!e.altKey){
         if(element?.closest('textarea,button,summary,details,[contenteditable="true"]'))return;

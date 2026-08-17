@@ -1,4 +1,4 @@
-# TV v2.6.0
+# TV v2.6.1
 
 TV is the redesigned successor to TV Board. It keeps the existing data/storage contracts while replacing the Kanban board with a scalable visual list library.
 
@@ -85,3 +85,10 @@ Export a backup from the current TV Board app. The redesign is migration-compati
 - Multi-column editor labels reserve consistent height so inputs align when labels wrap.
 - Country is now a true select control, so it remains changeable after a value has been chosen.
 - In Add Show, Return/Enter saves and closes from single-line fields once TVmaze suggestions are no longer open; when suggestions are open, Enter chooses the first suggestion instead.
+
+
+## v2.6.1 mobile navigation fix
+- Rebuilt phone library rows as a stacked layout so status, episode progress, ratings and genres cannot overlap.
+- Added explicit Back controls to shows, Settings, Filters, Manage Statuses and Saved Views.
+- Browser Back now closes the current secondary screen before leaving TV.
+- Added extra mobile safe-area space above Safari’s floating toolbar.

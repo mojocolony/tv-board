@@ -57,7 +57,7 @@
 
       <div class="sidebar-footer">
         <button class="nav-item" id="settingsButton"><span class="nav-icon" data-icon="settings"></span><span>Settings</span></button>
-        <div class="version">TV v2.6.0</div>
+        <div class="version">TV v2.6.1</div>
       </div>
     </aside>
 
@@ -127,9 +127,9 @@
   </div>
 
   <aside class="filter-drawer" id="filterDrawer" aria-hidden="true">
-    <div class="drawer-header">
-      <div><div class="eyebrow">LIBRARY</div><h2>Filter Shows</h2></div>
-      <button class="icon-button" id="closeFilterButton" aria-label="Close filters">×</button>
+    <div class="drawer-header secondary-screen-header">
+      <div class="secondary-header-main"><button type="button" class="back-button" id="backFilterButton" aria-label="Back from filters"><span aria-hidden="true">←</span><span>Back</span></button><div><div class="eyebrow">LIBRARY</div><h2>Filter Shows</h2></div></div>
+      <button class="icon-button secondary-close-button" id="closeFilterButton" aria-label="Close filters">×</button>
     </div>
     <div class="drawer-body">
       <div class="filter-section">
@@ -189,9 +189,9 @@
 
   <dialog id="showDialog" class="modal show-modal">
     <form method="dialog" id="showForm">
-      <div class="modal-header">
-        <div><div class="eyebrow">SHOW</div><h2 id="showDialogTitle">Add Show</h2></div>
-        <button type="button" class="icon-button" id="closeShowButton" aria-label="Close">×</button>
+      <div class="modal-header secondary-screen-header">
+        <div class="secondary-header-main"><button type="button" class="back-button" id="backShowButton" aria-label="Back from show"><span aria-hidden="true">←</span><span>Back</span></button><div><div class="eyebrow">SHOW</div><h2 id="showDialogTitle">Add Show</h2></div></div>
+        <button type="button" class="icon-button secondary-close-button" id="closeShowButton" aria-label="Close">×</button>
       </div>
       <input type="hidden" id="showId">
       <div class="show-edit-layout">
@@ -299,20 +299,20 @@
   </dialog>
 
   <dialog id="statusesDialog" class="modal compact-modal">
-    <div class="modal-header"><div><div class="eyebrow">LIBRARY</div><h2>Manage Statuses</h2></div><button class="icon-button" id="closeStatusesButton" aria-label="Close">×</button></div>
+    <div class="modal-header secondary-screen-header"><div class="secondary-header-main"><button type="button" class="back-button" id="backStatusesButton" aria-label="Back from statuses"><span aria-hidden="true">←</span><span>Back</span></button><div><div class="eyebrow">LIBRARY</div><h2>Manage Statuses</h2></div></div><button class="icon-button secondary-close-button" id="closeStatusesButton" aria-label="Close">×</button></div>
     <p class="modal-intro">These are the statuses inherited from your former TV Board columns. Rename, reorder or add them here.</p>
     <div id="statusManager" class="manager-list"></div>
     <form id="addStatusForm" class="inline-form"><input id="newStatusName" maxlength="50" placeholder="New status"><button class="secondary-button">Add</button></form>
   </dialog>
 
   <dialog id="savedViewsDialog" class="modal compact-modal">
-    <div class="modal-header"><div><div class="eyebrow">MY TV</div><h2>Saved Views</h2></div><button class="icon-button" id="closeSavedViewsButton" aria-label="Close">×</button></div>
+    <div class="modal-header secondary-screen-header"><div class="secondary-header-main"><button type="button" class="back-button" id="backSavedViewsButton" aria-label="Back from saved views"><span aria-hidden="true">←</span><span>Back</span></button><div><div class="eyebrow">MY TV</div><h2>Saved Views</h2></div></div><button class="icon-button secondary-close-button" id="closeSavedViewsButton" aria-label="Close">×</button></div>
     <p class="modal-intro">Saved views remember a set of filters and a sort order. They do not duplicate shows.</p>
     <div id="savedViewManager" class="manager-list"></div>
   </dialog>
 
   <dialog id="settingsDialog" class="modal settings-modal">
-    <div class="modal-header"><div><div class="eyebrow">TV</div><h2>Settings</h2></div><button class="icon-button" id="closeSettingsButton" aria-label="Close">×</button></div>
+    <div class="modal-header secondary-screen-header"><div class="secondary-header-main"><button type="button" class="back-button" id="backSettingsButton" aria-label="Back from settings"><span aria-hidden="true">←</span><span>Back</span></button><div><div class="eyebrow">TV</div><h2>Settings</h2></div></div><button class="icon-button secondary-close-button" id="closeSettingsButton" aria-label="Close">×</button></div>
     <div class="settings-sections">
       <section class="settings-card">
         <div class="setting-title-row"><div><h3>Statuses</h3><p>Manage Watching, Next, Someday and any other active statuses.</p></div><button class="secondary-button" id="openStatusesButton">Manage</button></div>
@@ -362,7 +362,7 @@
         </div>
       </section>
     </div>
-    <div class="settings-footer">TV v2.6.0</div>
+    <div class="settings-footer">TV v2.6.1</div>
   </dialog>
 
   <div class="toast" id="toast" role="status" aria-live="polite"></div>
