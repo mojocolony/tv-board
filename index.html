@@ -57,7 +57,7 @@
 
       <div class="sidebar-footer">
         <button class="nav-item" id="settingsButton"><span class="nav-icon" data-icon="settings"></span><span>Settings</span></button>
-        <div class="version">TV v2.6.1</div>
+        <div class="version">TV v2.7.0</div>
       </div>
     </aside>
 
@@ -84,7 +84,7 @@
           <input id="searchInput" type="search" placeholder="Search shows, networks, genres, tags, notes…" autocomplete="off">
         </label>
         <button class="toolbar-button" id="filterButton"><span data-icon="filter"></span>Filter <span class="filter-badge" id="filterBadge" hidden>0</span></button>
-        <label class="sort-wrap"><span data-icon="sort"></span><select id="sortSelect" aria-label="Sort shows">
+        <div class="sort-wrap custom-sort" id="sortControl"><button type="button" class="sort-button" id="sortButton" aria-haspopup="menu" aria-expanded="false"><span data-icon="sort"></span><span id="sortButtonLabel">Recently updated</span><span class="sort-chevron" aria-hidden="true">⌄</span></button><div class="sort-menu" id="sortMenu" role="menu" hidden></div><select id="sortSelect" aria-label="Sort shows" hidden>
           <option value="recent">Recently updated</option>
           <option value="added">Recently added</option>
           <option value="title-asc">Title A–Z</option>
@@ -106,7 +106,7 @@
           <option value="abandoned-desc">Date abandoned — Newest</option>
           <option value="abandoned-asc">Date abandoned — Oldest</option>
           <option value="episode-watched-desc">Episode watched — Most recent</option>
-        </select></label>
+        </select></div>
       </section>
 
       <div class="active-filters" id="activeFilters"></div>
@@ -234,13 +234,18 @@
             <label><span>Network / service</span><input id="showNetwork" maxlength="100" list="networkOptions" autocomplete="off"><datalist id="networkOptions"></datalist></label>
             <label><span>Country</span><select id="showCountry"><option value="">Not specified</option></select></label>
           </div>
-          <label><span>Watching with</span><input id="showWatchingWith" maxlength="60" list="watchingWithOptions" placeholder="Choose or type a name" autocomplete="off"><datalist id="watchingWithOptions"></datalist><small>Choose someone you already use, or type a new name.</small></label>
+          <label class="watching-with-field"><span>Watching with</span><input id="showWatchingWith" maxlength="60" placeholder="Choose or type a name" autocomplete="off" aria-autocomplete="list" aria-controls="watchingWithSuggestions" aria-expanded="false"><div class="watching-with-suggestions" id="watchingWithSuggestions" role="listbox" hidden></div><datalist id="watchingWithOptions"></datalist><small>Choose someone you already use, or type a new name.</small></label>
           <section class="viewing-history-card">
-            <div class="setting-title-row"><div><strong>Viewing history</strong><div class="helper">Dates are recorded automatically going forward and can be corrected here.</div></div></div>
+            <div class="setting-title-row viewing-history-heading"><div><strong>Viewing history</strong><div class="helper">Each viewing can keep its own dates and episode progress. Older dates remain unknown unless you enter them.</div></div><button type="button" class="secondary-button compact-action" id="startRewatchButton" hidden>Start rewatch</button></div>
+            <div class="viewing-runs-list" id="viewingRunsList"></div>
             <div class="field-grid three viewing-date-grid">
               <label><span>Date started</span><input id="showStartedDate" type="date"></label>
               <label><span>Date finished</span><input id="showFinishedDate" type="date"></label>
               <label><span>Date abandoned</span><input id="showAbandonedDate" type="date"></label>
+            </div>
+            <div class="watched-episode-choice" id="watchedEpisodeChoice" hidden>
+              <label><input id="markAllEpisodesWatched" type="checkbox"><span>Mark all available episodes as watched</span></label>
+              <small>Useful when adding a show you already completed. Episode dates stay unknown unless you enter them.</small>
             </div>
           </section>
           <label><span>Genres</span>
@@ -362,7 +367,7 @@
         </div>
       </section>
     </div>
-    <div class="settings-footer">TV v2.6.1</div>
+    <div class="settings-footer">TV v2.7.0</div>
   </dialog>
 
   <div class="toast" id="toast" role="status" aria-live="polite"></div>

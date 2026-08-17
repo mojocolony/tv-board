@@ -1,7 +1,7 @@
 (() => {
   'use strict';
 
-  const APP_VERSION = '2.6.1';
+  const APP_VERSION = '2.7.0';
   const STORAGE_KEY = 'tvBoard.state.v1';
   const DROPBOX_KEY = 'tvBoard.dropbox.v1';
   const PKCE_KEY = 'tvBoard.pkce.v1';
@@ -20,14 +20,14 @@
     alphabetJump: $('alphabetJump'),
     manageSavedViewsButton: $('manageSavedViewsButton'), settingsButton: $('settingsButton'), backFilterButton: $('backFilterButton'), backShowButton: $('backShowButton'), backStatusesButton: $('backStatusesButton'),
     viewTitle: $('viewTitle'), viewSubtitle: $('viewSubtitle'), syncChip: $('syncChip'), statusDot: $('statusDot'), syncLabel: $('syncLabel'),
-    addShowButton: $('addShowButton'), emptyAddButton: $('emptyAddButton'), searchInput: $('searchInput'), filterButton: $('filterButton'), filterBadge: $('filterBadge'), sortSelect: $('sortSelect'),
+    addShowButton: $('addShowButton'), emptyAddButton: $('emptyAddButton'), searchInput: $('searchInput'), filterButton: $('filterButton'), filterBadge: $('filterBadge'), sortSelect: $('sortSelect'), sortControl: $('sortControl'), sortButton: $('sortButton'), sortButtonLabel: $('sortButtonLabel'), sortMenu: $('sortMenu'),
     activeFilters: $('activeFilters'), showList: $('showList'), emptyState: $('emptyState'), emptyTitle: $('emptyTitle'), emptyText: $('emptyText'), footerMessage: $('footerMessage'),
     filterDrawer: $('filterDrawer'), drawerScrim: $('drawerScrim'), closeFilterButton: $('closeFilterButton'), filterStatuses: $('filterStatuses'), filterGenres: $('filterGenres'), filterEpisodes: $('filterEpisodes'),
     filterTime: $('filterTime'), filterWatchingWith: $('filterWatchingWith'), filterLetters: $('filterLetters'), filterYearFrom: $('filterYearFrom'), filterYearTo: $('filterYearTo'), filterRating: $('filterRating'), filterFavourite: $('filterFavourite'), filterDateType: $('filterDateType'), filterDateFrom: $('filterDateFrom'), filterDateTo: $('filterDateTo'), filterNetworks: $('filterNetworks'), filterTags: $('filterTags'),
     clearFiltersButton: $('clearFiltersButton'), saveViewButton: $('saveViewButton'), applyFiltersButton: $('applyFiltersButton'),
     showDialog: $('showDialog'), showForm: $('showForm'), showDialogTitle: $('showDialogTitle'), showId: $('showId'), showTitle: $('showTitle'), showLocation: $('showLocation'), showRating: $('showRating'), showFavourite: $('showFavourite'), showFavouriteText: $('showFavouriteText'),
     showPoster: $('showPoster'), posterPreview: $('posterPreview'), lookupShowButton: $('lookupShowButton'), lookupStatus: $('lookupStatus'), lookupResults: $('lookupResults'), showYear: $('showYear'), showSeasons: $('showSeasons'), showEpisodes: $('showEpisodes'),
-    showRuntime: $('showRuntime'), showTotalMinutes: $('showTotalMinutes'), showSeriesStatus: $('showSeriesStatus'), showNetwork: $('showNetwork'), showCountry: $('showCountry'), showWatchingWith: $('showWatchingWith'), showStartedDate: $('showStartedDate'), showFinishedDate: $('showFinishedDate'), showAbandonedDate: $('showAbandonedDate'), showGenres: $('showGenres'), showMetacritic: $('showMetacritic'),
+    showRuntime: $('showRuntime'), showTotalMinutes: $('showTotalMinutes'), showSeriesStatus: $('showSeriesStatus'), showNetwork: $('showNetwork'), showCountry: $('showCountry'), showWatchingWith: $('showWatchingWith'), watchingWithSuggestions: $('watchingWithSuggestions'), showStartedDate: $('showStartedDate'), showFinishedDate: $('showFinishedDate'), showAbandonedDate: $('showAbandonedDate'), viewingRunsList: $('viewingRunsList'), startRewatchButton: $('startRewatchButton'), watchedEpisodeChoice: $('watchedEpisodeChoice'), markAllEpisodesWatched: $('markAllEpisodesWatched'), showGenres: $('showGenres'), showMetacritic: $('showMetacritic'),
     networkOptions: $('networkOptions'), watchingWithOptions: $('watchingWithOptions'), genresPicker: $('genresPicker'), genresPickerSummary: $('genresPickerSummary'), genreChoices: $('genreChoices'), genreAddInput: $('genreAddInput'), genreAddButton: $('genreAddButton'), tagsPicker: $('tagsPicker'), tagsPickerSummary: $('tagsPickerSummary'), tagChoices: $('tagChoices'), tagAddInput: $('tagAddInput'), tagAddButton: $('tagAddButton'),
     streamingProvidersText: $('streamingProvidersText'), streamingProvidersNote: $('streamingProvidersNote'), refreshShowStreamingButton: $('refreshShowStreamingButton'), showTags: $('showTags'), showNotes: $('showNotes'),
     deleteShowButton: $('deleteShowButton'), closeShowButton: $('closeShowButton'), cancelShowButton: $('cancelShowButton'),
@@ -122,9 +122,79 @@
     if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return {};
     const out={}; Object.entries(raw).forEach(([key,value])=>{const d=validIsoDate(value); if(d) out[String(key).slice(0,80)]=d;}); return out;
   }
+  function normalizeWatchedEpisodes(raw, dates={}) {
+    const fromRaw=Array.isArray(raw)?raw:[];
+    return cleanList([...fromRaw, ...Object.keys(normalizeEpisodeWatchDates(dates))], 5000, 80);
+  }
+  function normalizeViewingRuns(raw) {
+    if (!Array.isArray(raw)) return [];
+    return raw.filter(Boolean).map((run,index)=>{
+      const episodeWatchDates=normalizeEpisodeWatchDates(run.episodeWatchDates);
+      const watchedEpisodes=normalizeWatchedEpisodes(run.watchedEpisodes, episodeWatchDates);
+      const status=['in-progress','completed','abandoned'].includes(run.status)?run.status:'in-progress';
+      return {
+        id:safeText(run.id||`run-${index+1}`,100),
+        status,
+        startedDate:validIsoDate(run.startedDate||run.dateStarted),
+        finishedDate:validIsoDate(run.finishedDate||run.dateFinished),
+        abandonedDate:validIsoDate(run.abandonedDate||run.dateAbandoned),
+        watchingWith:safeText(run.watchingWith||'',60),
+        watchedEpisodes,
+        episodeWatchDates,
+        activeSeason:positiveIntegerOrNull(run.activeSeason),
+        createdAt:validDateString(run.createdAt)?run.createdAt:nowIso(),
+        updatedAt:validDateString(run.updatedAt)?run.updatedAt:nowIso()
+      };
+    }).slice(0,100);
+  }
+  function viewingRunDates(show,type) {
+    const runs=Array.isArray(show?.viewingRuns)?show.viewingRuns:[];
+    const field=type==='started'?'startedDate':type==='finished'?'finishedDate':'abandonedDate';
+    return cleanList([show?.[field], ...runs.map(r=>r?.[field])].filter(Boolean), 200, 20).sort();
+  }
+  function activeViewingRun(show) {
+    const runs=Array.isArray(show?.viewingRuns)?show.viewingRuns:[];
+    const wanted=safeText(show?.currentViewingRunId||'',100);
+    return runs.find(r=>r.id===wanted) || [...runs].reverse().find(r=>r.status==='in-progress') || null;
+  }
+  function episodeTracking(show) {
+    const run=activeViewingRun(show);
+    if (run) return { run, watchedEpisodes:normalizeWatchedEpisodes(run.watchedEpisodes,run.episodeWatchDates), episodeWatchDates:normalizeEpisodeWatchDates(run.episodeWatchDates), activeSeason:positiveIntegerOrNull(run.activeSeason) };
+    const dates=normalizeEpisodeWatchDates(show?.episodeWatchDates);
+    return { run:null, watchedEpisodes:normalizeWatchedEpisodes(show?.watchedEpisodes,dates), episodeWatchDates:dates, activeSeason:positiveIntegerOrNull(show?.activeSeason||show?.episodeProgress?.season) };
+  }
+  function ensureViewingRun(show,{startedDate='',watchingWith=''}={}) {
+    if (!show) return null;
+    show.viewingRuns=normalizeViewingRuns(show.viewingRuns);
+    let run=activeViewingRun(show);
+    if (run) return run;
+    const legacyDates=normalizeEpisodeWatchDates(show.episodeWatchDates);
+    const legacyWatched=normalizeWatchedEpisodes(show.watchedEpisodes,legacyDates);
+    const hasLegacy=legacyWatched.length||show.startedDate||show.finishedDate||show.abandonedDate;
+    if (hasLegacy) {
+      const legacyStatus=show.archive===ARCHIVE_WATCHED?'completed':show.archive===ARCHIVE_ABANDONED?'abandoned':'in-progress';
+      run={id:uuid(),status:legacyStatus,startedDate:validIsoDate(show.startedDate),finishedDate:validIsoDate(show.finishedDate),abandonedDate:validIsoDate(show.abandonedDate),watchingWith:safeText(show.watchingWith||watchingWith,60),watchedEpisodes:legacyWatched,episodeWatchDates:legacyDates,activeSeason:positiveIntegerOrNull(show.activeSeason||show.episodeProgress?.season),createdAt:show.createdAt||nowIso(),updatedAt:show.updatedAt||nowIso()};
+      show.viewingRuns.push(run);
+      if (legacyStatus==='in-progress') show.currentViewingRunId=run.id;
+      return legacyStatus==='in-progress'?run:null;
+    }
+    run={id:uuid(),status:'in-progress',startedDate:validIsoDate(startedDate),finishedDate:'',abandonedDate:'',watchingWith:safeText(watchingWith||show.watchingWith,60),watchedEpisodes:[],episodeWatchDates:{},activeSeason:null,createdAt:nowIso(),updatedAt:nowIso()};
+    show.viewingRuns.push(run);show.currentViewingRunId=run.id;return run;
+  }
+  function syncLegacyTrackingFromRun(show,run) {
+    if (!show||!run) return;
+    show.currentViewingRunId=run.status==='in-progress'?run.id:'';
+    show.watchedEpisodes=normalizeWatchedEpisodes(run.watchedEpisodes,run.episodeWatchDates);
+    show.episodeWatchDates=normalizeEpisodeWatchDates(run.episodeWatchDates);
+    show.activeSeason=positiveIntegerOrNull(run.activeSeason);
+    show.startedDate=validIsoDate(run.startedDate);
+    show.finishedDate=validIsoDate(run.finishedDate);
+    show.abandonedDate=validIsoDate(run.abandonedDate);
+    if(run.watchingWith)show.watchingWith=safeText(run.watchingWith,60);
+  }
   function episodeDateKey(ep) { return ep?.id ? `id:${ep.id}` : `s${Number(ep?.season)||0}e${Number(ep?.number)||0}`; }
   function latestEpisodeWatchedDate(show) {
-    const values=Object.values(show?.episodeWatchDates||{}).filter(Boolean).sort(); return values.at(-1)||'';
+    const values=[...Object.values(show?.episodeWatchDates||{}), ...(show?.viewingRuns||[]).flatMap(run=>Object.values(run?.episodeWatchDates||{}))].filter(Boolean).sort(); return values.at(-1)||'';
   }
   function cleanList(items, max = 30, maxLength = 80) {
     const seen = new Set();
@@ -185,6 +255,9 @@
       nextTitle: safeText(value.nextTitle || '', 160),
       watchedCount: positiveIntegerOrNull(value.watchedCount),
       totalCount: positiveIntegerOrNull(value.totalCount),
+      seasonWatchedCount: integerOrNull(value.seasonWatchedCount),
+      seasonTotalCount: positiveIntegerOrNull(value.seasonTotalCount),
+      seasonRemaining: integerOrNull(value.seasonRemaining),
       updatedAt: validDateString(value.updatedAt) ? value.updatedAt : nowIso()
     };
   }
@@ -287,6 +360,10 @@
         finishedDate: validIsoDate(s.finishedDate || s.dateFinished),
         abandonedDate: validIsoDate(s.abandonedDate || s.dateAbandoned),
         episodeWatchDates: normalizeEpisodeWatchDates(s.episodeWatchDates),
+        watchedEpisodes: normalizeWatchedEpisodes(s.watchedEpisodes, s.episodeWatchDates),
+        activeSeason: positiveIntegerOrNull(s.activeSeason || s.episodeProgress?.season),
+        viewingRuns: normalizeViewingRuns(s.viewingRuns),
+        currentViewingRunId: safeText(s.currentViewingRunId || '', 100),
         order: Number.isFinite(Number(s.order)) ? Number(s.order) : index,
         createdAt,
         updatedAt
@@ -388,7 +465,7 @@
     };
   }
   function validSort(value) {
-    return ['recent','added','title-asc','title-desc','year-desc','year-asc','rating-desc','rating-asc','episodes-asc','episodes-desc','time-asc','time-desc','network','status','started-desc','started-asc','finished-desc','finished-asc','episode-watched-desc'].includes(value);
+    return ['recent','added','title-asc','title-desc','year-desc','year-asc','rating-desc','rating-asc','episodes-asc','episodes-desc','time-asc','time-desc','network','status','started-desc','started-asc','finished-desc','finished-asc','abandoned-desc','abandoned-asc','episode-watched-desc'].includes(value);
   }
 
   function statusFor(show) {
@@ -490,7 +567,8 @@
     if (f.favourite === 'yes' && !show.favourite) return false;
     if (f.favourite === 'no' && show.favourite) return false;
     if (f.dateType || f.dateFrom || f.dateTo) {
-      const dates = f.dateType==='started' ? [show.startedDate] : f.dateType==='finished' ? [show.finishedDate] : f.dateType==='abandoned' ? [show.abandonedDate] : f.dateType==='episode' ? Object.values(show.episodeWatchDates||{}) : [show.startedDate,show.finishedDate,show.abandonedDate,...Object.values(show.episodeWatchDates||{})];
+      const runEpisodeDates=(show.viewingRuns||[]).flatMap(run=>Object.values(run.episodeWatchDates||{}));
+      const dates = f.dateType==='started' ? viewingRunDates(show,'started') : f.dateType==='finished' ? viewingRunDates(show,'finished') : f.dateType==='abandoned' ? viewingRunDates(show,'abandoned') : f.dateType==='episode' ? [...Object.values(show.episodeWatchDates||{}),...runEpisodeDates] : [...viewingRunDates(show,'started'),...viewingRunDates(show,'finished'),...viewingRunDates(show,'abandoned'),...Object.values(show.episodeWatchDates||{}),...runEpisodeDates];
       const valid=dates.filter(Boolean); if(!valid.length)return false;
       if(f.dateFrom && !valid.some(d=>d>=f.dateFrom && (!f.dateTo||d<=f.dateTo)))return false;
       if(f.dateTo && !valid.some(d=>d<=f.dateTo && (!f.dateFrom||d>=f.dateFrom)))return false;
@@ -529,12 +607,12 @@
         case 'time-desc': return nvl(effectiveTotalMinutes(b), -1) - nvl(effectiveTotalMinutes(a), -1) || compareShowTitles(a,b);
         case 'network': return showNetworkLabel(a).localeCompare(showNetworkLabel(b), undefined, { sensitivity: 'base' }) || compareShowTitles(a,b);
         case 'status': return statusFor(a).name.localeCompare(statusFor(b).name) || compareShowTitles(a,b);
-        case 'started-desc': return (b.startedDate||'').localeCompare(a.startedDate||'') || compareShowTitles(a,b);
-        case 'started-asc': return (a.startedDate||'9999-99-99').localeCompare(b.startedDate||'9999-99-99') || compareShowTitles(a,b);
-        case 'finished-desc': return (b.finishedDate||'').localeCompare(a.finishedDate||'') || compareShowTitles(a,b);
-        case 'finished-asc': return (a.finishedDate||'9999-99-99').localeCompare(b.finishedDate||'9999-99-99') || compareShowTitles(a,b);
-        case 'abandoned-desc': return (b.abandonedDate||'').localeCompare(a.abandonedDate||'') || compareShowTitles(a,b);
-        case 'abandoned-asc': return (a.abandonedDate||'9999-99-99').localeCompare(b.abandonedDate||'9999-99-99') || compareShowTitles(a,b);
+        case 'started-desc': return (viewingRunDates(b,'started').at(-1)||'').localeCompare(viewingRunDates(a,'started').at(-1)||'') || compareShowTitles(a,b);
+        case 'started-asc': return (viewingRunDates(a,'started')[0]||'9999-99-99').localeCompare(viewingRunDates(b,'started')[0]||'9999-99-99') || compareShowTitles(a,b);
+        case 'finished-desc': return (viewingRunDates(b,'finished').at(-1)||'').localeCompare(viewingRunDates(a,'finished').at(-1)||'') || compareShowTitles(a,b);
+        case 'finished-asc': return (viewingRunDates(a,'finished')[0]||'9999-99-99').localeCompare(viewingRunDates(b,'finished')[0]||'9999-99-99') || compareShowTitles(a,b);
+        case 'abandoned-desc': return (viewingRunDates(b,'abandoned').at(-1)||'').localeCompare(viewingRunDates(a,'abandoned').at(-1)||'') || compareShowTitles(a,b);
+        case 'abandoned-asc': return (viewingRunDates(a,'abandoned')[0]||'9999-99-99').localeCompare(viewingRunDates(b,'abandoned')[0]||'9999-99-99') || compareShowTitles(a,b);
         case 'episode-watched-desc': return latestEpisodeWatchedDate(b).localeCompare(latestEpisodeWatchedDate(a)) || compareShowTitles(a,b);
         case 'recent':
         default: return Date.parse(b.updatedAt) - Date.parse(a.updatedAt) || compareShowTitles(a,b);
@@ -670,12 +748,19 @@
     render();
   }
 
+  function renderSortControl() {
+    if(!els.sortSelect||!els.sortMenu||!els.sortButtonLabel)return;
+    els.sortSelect.value=sortMode;const selected=els.sortSelect.selectedOptions?.[0];els.sortButtonLabel.textContent=selected?.textContent||'Sort';
+    els.sortMenu.replaceChildren();[...els.sortSelect.options].forEach(option=>{const button=document.createElement('button');button.type='button';button.className=`sort-menu-item${option.value===sortMode?' active':''}`;button.setAttribute('role','menuitemradio');button.setAttribute('aria-checked',String(option.value===sortMode));button.textContent=option.textContent;button.onclick=()=>{sortMode=option.value;els.sortSelect.value=sortMode;els.sortMenu.hidden=true;els.sortButton.setAttribute('aria-expanded','false');render();};els.sortMenu.appendChild(button);});
+  }
+  function closeSortMenu(){if(!els.sortMenu)return;els.sortMenu.hidden=true;els.sortButton?.setAttribute('aria-expanded','false');}
+  function toggleSortMenu(){if(!els.sortMenu)return;const opening=els.sortMenu.hidden;els.sortMenu.hidden=!opening;els.sortButton?.setAttribute('aria-expanded',String(opening));if(opening)renderSortControl();}
   function renderHeader() {
     const [title] = currentViewInfo();
     const shows = currentShows();
     els.viewTitle.textContent = title;
     els.viewSubtitle.textContent = `${shows.length} ${shows.length === 1 ? 'show' : 'shows'}`;
-    els.sortSelect.value = sortMode;
+    els.sortSelect.value = sortMode;renderSortControl();
     const count = filterCount(filters);
     els.filterBadge.hidden = count === 0;
     els.filterBadge.textContent = count;
@@ -753,7 +838,7 @@
     const sub = document.createElement('div'); sub.className = 'row-sub'; sub.textContent = subParts.join(' · '); main.appendChild(sub);
     const meta = document.createElement('div'); meta.className = 'row-meta';
     if (show.seasons !== null) meta.appendChild(metaSpan('library', `${show.seasons} ${show.seasons === 1 ? 'season' : 'seasons'}`));
-    if (!show.archive && show.episodeProgress) { const p = show.episodeProgress; const progressText = p.nextSeason && p.nextEpisode ? `Next: S${p.nextSeason} E${p.nextEpisode}` : 'All episodes watched'; meta.appendChild(metaSpan('play', progressText)); }
+    if (!show.archive && show.episodeProgress) { const p = show.episodeProgress; const progressText = p.nextSeason && p.nextEpisode ? `Next: S${p.nextSeason} E${p.nextEpisode}` : `Season ${p.season} complete`; meta.appendChild(metaSpan('play', progressText)); }
     if (show.episodes !== null) meta.appendChild(metaSpan('tv', `${show.episodes} ${show.episodes === 1 ? 'episode' : 'episodes'}`));
     const duration = formatDuration(effectiveTotalMinutes(show));
     if (duration) meta.appendChild(metaSpan('clock', duration));
@@ -787,9 +872,10 @@
     const p=show.episodeProgress;
     const primary=document.createElement('strong');
     if(p?.nextSeason&&p?.nextEpisode) primary.textContent=`Next: S${p.nextSeason} E${p.nextEpisode}${p.nextTitle?` — ${p.nextTitle}`:''}`;
-    else if(p && !p.nextSeason) primary.textContent='All available episodes watched'; else primary.textContent='Not started';
+    else if(p && !p.nextSeason) primary.textContent=`Season ${p.season} complete`; else primary.textContent='Not started';
     const secondary=document.createElement('span');
-    if(p?.watchedCount&&p?.totalCount) secondary.textContent=`${p.watchedCount} of ${p.totalCount} episodes watched`;
+    if(p?.seasonTotalCount) secondary.textContent=`Season ${p.season}: ${p.seasonWatchedCount||0} of ${p.seasonTotalCount} watched · ${p.seasonRemaining||0} left`;
+    else if(p?.watchedCount&&p?.totalCount) secondary.textContent=`${p.watchedCount} of ${p.totalCount} episodes watched`;
     else if(show.watchingWith) secondary.textContent=`Watching with ${show.watchingWith}`; else secondary.textContent='Open the show to set your episode progress.';
     progress.append(primary,secondary); main.appendChild(progress);
     return row;
@@ -1030,7 +1116,7 @@
     state.columns.push({id,name:text.slice(0,50),order:state.columns.length,color:defaultColour(state.columns.length),updatedAt:t});state.columnsUpdatedAt=t;saveState();renderStatusManager();
   }
 
-  const STANDARD_GENRES = ['Action','Adventure','Animation','Comedy','Crime','Documentary','Drama','Family','Fantasy','History','Horror','Music','Mystery','Romance','Science Fiction','Sport','Thriller','War','Western'];
+  const STANDARD_GENRES = ['Action','Adventure','Animation','Classic','Comedy','Crime','Documentary','Drama','Family','Fantasy','History','Horror','Music','Mystery','Romance','Science Fiction','Sport','Thriller','War','Western'];
   const COMMON_NETWORKS = ['Apple TV+','BBC','CBC','Crave','Disney+','HBO','HBO Max','ITV','Netflix','Paramount+','PBS','Prime Video','StackTV'];
   const COMMON_COUNTRIES = ['Argentina','Australia','Austria','Belgium','Brazil','Canada','Chile','China','Colombia','Czech Republic','Denmark','Finland','France','Germany','Greece','Hong Kong','Hungary','Iceland','India','Ireland','Israel','Italy','Japan','Mexico','Netherlands','New Zealand','Norway','Poland','Portugal','Singapore','South Africa','South Korea','Spain','Sweden','Switzerland','Taiwan','Turkey','United Kingdom','United States'];
 
@@ -1054,10 +1140,25 @@
     if (wanted && ![...el.options].some(o=>o.value===wanted)) { const option=document.createElement('option'); option.value=wanted; option.textContent=wanted; el.appendChild(option); }
     el.value=wanted;
   }
+  function watchingWithValues() {
+    return uniqueSorted(state.shows.flatMap(show=>[show.watchingWith, ...(show.viewingRuns||[]).map(run=>run.watchingWith)]).filter(Boolean));
+  }
+  function hideWatchingWithSuggestions() {
+    if(!els.watchingWithSuggestions)return;els.watchingWithSuggestions.hidden=true;els.showWatchingWith?.setAttribute('aria-expanded','false');
+  }
+  function renderWatchingWithSuggestions() {
+    if(!els.watchingWithSuggestions||!els.showWatchingWith)return;
+    const query=els.showWatchingWith.value.trim().toLowerCase();
+    const values=watchingWithValues().filter(value=>!query||value.toLowerCase().includes(query)).slice(0,12);
+    els.watchingWithSuggestions.replaceChildren();
+    if(!values.length){hideWatchingWithSuggestions();return;}
+    values.forEach(value=>{const button=document.createElement('button');button.type='button';button.className='watching-with-option';button.setAttribute('role','option');button.textContent=value;button.onclick=()=>{els.showWatchingWith.value=value;hideWatchingWithSuggestions();els.showWatchingWith.focus();};els.watchingWithSuggestions.appendChild(button);});
+    els.watchingWithSuggestions.hidden=false;els.showWatchingWith.setAttribute('aria-expanded','true');
+  }
   function refreshEditorChoices() {
     populateDatalist(els.networkOptions, [...COMMON_NETWORKS, ...state.shows.flatMap(s=>allNetworkValues(s))]);
     populateSelect(els.showCountry, [...COMMON_COUNTRIES, ...state.shows.map(s=>s.country).filter(Boolean)], els.showCountry?.value || '', 'Not specified');
-    populateDatalist(els.watchingWithOptions, state.shows.map(s=>s.watchingWith).filter(Boolean));
+    populateDatalist(els.watchingWithOptions, watchingWithValues());
     renderEditorPicker('genres');
     renderEditorPicker('tags');
   }
@@ -1109,6 +1210,8 @@
     els.showYear.value=show?.firstAirYear||'';els.showSeasons.value=show?.seasons??'';els.showEpisodes.value=show?.episodes??'';els.showRuntime.value=show?.runtime??'';els.showTotalMinutes.value=show?.totalMinutes??'';
     const seriesStatus=show?.seriesStatus||''; if(seriesStatus && ![...els.showSeriesStatus.options].some(o=>o.value===seriesStatus)){const option=document.createElement('option');option.value=seriesStatus;option.textContent=seriesStatus;els.showSeriesStatus.appendChild(option);} els.showSeriesStatus.value=seriesStatus;els.showNetwork.value=show?.network||'';els.showWatchingWith.value=show?.watchingWith||'';els.showStartedDate.value=show?.startedDate||'';els.showFinishedDate.value=show?.finishedDate||'';els.showAbandonedDate.value=show?.abandonedDate||'';els.showGenres.value=(show?.genres||[]).join(', ');els.showMetacritic.value=show?.metacritic||'';
     els.showTags.value=(show?.tags||[]).join(', ');els.showNotes.value=show?.notes||'';refreshEditorChoices();setSelectValue(els.showCountry,show?.country||'');clearTimeout(autocompleteTimer);autocompleteTimer=null;els.lookupStatus.textContent=show?'Find details uses TVmaze to refresh landscape artwork and show metadata.':'Start typing a title for TVmaze suggestions, or use Find details.';els.lookupResults.hidden=true;els.lookupResults.replaceChildren();els.showTitle.setAttribute('aria-expanded','false');
+    const editableRun=activeViewingRun(draftMeta)||normalizeViewingRuns(draftMeta.viewingRuns).at(-1);if(editableRun){els.showStartedDate.value=editableRun.startedDate||els.showStartedDate.value;els.showFinishedDate.value=editableRun.finishedDate||els.showFinishedDate.value;els.showAbandonedDate.value=editableRun.abandonedDate||els.showAbandonedDate.value;if(editableRun.watchingWith&&!els.showWatchingWith.value)els.showWatchingWith.value=editableRun.watchingWith;}
+    if(els.markAllEpisodesWatched)els.markAllEpisodesWatched.checked=false;updateWatchedEpisodeChoice();renderViewingHistory();hideWatchingWithSuggestions();
     els.deleteShowButton.style.visibility=show?'visible':'hidden';updatePosterPreview();renderStreamingPreview();
     prepareEpisodeGuide(show);
     prepareCast(show);
@@ -1117,6 +1220,42 @@
   }
   function closeShowDialog(skipHistory=false){clearTimeout(autocompleteTimer);autocompleteTimer=null;if(els.showDialog.open)els.showDialog.close(); if(lookupController){lookupController.abort();lookupController=null;}els.showTitle.setAttribute('aria-expanded','false');if(!skipHistory)removeOverlayState('show');}
   function setFavourite(value){draftMeta.favourite=Boolean(value);els.showFavourite.classList.toggle('active',draftMeta.favourite);els.showFavourite.setAttribute('aria-pressed',String(draftMeta.favourite));els.showFavouriteText.textContent=draftMeta.favourite?'Favourite':'Not favourite';}
+  function viewingStatusLabel(run){return run.status==='completed'?'Completed':run.status==='abandoned'?'Abandoned':'In progress';}
+  function renderViewingHistory() {
+    if(!els.viewingRunsList)return;
+    draftMeta.viewingRuns=normalizeViewingRuns(draftMeta.viewingRuns);
+    els.viewingRunsList.replaceChildren();
+    const runs=draftMeta.viewingRuns;
+    if(!runs.length){const empty=document.createElement('div');empty.className='viewing-run-empty';empty.textContent=els.showId.value?'No separate viewing history has been recorded yet.':'Viewing history will begin when you start watching.';els.viewingRunsList.appendChild(empty);}
+    runs.forEach((run,index)=>{
+      const row=document.createElement('div');row.className=`viewing-run${run.id===draftMeta.currentViewingRunId?' current':''}`;
+      const title=document.createElement('strong');title.textContent=index===0?'First viewing':`Rewatch ${index}`;
+      const meta=document.createElement('span');const dates=[run.startedDate?`started ${run.startedDate}`:'',run.finishedDate?`finished ${run.finishedDate}`:'',run.abandonedDate?`abandoned ${run.abandonedDate}`:''].filter(Boolean);const watchedCount=normalizeWatchedEpisodes(run.watchedEpisodes,run.episodeWatchDates).length;meta.textContent=[viewingStatusLabel(run),dates.join(' · '),watchedCount?`${watchedCount} episode${watchedCount===1?'':'s'}`:'',run.watchingWith?`with ${run.watchingWith}`:''].filter(Boolean).join(' · ');
+      row.append(title,meta);els.viewingRunsList.appendChild(row);
+    });
+    const active=activeViewingRun(draftMeta);const watching=state.columns.find(c=>c.id==='watching'||c.name.toLowerCase()==='watching');const currentlyWatching=Boolean(watching&&els.showLocation.value===`status:${watching.id}`);
+    if(els.startRewatchButton){els.startRewatchButton.hidden=!els.showId.value||Boolean(active)||currentlyWatching;els.startRewatchButton.disabled=Boolean(active)||currentlyWatching;}
+  }
+  function createHistoricalRunFromCurrent(show) {
+    show.viewingRuns=normalizeViewingRuns(show.viewingRuns);
+    if(show.viewingRuns.length)return;
+    const tracking=episodeTracking(show);
+    if(show.archive===ARCHIVE_WATCHED || show.finishedDate || tracking.watchedEpisodes.length){
+      show.viewingRuns.push({id:uuid(),status:'completed',startedDate:validIsoDate(show.startedDate),finishedDate:validIsoDate(show.finishedDate),abandonedDate:'',watchingWith:safeText(show.watchingWith,60),watchedEpisodes:tracking.watchedEpisodes,episodeWatchDates:tracking.episodeWatchDates,activeSeason:tracking.activeSeason,createdAt:show.createdAt||nowIso(),updatedAt:show.updatedAt||nowIso()});
+    } else if(show.archive===ARCHIVE_ABANDONED || show.abandonedDate){
+      show.viewingRuns.push({id:uuid(),status:'abandoned',startedDate:validIsoDate(show.startedDate),finishedDate:'',abandonedDate:validIsoDate(show.abandonedDate),watchingWith:safeText(show.watchingWith,60),watchedEpisodes:tracking.watchedEpisodes,episodeWatchDates:tracking.episodeWatchDates,activeSeason:tracking.activeSeason,createdAt:show.createdAt||nowIso(),updatedAt:show.updatedAt||nowIso()});
+    }
+  }
+  function startRewatch() {
+    if(!els.showId.value)return;
+    createHistoricalRunFromCurrent(draftMeta);
+    const run={id:uuid(),status:'in-progress',startedDate:todayIsoDate(),finishedDate:'',abandonedDate:'',watchingWith:safeText(els.showWatchingWith.value,60),watchedEpisodes:[],episodeWatchDates:{},activeSeason:null,createdAt:nowIso(),updatedAt:nowIso()};
+    draftMeta.viewingRuns=normalizeViewingRuns([...(draftMeta.viewingRuns||[]),run]);draftMeta.currentViewingRunId=run.id;draftMeta.watchedEpisodes=[];draftMeta.episodeWatchDates={};draftMeta.activeSeason=null;draftMeta.episodeProgress=null;
+    els.showStartedDate.value=run.startedDate;els.showFinishedDate.value='';els.showAbandonedDate.value='';
+    const watching=state.columns.find(c=>c.id==='watching'||c.name.toLowerCase()==='watching');if(watching)els.showLocation.value=`status:${watching.id}`;
+    renderViewingHistory();loadEpisodeGuide(draftMeta,false);showToast('New rewatch started');
+  }
+  function updateWatchedEpisodeChoice(){if(!els.watchedEpisodeChoice)return;const isWatched=els.showLocation.value===ARCHIVE_WATCHED;els.watchedEpisodeChoice.hidden=!isWatched;if(!isWatched&&els.markAllEpisodesWatched)els.markAllEpisodesWatched.checked=false;}
   function updatePosterPreview(){setArtwork(els.posterPreview,els.showPoster.value);}
   function renderStreamingPreview(){els.streamingProvidersText.replaceChildren();const providers=cleanProviders(draftMeta.providers);if(providers.length){providers.forEach(p=>{const s=document.createElement('span');s.className='provider-pill';s.textContent=p;els.streamingProvidersText.appendChild(s);});els.streamingProvidersNote.textContent=draftMeta.providersUpdatedAt?`Updated ${new Date(draftMeta.providersUpdatedAt).toLocaleDateString()}`:'Subscription services in Canada';}else{els.streamingProvidersNote.textContent=prefs.tmdbCredential?'No subscription services found in Canada.':'Requires a TMDB credential in Settings.';}}
 
@@ -1214,58 +1353,80 @@
       const p=document.createElement('p');p.className='episode-empty';p.textContent='Try Refresh again later.';els.episodeGuide.replaceChildren(p);
     }
   }
+  function trackingForDraft(episodes=[]) {
+    draftMeta.viewingRuns=normalizeViewingRuns(draftMeta.viewingRuns);
+    const runs=normalizeViewingRuns(draftMeta.viewingRuns);
+    const run=activeViewingRun(draftMeta) || ([ARCHIVE_WATCHED,ARCHIVE_ABANDONED].includes(draftMeta.archive)?runs.at(-1):null);
+    let dates=normalizeEpisodeWatchDates(run?.episodeWatchDates || draftMeta.episodeWatchDates);
+    let watched=normalizeWatchedEpisodes(run?.watchedEpisodes || draftMeta.watchedEpisodes,dates);
+    let activeSeason=positiveIntegerOrNull(run?.activeSeason || draftMeta.activeSeason || draftMeta.episodeProgress?.season);
+    // Older TV versions stored a single linear progress marker. Preserve that known
+    // progress once, but all new tracking is episode-by-episode and season-aware.
+    if(!watched.length && draftMeta.episodeProgress && episodes.length){
+      const legacyIndex=episodeProgressIndex(draftMeta.episodeProgress,episodes);
+      if(legacyIndex>=0)watched=episodes.slice(0,legacyIndex+1).map(episodeDateKey);
+    }
+    return {run,dates,watched,activeSeason};
+  }
+  function progressFromTracking(episodes, watchedEpisodes, activeSeason) {
+    const watchedSet=new Set(normalizeWatchedEpisodes(watchedEpisodes));
+    const season=positiveIntegerOrNull(activeSeason);
+    if(!season)return null;
+    const entries=episodes.filter(ep=>ep.season===season);
+    if(!entries.length)return null;
+    const watchedEntries=entries.filter(ep=>watchedSet.has(episodeDateKey(ep)));
+    if(!watchedEntries.length)return null;
+    const last=watchedEntries.sort((a,b)=>a.number-b.number).at(-1);
+    const next=entries.find(ep=>!watchedSet.has(episodeDateKey(ep)))||null;
+    return {season:last.season,episode:last.number,episodeId:last.id||null,title:last.name||'',nextSeason:next?.season||null,nextEpisode:next?.number||null,nextEpisodeId:next?.id||null,nextTitle:next?.name||'',watchedCount:watchedSet.size,totalCount:episodes.length||null,seasonWatchedCount:watchedEntries.length,seasonTotalCount:entries.length,seasonRemaining:Math.max(0,entries.length-watchedEntries.length),updatedAt:nowIso()};
+  }
+  function applyTrackingToDraft(episodes,{watched,dates,activeSeason,run}) {
+    const cleanWatched=normalizeWatchedEpisodes(watched,dates);const cleanDates=normalizeEpisodeWatchDates(dates);const season=positiveIntegerOrNull(activeSeason);
+    draftMeta.watchedEpisodes=cleanWatched;draftMeta.episodeWatchDates=cleanDates;draftMeta.activeSeason=season;draftMeta.episodeProgress=progressFromTracking(episodes,cleanWatched,season);
+    if(run){run.watchedEpisodes=cleanWatched;run.episodeWatchDates=cleanDates;run.activeSeason=season;run.updatedAt=nowIso();if(!run.startedDate)run.startedDate=todayIsoDate();run.watchingWith=safeText(els.showWatchingWith.value||run.watchingWith,60);draftMeta.currentViewingRunId=run.id;}
+    if(!draftMeta.startedDate && cleanWatched.length)draftMeta.startedDate=todayIsoDate();
+    els.showStartedDate.value=draftMeta.startedDate||run?.startedDate||els.showStartedDate.value;
+  }
+  function persistDraftTrackingIfNeeded() {
+    const id=els.showId.value;if(!id)return;const show=state.shows.find(s=>s.id===id);if(!show)return;
+    ['viewingRuns','currentViewingRunId','watchedEpisodes','episodeWatchDates','activeSeason','episodeProgress','startedDate','finishedDate','abandonedDate'].forEach(key=>{show[key]=clone(draftMeta[key]??show[key]);});
+    if(els.showWatchingWith.value)show.watchingWith=safeText(els.showWatchingWith.value,60);
+    show.updatedAt=nowIso();localStorage.setItem(STORAGE_KEY,JSON.stringify(state));render();if(dbx.connected)scheduleSync();
+  }
   function renderEpisodeGuide(episodes, progress) {
-    els.episodeGuide.replaceChildren();
-    els.episodeProgressSummary.replaceChildren();
-    if (!episodes.length) return;
-    const progressIndex = episodeProgressIndex(progress, episodes);
-    const next = episodes[progressIndex + 1] || (progressIndex < 0 ? episodes[0] : null);
-    if (progressIndex >= 0) {
-      const summary=document.createElement('div');summary.className='progress-callout';
-      const strong=document.createElement('strong'); strong.textContent = next ? `Next: S${next.season} E${next.number} — ${next.name}` : 'All available episodes watched';
-      const small=document.createElement('span'); small.textContent = `${progressIndex + 1} of ${episodes.length} episodes watched`; summary.append(strong,small); els.episodeProgressSummary.appendChild(summary);
+    els.episodeGuide.replaceChildren();els.episodeProgressSummary.replaceChildren();if(!episodes.length)return;
+    const tracking=trackingForDraft(episodes);const watchedSet=new Set(tracking.watched);let activeSeason=tracking.activeSeason;
+    if(!activeSeason&&tracking.watched.length){const watchedEps=episodes.filter(ep=>watchedSet.has(episodeDateKey(ep)));activeSeason=watchedEps.at(-1)?.season||null;}
+    const seasonEntries=activeSeason?episodes.filter(ep=>ep.season===activeSeason):[];const nextInSeason=seasonEntries.find(ep=>!watchedSet.has(episodeDateKey(ep)))||null;const watchedInSeason=seasonEntries.filter(ep=>watchedSet.has(episodeDateKey(ep))).length;const left=Math.max(0,seasonEntries.length-watchedInSeason);
+    if(activeSeason&&seasonEntries.length){
+      const summary=document.createElement('div');summary.className='progress-callout';const strong=document.createElement('strong');strong.textContent=nextInSeason?`Season ${activeSeason} · Next: E${nextInSeason.number} — ${nextInSeason.name}`:`Season ${activeSeason} · All available episodes watched`;const small=document.createElement('span');const available=String(els.showSeriesStatus.value||draftMeta.seriesStatus||'').toLowerCase()==='running'?' available':'';small.textContent=`${watchedInSeason} of ${seasonEntries.length} watched · ${left} episode${left===1?'':'s'}${available} left`;summary.append(strong,small);els.episodeProgressSummary.appendChild(summary);
     } else {
       const summary=document.createElement('div');summary.className='progress-callout quiet';summary.textContent=`No viewing progress recorded · ${episodes.length} episodes available`;els.episodeProgressSummary.appendChild(summary);
     }
-    const seasons = new Map();
-    episodes.forEach((ep, idx) => { if(!seasons.has(ep.season)) seasons.set(ep.season, []); seasons.get(ep.season).push([ep,idx]); });
-    const nextIndex = progressIndex + 1;
-    seasons.forEach((entries, season) => {
-      const block=document.createElement('details');block.className='season-block';
-      if (entries.some(([,idx]) => idx === nextIndex) || (!progress && season === episodes[0].season)) block.open=true;
-      const head=document.createElement('summary');
-      const label=document.createElement('strong');label.textContent=`Season ${season}`;
-      const watched=entries.filter(([,idx]) => idx <= progressIndex).length;
-      const count=document.createElement('span');count.textContent=`${watched}/${entries.length} watched`;head.append(label,count);block.appendChild(head);
-      const list=document.createElement('div');list.className='episode-list';
-      entries.forEach(([ep,idx]) => {
-        const item=document.createElement('details');item.className='episode-item';
-        if(idx <= progressIndex)item.classList.add('watched');if(idx===nextIndex)item.classList.add('next');
-        const row=document.createElement('summary');
-        const check=document.createElement('span');check.className='episode-check';check.textContent=idx<=progressIndex?'✓':'○';
-        const code=document.createElement('span');code.className='episode-code';code.textContent=`S${ep.season} E${ep.number}`;
-        const name=document.createElement('span');name.className='episode-name';name.textContent=ep.name;
-        const runtime=document.createElement('span');runtime.className='episode-runtime';runtime.textContent=ep.runtime?`${ep.runtime}m`:'';
-        row.append(check,code,name);if(idx===nextIndex){const badge=document.createElement('span');badge.className='episode-next-badge';badge.textContent='Next';row.appendChild(badge);}row.appendChild(runtime);item.appendChild(row);
-        const body=document.createElement('div');body.className='episode-body';
-        const desc=document.createElement('p');desc.textContent=ep.summary;body.appendChild(desc); const watchedDate=(draftMeta.episodeWatchDates||currentEpisodeShow()?.episodeWatchDates||{})[episodeDateKey(ep)]; if(watchedDate){const date=document.createElement('div');date.className='episode-watched-date';date.textContent=`Watched ${new Date(`${watchedDate}T12:00:00`).toLocaleDateString()}`;body.appendChild(date);}
-        if(idx !== progressIndex) { const mark=document.createElement('button');mark.type='button';mark.className='secondary-button episode-progress-button';mark.textContent='Mark up to here as watched';mark.onclick=()=>markUpToEpisode(ep,episodes);body.appendChild(mark); }
-        item.appendChild(body);list.appendChild(item);
-      });
-      block.appendChild(list);els.episodeGuide.appendChild(block);
+    const seasons=new Map();episodes.forEach(ep=>{if(!seasons.has(ep.season))seasons.set(ep.season,[]);seasons.get(ep.season).push(ep);});
+    seasons.forEach((entries,season)=>{
+      const block=document.createElement('details');block.className='season-block';if(season===activeSeason||(!activeSeason&&season===episodes[0].season))block.open=true;
+      const head=document.createElement('summary');const label=document.createElement('strong');label.textContent=`Season ${season}`;const watched=entries.filter(ep=>watchedSet.has(episodeDateKey(ep))).length;const count=document.createElement('span');count.textContent=`${watched}/${entries.length} watched · ${entries.length-watched} left`;head.append(label,count);block.appendChild(head);
+      const list=document.createElement('div');list.className='episode-list';const seasonNext=season===activeSeason?entries.find(ep=>!watchedSet.has(episodeDateKey(ep))):null;
+      entries.forEach(ep=>{
+        const key=episodeDateKey(ep);const isWatched=watchedSet.has(key);const isNext=seasonNext&&episodeDateKey(seasonNext)===key;const item=document.createElement('details');item.className='episode-item';if(isWatched)item.classList.add('watched');if(isNext)item.classList.add('next');
+        const row=document.createElement('summary');const check=document.createElement('span');check.className='episode-check';check.textContent=isWatched?'✓':'○';const code=document.createElement('span');code.className='episode-code';code.textContent=`S${ep.season} E${ep.number}`;const name=document.createElement('span');name.className='episode-name';name.textContent=ep.name;const runtime=document.createElement('span');runtime.className='episode-runtime';runtime.textContent=ep.runtime?`${ep.runtime}m`:'';row.append(check,code,name);if(isNext){const badge=document.createElement('span');badge.className='episode-next-badge';badge.textContent='Next';row.appendChild(badge);}row.appendChild(runtime);item.appendChild(row);
+        const body=document.createElement('div');body.className='episode-body';const desc=document.createElement('p');desc.textContent=ep.summary;body.appendChild(desc);const watchedDate=tracking.dates[key];if(isWatched){const dateWrap=document.createElement('label');dateWrap.className='episode-date-editor';const dateLabel=document.createElement('span');dateLabel.textContent='Watched date';const dateInput=document.createElement('input');dateInput.type='date';dateInput.value=watchedDate||'';dateInput.setAttribute('aria-label',`Watched date for S${ep.season} E${ep.number}`);dateInput.onchange=()=>updateEpisodeWatchedDate(ep,episodes,dateInput.value);dateWrap.append(dateLabel,dateInput);body.appendChild(dateWrap);}
+        const actions=document.createElement('div');actions.className='episode-actions';const toggle=document.createElement('button');toggle.type='button';toggle.className='secondary-button episode-progress-button';toggle.textContent=isWatched?'Mark unwatched':'Mark watched';toggle.onclick=()=>toggleEpisodeWatched(ep,episodes);actions.appendChild(toggle);if(!isWatched){const through=document.createElement('button');through.type='button';through.className='text-button episode-through-button';through.textContent='Mark this season up to here';through.onclick=()=>markSeasonUpToEpisode(ep,episodes);actions.appendChild(through);}body.appendChild(actions);item.appendChild(body);list.appendChild(item);
+      });block.appendChild(list);els.episodeGuide.appendChild(block);
     });
   }
-  function markUpToEpisode(ep, episodes) {
-    const progress = progressFromEpisode(ep, episodes);
-    draftMeta.episodeProgress = progress;
-    const watchedDates=normalizeEpisodeWatchDates(draftMeta.episodeWatchDates || currentEpisodeShow()?.episodeWatchDates); const targetIndex=episodeProgressIndex(progress,episodes); const today=todayIsoDate(); episodes.forEach((episode,index)=>{const key=episodeDateKey(episode); if(index<=targetIndex){if(!watchedDates[key])watchedDates[key]=today;}else delete watchedDates[key];}); draftMeta.episodeWatchDates=watchedDates;
-    const id = els.showId.value;
-    if (id) {
-      const show=state.shows.find(s=>s.id===id);
-      if(show){show.episodeProgress=progress;show.episodeWatchDates=normalizeEpisodeWatchDates(draftMeta.episodeWatchDates);if(!show.startedDate)show.startedDate=todayIsoDate();draftMeta.startedDate=show.startedDate;els.showStartedDate.value=show.startedDate;show.updatedAt=nowIso();localStorage.setItem(STORAGE_KEY,JSON.stringify(state));render();if(dbx.connected)scheduleSync();}
-    }
-    renderEpisodeGuide(episodes, progress);
-    showToast(`Progress saved through S${ep.season} E${ep.number}`);
+  function toggleEpisodeWatched(ep,episodes) {
+    let tracking=trackingForDraft(episodes);let run=tracking.run;if(!run&&tracking.watched.length){draftMeta.watchedEpisodes=tracking.watched;draftMeta.activeSeason=tracking.activeSeason;}if(!run){run=ensureViewingRun(draftMeta,{startedDate:els.showStartedDate.value||todayIsoDate(),watchingWith:els.showWatchingWith.value});tracking=trackingForDraft(episodes);}
+    const watched=new Set(tracking.watched);const dates={...tracking.dates};const key=episodeDateKey(ep);if(watched.has(key)){watched.delete(key);delete dates[key];}else{watched.add(key);if(!dates[key])dates[key]=todayIsoDate();}
+    applyTrackingToDraft(episodes,{watched:[...watched],dates,activeSeason:ep.season,run});persistDraftTrackingIfNeeded();renderViewingHistory();renderEpisodeGuide(episodes,draftMeta.episodeProgress);showToast(watched.has(key)?`S${ep.season} E${ep.number} marked watched`:`S${ep.season} E${ep.number} marked unwatched`);
+  }
+  function updateEpisodeWatchedDate(ep,episodes,value) {
+    const tracking=trackingForDraft(episodes);const run=tracking.run;const dates={...tracking.dates};const key=episodeDateKey(ep);const date=validIsoDate(value);if(date)dates[key]=date;else delete dates[key];applyTrackingToDraft(episodes,{watched:tracking.watched,dates,activeSeason:tracking.activeSeason||ep.season,run});persistDraftTrackingIfNeeded();renderViewingHistory();renderEpisodeGuide(episodes,draftMeta.episodeProgress);showToast(date?'Watched date updated':'Watched date cleared');
+  }
+  function markSeasonUpToEpisode(ep,episodes) {
+    let tracking=trackingForDraft(episodes);let run=tracking.run;if(!run&&tracking.watched.length){draftMeta.watchedEpisodes=tracking.watched;draftMeta.activeSeason=tracking.activeSeason;}if(!run){run=ensureViewingRun(draftMeta,{startedDate:els.showStartedDate.value||todayIsoDate(),watchingWith:els.showWatchingWith.value});tracking=trackingForDraft(episodes);}
+    const watched=new Set(tracking.watched);const dates={...tracking.dates};const today=todayIsoDate();episodes.filter(item=>item.season===ep.season&&item.number<=ep.number).forEach(item=>{const key=episodeDateKey(item);watched.add(key);if(!dates[key])dates[key]=today;});applyTrackingToDraft(episodes,{watched:[...watched],dates,activeSeason:ep.season,run});persistDraftTrackingIfNeeded();renderViewingHistory();renderEpisodeGuide(episodes,draftMeta.episodeProgress);showToast(`Season ${ep.season} saved through E${ep.number}`);
   }
 
   function hideLookupSuggestions() {
@@ -1334,7 +1495,7 @@
       els.showSeasons.value=seasons.length||'';els.showEpisodes.value=episodes.length||'';const runtime=show.averageRuntime||show.runtime||medianRuntime(episodes);els.showRuntime.value=runtime||'';
       const total=episodes.reduce((sum,e)=>sum+(Number(e.runtime)||0),0);els.showTotalMinutes.value=total||((runtime&&episodes.length)?runtime*episodes.length:'');
       if(!els.showMetacritic.value)els.showMetacritic.value=`https://www.metacritic.com/tv/${slugify(show.name)}/`;
-      if(draftMeta.tvmazeId && draftMeta.tvmazeId!==show.id){draftMeta.episodeProgress=null;draftMeta.episodeWatchDates={};}draftMeta.tvmazeId=show.id;draftMeta.imdbId=show.externals?.imdb||'';draftMeta.tmdbId=null;draftMeta.cast=cast;updatePosterPreview();renderEpisodeGuide(normalizedEpisodes,draftMeta.episodeProgress||null);els.episodeGuideStatus.textContent=normalizedEpisodes.length?`${normalizedEpisodes.length} episodes · click an episode for its description.`:'No numbered episodes are available from TVmaze.';els.refreshEpisodesButton.disabled=false;renderCast(cast);els.castStatus.textContent=cast.length?`${cast.length} principal cast member${cast.length===1?'':'s'} from TVmaze.`:'No main cast is listed by TVmaze.';
+      if(draftMeta.tvmazeId && draftMeta.tvmazeId!==show.id){draftMeta.episodeProgress=null;draftMeta.episodeWatchDates={};draftMeta.watchedEpisodes=[];draftMeta.activeSeason=null;draftMeta.viewingRuns=[];draftMeta.currentViewingRunId='';}draftMeta.tvmazeId=show.id;draftMeta.imdbId=show.externals?.imdb||'';draftMeta.tmdbId=null;draftMeta.cast=cast;updatePosterPreview();renderEpisodeGuide(normalizedEpisodes,draftMeta.episodeProgress||null);els.episodeGuideStatus.textContent=normalizedEpisodes.length?`${normalizedEpisodes.length} episodes · click an episode for its description.`:'No numbered episodes are available from TVmaze.';els.refreshEpisodesButton.disabled=false;renderCast(cast);els.castStatus.textContent=cast.length?`${cast.length} principal cast member${cast.length===1?'':'s'} from TVmaze.`:'No main cast is listed by TVmaze.';
       els.lookupStatus.textContent='Details and landscape artwork added from TVmaze. You can edit anything before saving.';
       if(prefs.tmdbCredential)await refreshDraftProviders();
     }catch(err){console.error(err);els.lookupStatus.textContent='Basic TVmaze details were found, but episode details could not be loaded.';}
@@ -1349,7 +1510,7 @@
       id:existing?.id||uuid(),title:els.showTitle.value.trim().slice(0,120),columnId:selectedColumn===''?'':(state.columns.some(c=>c.id===selectedColumn)?selectedColumn:state.columns[0].id),archive,
       poster:safeUrl(els.showPoster.value),metacritic:safeUrl(els.showMetacritic.value),seasons:integerOrNull(els.showSeasons.value),episodes:integerOrNull(els.showEpisodes.value),runtime:integerOrNull(els.showRuntime.value),totalMinutes:integerOrNull(els.showTotalMinutes.value),
       genres:cleanGenres(splitComma(els.showGenres.value)),network:safeText(els.showNetwork.value,100),country:safeText(els.showCountry.value,80),seriesStatus:safeText(els.showSeriesStatus.value,50),watchingWith:safeText(els.showWatchingWith.value,60),favourite:Boolean(draftMeta.favourite),
-      rating:clampRating(els.showRating.value),startedDate:validIsoDate(els.showStartedDate.value),finishedDate:validIsoDate(els.showFinishedDate.value),abandonedDate:validIsoDate(els.showAbandonedDate.value),episodeWatchDates:normalizeEpisodeWatchDates(draftMeta.episodeWatchDates || existing?.episodeWatchDates),tags:cleanTags(splitComma(els.showTags.value)),notes:String(els.showNotes.value||'').slice(0,4000),firstAirYear:positiveIntegerOrNull(els.showYear.value),providers:cleanProviders(draftMeta.providers),providerLink:safeUrl(draftMeta.providerLink||''),providersUpdatedAt:validDateString(draftMeta.providersUpdatedAt)?draftMeta.providersUpdatedAt:null,episodeProgress:normalizeEpisodeProgress(draftMeta.episodeProgress),
+      rating:clampRating(els.showRating.value),startedDate:validIsoDate(els.showStartedDate.value),finishedDate:validIsoDate(els.showFinishedDate.value),abandonedDate:validIsoDate(els.showAbandonedDate.value),episodeWatchDates:normalizeEpisodeWatchDates(draftMeta.episodeWatchDates || existing?.episodeWatchDates),watchedEpisodes:normalizeWatchedEpisodes(draftMeta.watchedEpisodes || existing?.watchedEpisodes,draftMeta.episodeWatchDates || existing?.episodeWatchDates),activeSeason:positiveIntegerOrNull(draftMeta.activeSeason || existing?.activeSeason),viewingRuns:normalizeViewingRuns(draftMeta.viewingRuns || existing?.viewingRuns),currentViewingRunId:safeText(draftMeta.currentViewingRunId || existing?.currentViewingRunId || '',100),tags:cleanTags(splitComma(els.showTags.value)),notes:String(els.showNotes.value||'').slice(0,4000),firstAirYear:positiveIntegerOrNull(els.showYear.value),providers:cleanProviders(draftMeta.providers),providerLink:safeUrl(draftMeta.providerLink||''),providersUpdatedAt:validDateString(draftMeta.providersUpdatedAt)?draftMeta.providersUpdatedAt:null,episodeProgress:normalizeEpisodeProgress(draftMeta.episodeProgress),
       tvmazeId:positiveIntegerOrNull(draftMeta.tvmazeId),imdbId:safeText(draftMeta.imdbId,40),tmdbId:positiveIntegerOrNull(draftMeta.tmdbId),cast:normalizeCast(draftMeta.cast),order,createdAt:existing?.createdAt||t,updatedAt:t
     };
   }
@@ -1360,11 +1521,37 @@
     const year=positiveIntegerOrNull(candidate?.firstAirYear || (candidate?.premiered ? String(candidate.premiered).slice(0,4) : null));
     return state.shows.find(show=>show.id!==excludeId && ((tvmazeId && show.tvmazeId===tvmazeId) || (title && normalizedTitleForDuplicate(show.title)===title && (!year || !show.firstAirYear || show.firstAirYear===year)))) || null;
   }
-  function saveShowFromForm(event){
-    event.preventDefault();const title=els.showTitle.value.trim();if(!title){els.showTitle.focus();return;}const id=els.showId.value;const index=state.shows.findIndex(s=>s.id===id);const existing=index>=0?state.shows[index]:null;const beforeStatus=existing?statusFor(existing).id:'';const obj=formShowObject(existing);const afterStatus=statusFor(obj).id;const today=todayIsoDate();
-    if(afterStatus==='watching' && beforeStatus!=='watching' && !obj.startedDate)obj.startedDate=today;
-    if(afterStatus===ARCHIVE_WATCHED && beforeStatus!==ARCHIVE_WATCHED && !obj.finishedDate)obj.finishedDate=today;
-    if(afterStatus===ARCHIVE_ABANDONED && beforeStatus!==ARCHIVE_ABANDONED && !obj.abandonedDate)obj.abandonedDate=today;
+  async function saveShowFromForm(event){
+    event.preventDefault();const title=els.showTitle.value.trim();if(!title){els.showTitle.focus();return;}
+    const id=els.showId.value;const index=state.shows.findIndex(s=>s.id===id);const existing=index>=0?state.shows[index]:null;const beforeStatus=existing?statusFor(existing).id:'';
+    if(existing && !normalizeViewingRuns(draftMeta.viewingRuns).length && [ARCHIVE_WATCHED,ARCHIVE_ABANDONED].includes(beforeStatus))createHistoricalRunFromCurrent(draftMeta);
+    const obj=formShowObject(existing);const afterStatus=statusFor(obj).id;const today=todayIsoDate();obj.viewingRuns=normalizeViewingRuns(obj.viewingRuns);
+
+    let run=activeViewingRun(obj) || obj.viewingRuns.at(-1) || null;
+    if(run){run.startedDate=validIsoDate(els.showStartedDate.value);run.finishedDate=validIsoDate(els.showFinishedDate.value);run.abandonedDate=validIsoDate(els.showAbandonedDate.value);run.watchingWith=safeText(els.showWatchingWith.value||run.watchingWith,60);run.updatedAt=nowIso();}
+
+    if(afterStatus==='watching'){
+      run=activeViewingRun(obj);
+      if(!run){run={id:uuid(),status:'in-progress',startedDate:validIsoDate(els.showStartedDate.value)||(beforeStatus==='watching'?validIsoDate(existing?.startedDate):today),finishedDate:'',abandonedDate:'',watchingWith:safeText(els.showWatchingWith.value,60),watchedEpisodes:normalizeWatchedEpisodes(obj.watchedEpisodes,obj.episodeWatchDates),episodeWatchDates:normalizeEpisodeWatchDates(obj.episodeWatchDates),activeSeason:positiveIntegerOrNull(obj.activeSeason),createdAt:nowIso(),updatedAt:nowIso()};obj.viewingRuns.push(run);obj.currentViewingRunId=run.id;}
+      run.status='in-progress';run.finishedDate='';run.abandonedDate='';if(!run.startedDate)run.startedDate=today;run.watchingWith=safeText(els.showWatchingWith.value||run.watchingWith,60);syncLegacyTrackingFromRun(obj,run);
+    } else if(afterStatus===ARCHIVE_WATCHED){
+      run=activeViewingRun(obj)||run;
+      if(!run){run={id:uuid(),status:'completed',startedDate:validIsoDate(els.showStartedDate.value),finishedDate:validIsoDate(els.showFinishedDate.value),abandonedDate:'',watchingWith:safeText(els.showWatchingWith.value,60),watchedEpisodes:normalizeWatchedEpisodes(obj.watchedEpisodes,obj.episodeWatchDates),episodeWatchDates:normalizeEpisodeWatchDates(obj.episodeWatchDates),activeSeason:positiveIntegerOrNull(obj.activeSeason),createdAt:nowIso(),updatedAt:nowIso()};obj.viewingRuns.push(run);}
+      run.status='completed';run.abandonedDate='';if(existing && beforeStatus==='watching' && !run.finishedDate)run.finishedDate=today;run.watchingWith=safeText(els.showWatchingWith.value||run.watchingWith,60);
+      if(els.markAllEpisodesWatched?.checked && obj.tvmazeId){
+        let episodes=episodeCache.get(obj.tvmazeId);if(!episodes){try{const res=await fetch(`https://api.tvmaze.com/shows/${obj.tvmazeId}/episodes`);if(res.ok){episodes=normalizeTvmazeEpisodes(await res.json());episodeCache.set(obj.tvmazeId,episodes);}}catch(_){}}
+        if(episodes?.length){run.watchedEpisodes=episodes.map(episodeDateKey);run.activeSeason=episodes.at(-1)?.season||run.activeSeason;run.episodeWatchDates=normalizeEpisodeWatchDates(run.episodeWatchDates);obj.episodeProgress=progressFromTracking(episodes,run.watchedEpisodes,run.activeSeason);}
+      }
+      syncLegacyTrackingFromRun(obj,run);obj.currentViewingRunId='';
+    } else if(afterStatus===ARCHIVE_ABANDONED){
+      run=activeViewingRun(obj)||run;
+      if(!run){run={id:uuid(),status:'abandoned',startedDate:validIsoDate(els.showStartedDate.value),finishedDate:'',abandonedDate:validIsoDate(els.showAbandonedDate.value),watchingWith:safeText(els.showWatchingWith.value,60),watchedEpisodes:normalizeWatchedEpisodes(obj.watchedEpisodes,obj.episodeWatchDates),episodeWatchDates:normalizeEpisodeWatchDates(obj.episodeWatchDates),activeSeason:positiveIntegerOrNull(obj.activeSeason),createdAt:nowIso(),updatedAt:nowIso()};obj.viewingRuns.push(run);}
+      run.status='abandoned';run.finishedDate='';if(existing && beforeStatus==='watching' && !run.abandonedDate)run.abandonedDate=today;run.watchingWith=safeText(els.showWatchingWith.value||run.watchingWith,60);syncLegacyTrackingFromRun(obj,run);obj.currentViewingRunId='';
+    } else if(activeViewingRun(obj)){
+      run=activeViewingRun(obj);run.watchingWith=safeText(els.showWatchingWith.value||run.watchingWith,60);run.startedDate=validIsoDate(els.showStartedDate.value)||run.startedDate;syncLegacyTrackingFromRun(obj,run);
+    }
+
+    obj.startedDate=validIsoDate(els.showStartedDate.value)||obj.startedDate;obj.finishedDate=validIsoDate(els.showFinishedDate.value)||obj.finishedDate;obj.abandonedDate=validIsoDate(els.showAbandonedDate.value)||obj.abandonedDate;
     if(!existing&&!draftMeta.allowDuplicate){const duplicate=findDuplicateCandidate(obj);if(duplicate){const ok=confirm(`“${obj.title}” is already in TV (${statusFor(duplicate).name}).\n\nAdd another copy anyway?`);if(!ok){showToast('Duplicate not added');return;}}}
     if(index>=0)state.shows[index]=obj;else state.shows.push(obj);saveState();closeShowDialog();showToast(existing?'Show updated':'Show added');
   }
@@ -1437,11 +1624,12 @@
   function bindEvents(){
     els.mobileMenuButton.onclick=openMobileNav;els.sidebarScrim.onclick=closeMobileNav;
     els.addShowButton.onclick=()=>openShowDialog();els.emptyAddButton.onclick=()=>openShowDialog();
-    els.searchInput.oninput=render;els.sortSelect.onchange=()=>{sortMode=els.sortSelect.value;render();};
+    els.searchInput.oninput=render;els.sortSelect.onchange=()=>{sortMode=els.sortSelect.value;render();};if(els.sortButton)els.sortButton.onclick=toggleSortMenu;
     els.filterButton.onclick=openFilterDrawer;els.closeFilterButton.onclick=()=>closeFilterDrawer();els.backFilterButton.onclick=()=>closeFilterDrawer();els.drawerScrim.onclick=()=>closeFilterDrawer();els.applyFiltersButton.onclick=applyFilters;els.clearFiltersButton.onclick=clearFilterDraft;els.saveViewButton.onclick=saveCurrentView;
     [els.filterEpisodes,els.filterTime,els.filterYearFrom,els.filterYearTo,els.filterRating,els.filterFavourite,els.filterDateType,els.filterDateFrom,els.filterDateTo].forEach(el=>{el.addEventListener('change',readDraftScalarFilters);});
-    els.showForm.onsubmit=saveShowFromForm;els.closeShowButton.onclick=()=>closeShowDialog();els.backShowButton.onclick=()=>closeShowDialog();els.cancelShowButton.onclick=()=>closeShowDialog();els.deleteShowButton.onclick=deleteCurrentShow;els.lookupShowButton.onclick=lookupShows;els.showTitle.addEventListener('input',scheduleTitleAutocomplete);els.showTitle.addEventListener('keydown',e=>{if(e.key==='ArrowDown'&&!els.lookupResults.hidden){const first=lookupResultButtons()[0];if(first){e.preventDefault();first.focus();}}else if(e.key==='Enter'&&!els.lookupResults.hidden){const first=lookupResultButtons()[0];if(first){e.preventDefault();first.click();}}});els.showPoster.oninput=updatePosterPreview;els.showFavourite.onclick=()=>setFavourite(!draftMeta.favourite);els.refreshShowStreamingButton.onclick=refreshDraftProviders;els.refreshEpisodesButton.onclick=()=>loadEpisodeGuide(currentEpisodeShow()||draftMeta,true);
+    els.showForm.onsubmit=saveShowFromForm;els.closeShowButton.onclick=()=>closeShowDialog();els.backShowButton.onclick=()=>closeShowDialog();els.cancelShowButton.onclick=()=>closeShowDialog();els.deleteShowButton.onclick=deleteCurrentShow;els.lookupShowButton.onclick=lookupShows;els.showTitle.addEventListener('input',scheduleTitleAutocomplete);els.showTitle.addEventListener('keydown',e=>{if(e.key==='ArrowDown'&&!els.lookupResults.hidden){const first=lookupResultButtons()[0];if(first){e.preventDefault();first.focus();}}else if(e.key==='Enter'&&!els.lookupResults.hidden){const first=lookupResultButtons()[0];if(first){e.preventDefault();first.click();}}});els.showPoster.oninput=updatePosterPreview;els.showFavourite.onclick=()=>setFavourite(!draftMeta.favourite);els.showLocation.onchange=()=>{updateWatchedEpisodeChoice();renderViewingHistory();};if(els.startRewatchButton)els.startRewatchButton.onclick=startRewatch;els.refreshShowStreamingButton.onclick=refreshDraftProviders;els.refreshEpisodesButton.onclick=()=>loadEpisodeGuide(currentEpisodeShow()||draftMeta,true);
     els.genreAddButton.onclick=()=>addPickerValue('genres');els.tagAddButton.onclick=()=>addPickerValue('tags');els.genreAddInput.onkeydown=e=>{if(e.key==='Enter'){e.preventDefault();addPickerValue('genres');}};els.tagAddInput.onkeydown=e=>{if(e.key==='Enter'){e.preventDefault();addPickerValue('tags');}};
+    if(els.showWatchingWith){els.showWatchingWith.addEventListener('focus',renderWatchingWithSuggestions);els.showWatchingWith.addEventListener('input',renderWatchingWithSuggestions);els.showWatchingWith.addEventListener('keydown',e=>{if(e.key==='ArrowDown'&&!els.watchingWithSuggestions?.hidden){const first=els.watchingWithSuggestions.querySelector('button');if(first){e.preventDefault();first.focus();}}else if(e.key==='Escape')hideWatchingWithSuggestions();});}
     els.showDialog.addEventListener('keydown',e=>{
       if(e.key!=='Enter'||e.defaultPrevented||e.metaKey||e.ctrlKey||e.altKey)return;
       const target=e.target;
@@ -1473,8 +1661,9 @@
       if(suppressOverlayPop){suppressOverlayPop=false;return;}
       closeTopOverlayDirect();
     });
+    document.addEventListener('pointerdown',e=>{if(els.sortControl&&!els.sortControl.contains(e.target))closeSortMenu();if(els.watchingWithSuggestions&&!els.watchingWithSuggestions.hidden&&!e.target.closest('.watching-with-field'))hideWatchingWithSuggestions();});
     document.addEventListener('keydown',e=>{
-      if(e.key==='Escape'){if(history.state?.tvOverlay){history.back();return;}if(closeTopOverlayDirect())return;}
+      if(e.key==='Escape'){if(els.sortMenu&&!els.sortMenu.hidden){closeSortMenu();return;}if(els.watchingWithSuggestions&&!els.watchingWithSuggestions.hidden){hideWatchingWithSuggestions();return;}if(history.state?.tvOverlay){history.back();return;}if(closeTopOverlayDirect())return;}
       const target=e.target;const element=target instanceof HTMLElement ? target : null;
       if(e.key==='Enter'&&els.showDialog.open&&!e.defaultPrevented&&!e.metaKey&&!e.ctrlKey&&!e.altKey){
         if(element?.closest('textarea,button,summary,details,[contenteditable="true"]'))return;

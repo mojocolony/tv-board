@@ -675,3 +675,127 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
   .show-row .row-meta span:nth-child(n+3) { display:inline-flex; }
   .show-row:not(.watching-now-row) .status-pill { max-width:100% !important; }
 }
+
+/* TV v2.7.0 — tablet layout, episode-level history, and app-controlled pickers */
+.custom-sort { position: relative; min-width: 210px; }
+.sort-button { width:100%; min-height:44px; display:flex; align-items:center; gap:8px; padding:0 12px; border:1px solid var(--line); border-radius:10px; background:rgba(255,255,255,.52); color:var(--ink); font-weight:750; text-align:left; }
+.sort-button > span:nth-child(2) { flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.sort-chevron { flex:0 0 auto; color:var(--muted); font-size:16px; }
+.sort-menu { position:absolute; z-index:80; top:calc(100% + 6px); right:0; width:min(310px, calc(100vw - 28px)); max-height:min(62vh, 620px); overflow-y:auto; padding:7px; border:1px solid var(--line); border-radius:13px; background:var(--panel); box-shadow:var(--shadow); }
+.sort-menu-item { width:100%; min-height:40px; display:flex; align-items:center; padding:7px 10px; border:0; border-radius:8px; background:transparent; color:var(--ink); text-align:left; font-size:calc(11.5px * var(--tv-font-scale)); }
+.sort-menu-item:hover, .sort-menu-item.active { background:var(--app-blue-soft); color:var(--app-blue-deep); }
+.sort-menu-item.active::before { content:'✓'; width:20px; flex:0 0 20px; font-weight:800; }
+.sort-menu-item:not(.active)::before { content:''; width:20px; flex:0 0 20px; }
+:root[data-theme="dark"] .sort-button { background:rgba(255,255,255,.035); }
+:root[data-theme="dark"] .sort-menu-item:hover, :root[data-theme="dark"] .sort-menu-item.active { background:rgba(119,141,169,.18); }
+
+.watching-with-field { position:relative; }
+.watching-with-suggestions { position:absolute; z-index:90; left:0; right:0; top:calc(100% - 27px); max-height:210px; overflow-y:auto; padding:6px; border:1px solid var(--line); border-radius:10px; background:var(--panel); box-shadow:var(--shadow); }
+.watching-with-option { width:100%; min-height:40px; display:block; padding:7px 10px; border:0; border-radius:7px; background:transparent; color:var(--ink); text-align:left; font-weight:700; }
+.watching-with-option:hover, .watching-with-option:focus-visible { background:var(--app-blue-soft); color:var(--app-blue-deep); }
+:root[data-theme="dark"] .watching-with-option:hover, :root[data-theme="dark"] .watching-with-option:focus-visible { background:rgba(119,141,169,.18); }
+
+.viewing-history-heading { align-items:flex-start; }
+.compact-action { min-height:34px; padding:0 10px; white-space:nowrap; }
+.viewing-runs-list { display:grid; gap:6px; margin-top:10px; }
+.viewing-run { display:grid; grid-template-columns:auto minmax(0,1fr); align-items:baseline; gap:8px; padding:8px 9px; border-radius:8px; background:rgba(119,141,169,.07); }
+.viewing-run.current { background:var(--app-blue-soft); }
+.viewing-run strong { font-size:calc(10.5px * var(--tv-font-scale)); }
+.viewing-run span, .viewing-run-empty { color:var(--muted); font-size:calc(9.5px * var(--tv-font-scale)); line-height:1.35; }
+.watched-episode-choice { margin-top:10px; padding:10px; border:1px solid var(--line); border-radius:9px; background:rgba(255,255,255,.34); }
+.watched-episode-choice > label { display:flex !important; grid-template-rows:none !important; align-items:center; gap:9px; }
+.watched-episode-choice input { width:18px !important; height:18px !important; min-width:18px !important; min-height:18px !important; flex:0 0 18px; }
+.watched-episode-choice label > span { min-height:0 !important; display:block !important; font-size:calc(10.5px * var(--tv-font-scale)) !important; text-transform:none !important; letter-spacing:0 !important; font-weight:700; }
+.watched-episode-choice small { margin:6px 0 0 27px; }
+.episode-actions { display:flex; align-items:center; flex-wrap:wrap; gap:8px; }
+.episode-through-button { min-height:34px; padding:0 4px; font-size:calc(9.5px * var(--tv-font-scale)); }
+
+/* iPad portrait and similarly constrained tablet widths use the drawer navigation,
+   not a squeezed desktop sidebar. Landscape/desktop keeps the persistent sidebar. */
+@media (max-width:1100px) {
+  .app-shell { display:block; }
+  .sidebar { position:fixed; left:0; top:0; bottom:0; width:min(310px, 84vw); height:100dvh; max-height:100dvh; transform:translateX(-105%); transition:transform .2s ease; box-shadow:var(--shadow); overflow:hidden; padding-bottom:calc(12px + env(safe-area-inset-bottom)); }
+  .sidebar.open { transform:translateX(0); }
+  .sidebar-scrim { z-index:15; }
+  .mobile-menu { display:grid; }
+  .nav-scroll { flex:1 1 auto; min-height:0; overflow-y:auto; -webkit-overflow-scrolling:touch; overscroll-behavior:contain; padding-bottom:18px; }
+  .sidebar-footer { flex:0 0 auto; background:inherit; }
+  .main { width:100%; padding:24px clamp(18px, 3.2vw, 34px) calc(22px + env(safe-area-inset-bottom)); }
+  .main-header { max-width:none; align-items:flex-start; gap:16px; }
+  .title-wrap { min-width:0; align-items:flex-start; }
+  .title-wrap > div:last-child { min-width:0; }
+  h1 { font-size:clamp(44px, 6.2vw, 64px); line-height:.92; white-space:normal; text-wrap:balance; }
+  .header-actions { flex:0 0 auto; padding-top:8px; }
+  .toolbar, .show-list, .alphabet-jump, .active-filters, .main-footer { max-width:none; }
+  .toolbar { grid-template-columns:minmax(250px,1fr) auto minmax(210px,260px); }
+  .show-row { grid-template-columns:112px minmax(0,1fr) minmax(170px,210px) 112px; column-gap:14px; }
+  .row-poster { width:112px; }
+  .row-personal { display:block; }
+  .show-edit-layout { grid-template-columns:180px minmax(0,1fr); gap:18px; }
+  dialog.modal { width:min(940px, calc(100vw - 38px)); max-height:calc(100dvh - 38px); }
+  .modal-header h2 { line-height:1; }
+
+  /* The reading-size preference should materially affect tablet editor text. */
+  .show-modal .show-fields label > span,
+  .show-modal .poster-editor label > span,
+  .show-modal .filter-heading { font-size:calc(12px * var(--tv-font-scale)); }
+  .show-modal .show-fields input,
+  .show-modal .show-fields select,
+  .show-modal .show-fields textarea,
+  .show-modal .poster-editor input { min-height:calc(36px + 8px * var(--tv-font-scale)); font-size:calc(14px * var(--tv-font-scale)); }
+  .show-modal .helper,
+  .show-modal small { font-size:calc(11px * var(--tv-font-scale)); }
+  .show-modal .secondary-button,
+  .show-modal .primary-button,
+  .show-modal .text-button { font-size:calc(12px * var(--tv-font-scale)); }
+  .show-modal .episode-guide-heading strong,
+  .show-modal .viewing-history-card strong,
+  .show-modal .cast-heading strong { font-size:calc(15px * var(--tv-font-scale)); }
+  .show-modal .season-block > summary strong { font-size:calc(12px * var(--tv-font-scale)); }
+  .show-modal .season-block > summary span,
+  .show-modal .episode-code,
+  .show-modal .episode-runtime { font-size:calc(10.5px * var(--tv-font-scale)); }
+  .show-modal .episode-name { font-size:calc(12px * var(--tv-font-scale)); }
+  .show-modal .episode-body p { font-size:calc(11px * var(--tv-font-scale)); }
+  .show-modal .progress-callout strong { font-size:calc(13px * var(--tv-font-scale)); }
+  .show-modal .progress-callout span,
+  .show-modal .progress-callout.quiet { font-size:calc(11px * var(--tv-font-scale)); }
+}
+
+/* At narrow tablet widths, retain genres by stacking personal metadata beneath title
+   instead of dropping the entire genre/rating column. */
+@media (min-width:721px) and (max-width:900px) {
+  .main { padding-left:20px; padding-right:20px; }
+  .main-header { flex-wrap:wrap; }
+  .header-actions { margin-left:auto; }
+  h1 { font-size:clamp(42px, 7.5vw, 58px); }
+  .toolbar { grid-template-columns:minmax(220px,1fr) auto; }
+  .custom-sort { grid-column:1 / -1; width:100%; }
+  .show-row { grid-template-columns:106px minmax(0,1fr) 112px !important; grid-template-areas:"poster main status" "poster personal status" !important; row-gap:4px; }
+  .row-poster { grid-area:poster; width:106px; }
+  .row-main { grid-area:main; }
+  .row-personal { grid-area:personal; display:block !important; padding-top:2px; }
+  .status-pill { grid-area:status; justify-self:end; }
+  .tags-mini { display:flex !important; max-height:none; overflow:visible; }
+  .show-edit-layout { grid-template-columns:150px minmax(0,1fr); }
+}
+
+@media (max-width:720px) {
+  .main-header { flex-wrap:nowrap; }
+  h1 { font-size:calc(34px * min(var(--tv-font-scale), 1.25)); white-space:normal; }
+  .toolbar { grid-template-columns:minmax(0,1fr) auto; }
+  .custom-sort { grid-column:1 / -1; width:100%; min-width:0; }
+  .sort-menu { left:0; right:auto; width:100%; max-height:55dvh; }
+  .watching-with-suggestions { top:calc(100% - 24px); }
+  .viewing-run { grid-template-columns:1fr; gap:2px; }
+  .viewing-history-heading { flex-direction:column; align-items:stretch; }
+  .compact-action { align-self:flex-start; }
+  .episode-actions { align-items:flex-start; flex-direction:column; }
+}
+@media (max-width:720px) {
+  .main { padding:16px 12px calc(18px + env(safe-area-inset-bottom)); }
+  dialog.modal { width:100vw; max-width:100vw; height:100dvh; max-height:100dvh; margin:0; border-radius:0; border-left:0; border-right:0; }
+}
+.episode-date-editor { display:flex; align-items:center; flex-wrap:wrap; gap:8px; margin:0 0 9px; }
+.episode-date-editor > span { color:var(--muted); font-size:calc(9.5px * var(--tv-font-scale)); font-weight:700; text-transform:none; letter-spacing:0; min-height:0; }
+.episode-date-editor input { min-height:34px !important; width:auto; font-size:calc(10px * var(--tv-font-scale)) !important; }

@@ -1,4 +1,4 @@
-# TV v2.6.1
+# TV v2.7.0
 
 TV is the redesigned successor to TV Board. It keeps the existing data/storage contracts while replacing the Kanban board with a scalable visual list library.
 
@@ -31,6 +31,22 @@ Opening TV on a browser that already used TV Board will migrate the existing rec
 - TMDB / JustWatch Canadian streaming lookup remains available
 - JSON import/export remains available
 - Dropbox OAuth 2 + PKCE sync remains available
+
+
+## New in v2.7.0
+
+- Episode-level watch tracking: mark one episode watched/unwatched without affecting earlier seasons.
+- “Mark this season up to here” only marks episodes in the selected season.
+- Season progress now reports watched/left counts and the next episode for the active season.
+- Separate viewing runs support rewatches while preserving prior completed viewing history.
+- Adding a show as Watched can optionally mark all available episodes watched without inventing historical watch dates.
+- Date filters and date sorting include dates stored in viewing history.
+- iPad portrait now uses a hideable navigation drawer instead of squeezing the desktop sidebar beside the library.
+- Tablet headings and controls use dedicated responsive sizing; genre metadata remains visible.
+- Sort uses an app-controlled menu instead of the browser's native iPad select sheet.
+- Watching With uses an app-controlled suggestion list, including existing names such as P.
+- Tablet editor text scales more substantially with the font-size preference.
+- Added Classic to the standard genre choices.
 
 ## New in v2.5.1
 
