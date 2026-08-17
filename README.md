@@ -1,4 +1,4 @@
-# TV v2.7.1
+# TV v2.8.0
 
 TV is the redesigned successor to TV Board. It keeps the existing data/storage contracts while replacing the Kanban board with a scalable visual list library.
 
@@ -32,6 +32,16 @@ Opening TV on a browser that already used TV Board will migrate the existing rec
 - JSON import/export remains available
 - Dropbox OAuth 2 + PKCE sync remains available
 
+
+
+## New in v2.8.0
+
+- Restores **poster-first TVmaze artwork**. TVmaze's canonical show poster is preferred; landscape backgrounds/stills are fallbacks only.
+- Includes a one-time repair pass for existing TVmaze-hosted artwork affected by the earlier landscape-artwork preference, without changing the library's user-facing “recently updated” timestamps.
+- Choosing **Watched** now surfaces an immediate episode-history choice beside the Status field: mark all available episodes, choose episodes yourself, or save without inventing episode history.
+- Episode details now support both **Mark this season up to here** and **Mark series up to here**, in addition to marking one episode at a time.
+- Wide season/episode codes such as **S50 E10** remain on one line in the desktop episode guide.
+- Background library re-renders are deferred while Add/Edit Show is open, reducing the modal-background flicker caused by Dropbox sync or episode-history saves.
 
 ## New in v2.7.1
 

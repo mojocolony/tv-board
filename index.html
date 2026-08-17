@@ -57,7 +57,7 @@
 
       <div class="sidebar-footer">
         <button class="nav-item" id="settingsButton"><span class="nav-icon" data-icon="settings"></span><span>Settings</span></button>
-        <div class="version">TV v2.7.1</div>
+        <div class="version">TV v2.8.0</div>
       </div>
     </aside>
 
@@ -214,6 +214,17 @@
             <label class="favourite-field"><span>Favourite</span><button type="button" class="favourite-toggle" id="showFavourite" aria-pressed="false"><span data-icon="heart"></span><span id="showFavouriteText">Not favourite</span></button></label>
           </div>
 
+          <div class="watched-episode-choice" id="watchedEpisodeChoice" hidden>
+            <input id="markAllEpisodesWatched" type="checkbox" hidden>
+            <strong>Mark episodes watched?</strong>
+            <div class="watched-choice-actions">
+              <button type="button" class="secondary-button" id="markAllEpisodesButton">All available episodes</button>
+              <button type="button" class="secondary-button" id="chooseEpisodesButton">Choose episodes</button>
+              <button type="button" class="text-button" id="skipEpisodesButton">Not now</button>
+            </div>
+            <small id="watchedEpisodeChoiceNote">Choose how TV should record the episode history for this watched show.</small>
+          </div>
+
           <div class="field-grid three">
             <label><span>Year</span><input id="showYear" type="number" min="1900" max="2100"></label>
             <label><span>Seasons</span><input id="showSeasons" type="number" min="0"></label>
@@ -243,10 +254,6 @@
               <label><span>Date started</span><input id="showStartedDate" type="date"></label>
               <label><span>Date finished</span><input id="showFinishedDate" type="date"></label>
               <label><span>Date abandoned</span><input id="showAbandonedDate" type="date"></label>
-            </div>
-            <div class="watched-episode-choice" id="watchedEpisodeChoice" hidden>
-              <label><input id="markAllEpisodesWatched" type="checkbox"><span>Mark all available episodes as watched</span></label>
-              <small>Useful when adding a show you already completed. Episode dates stay unknown unless you enter them.</small>
             </div>
           </section>
           <label><span>Genres</span>
@@ -368,7 +375,7 @@
         </div>
       </section>
     </div>
-    <div class="settings-footer">TV v2.7.1</div>
+    <div class="settings-footer">TV v2.8.0</div>
   </dialog>
 
   <div class="toast" id="toast" role="status" aria-live="polite"></div>

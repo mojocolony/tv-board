@@ -826,3 +826,29 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
   .sort-menu-item { min-height:50px; padding:10px 12px; border-radius:11px; font-size:calc(13px * min(var(--tv-font-scale),1.35)); }
   body.sort-menu-open .sort-button { border-color:rgba(119,141,169,.78); }
 }
+
+
+/* TV v2.8.0 — poster-first artwork, stable editor, episode-history controls */
+.episode-item > summary { grid-template-columns:18px 82px minmax(0,1fr) auto auto; }
+.episode-code { white-space:nowrap; }
+.episode-body { padding-left:117px; }
+.watched-episode-choice { margin:10px 0 4px; padding:12px; }
+.watched-episode-choice > strong { display:block; margin-bottom:8px; font-size:calc(11px * var(--tv-font-scale)); }
+.watched-choice-actions { display:flex; flex-wrap:wrap; align-items:center; gap:7px; }
+.watched-choice-actions .secondary-button.active { border-color:var(--app-blue); background:var(--app-blue-soft); color:var(--app-blue-deep); }
+.watched-episode-choice small { display:block; margin:8px 0 0; }
+@media (max-width:720px) {
+  .episode-item > summary { grid-template-columns:18px 72px minmax(0,1fr) auto; }
+  .episode-body { padding-left:10px; }
+  .watched-choice-actions { align-items:stretch; flex-direction:column; }
+  .watched-choice-actions button { width:100%; justify-content:center; }
+}
+.watched-episode-choice { width:100%; max-width:100%; min-width:0; box-sizing:border-box; overflow-wrap:anywhere; }
+.watched-choice-actions { min-width:0; }
+.watched-choice-actions button { min-width:0; max-width:100%; white-space:normal; }
+@media (max-width:430px) {
+  .show-fields { min-width:0; }
+  .field-grid.three { grid-template-columns:minmax(0,1fr) !important; min-width:0; }
+  .field-grid.three > :last-child { grid-column:auto; }
+  .field-grid.three > label { min-width:0; }
+}

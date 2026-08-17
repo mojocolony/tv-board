@@ -1,7 +1,7 @@
 (() => {
   'use strict';
 
-  const APP_VERSION = '2.7.1';
+  const APP_VERSION = '2.8.0';
   const STORAGE_KEY = 'tvBoard.state.v1';
   const DROPBOX_KEY = 'tvBoard.dropbox.v1';
   const PKCE_KEY = 'tvBoard.pkce.v1';
@@ -12,6 +12,7 @@
   const ARCHIVE_ABANDONED = 'abandoned';
   const UNSORTED = 'unsorted';
   const TOMBSTONE_DAYS = 180;
+  const POSTER_REPAIR_KEY = 'tv.poster-repair.v2.8.0';
 
   const $ = id => document.getElementById(id);
   const els = {
@@ -27,7 +28,7 @@
     clearFiltersButton: $('clearFiltersButton'), saveViewButton: $('saveViewButton'), applyFiltersButton: $('applyFiltersButton'),
     showDialog: $('showDialog'), showForm: $('showForm'), showDialogTitle: $('showDialogTitle'), showId: $('showId'), showTitle: $('showTitle'), showLocation: $('showLocation'), showRating: $('showRating'), showFavourite: $('showFavourite'), showFavouriteText: $('showFavouriteText'),
     showPoster: $('showPoster'), posterPreview: $('posterPreview'), lookupShowButton: $('lookupShowButton'), lookupStatus: $('lookupStatus'), lookupResults: $('lookupResults'), showYear: $('showYear'), showSeasons: $('showSeasons'), showEpisodes: $('showEpisodes'),
-    showRuntime: $('showRuntime'), showTotalMinutes: $('showTotalMinutes'), showSeriesStatus: $('showSeriesStatus'), showNetwork: $('showNetwork'), showCountry: $('showCountry'), showWatchingWith: $('showWatchingWith'), watchingWithSuggestions: $('watchingWithSuggestions'), showStartedDate: $('showStartedDate'), showFinishedDate: $('showFinishedDate'), showAbandonedDate: $('showAbandonedDate'), viewingRunsList: $('viewingRunsList'), startRewatchButton: $('startRewatchButton'), watchedEpisodeChoice: $('watchedEpisodeChoice'), markAllEpisodesWatched: $('markAllEpisodesWatched'), showGenres: $('showGenres'), showMetacritic: $('showMetacritic'),
+    showRuntime: $('showRuntime'), showTotalMinutes: $('showTotalMinutes'), showSeriesStatus: $('showSeriesStatus'), showNetwork: $('showNetwork'), showCountry: $('showCountry'), showWatchingWith: $('showWatchingWith'), watchingWithSuggestions: $('watchingWithSuggestions'), showStartedDate: $('showStartedDate'), showFinishedDate: $('showFinishedDate'), showAbandonedDate: $('showAbandonedDate'), viewingRunsList: $('viewingRunsList'), startRewatchButton: $('startRewatchButton'), watchedEpisodeChoice: $('watchedEpisodeChoice'), markAllEpisodesWatched: $('markAllEpisodesWatched'), markAllEpisodesButton: $('markAllEpisodesButton'), chooseEpisodesButton: $('chooseEpisodesButton'), skipEpisodesButton: $('skipEpisodesButton'), watchedEpisodeChoiceNote: $('watchedEpisodeChoiceNote'), showGenres: $('showGenres'), showMetacritic: $('showMetacritic'),
     networkOptions: $('networkOptions'), watchingWithOptions: $('watchingWithOptions'), genresPicker: $('genresPicker'), genresPickerSummary: $('genresPickerSummary'), genreChoices: $('genreChoices'), genreAddInput: $('genreAddInput'), genreAddButton: $('genreAddButton'), tagsPicker: $('tagsPicker'), tagsPickerSummary: $('tagsPickerSummary'), tagChoices: $('tagChoices'), tagAddInput: $('tagAddInput'), tagAddButton: $('tagAddButton'),
     streamingProvidersText: $('streamingProvidersText'), streamingProvidersNote: $('streamingProvidersNote'), refreshShowStreamingButton: $('refreshShowStreamingButton'), showTags: $('showTags'), showNotes: $('showNotes'),
     deleteShowButton: $('deleteShowButton'), closeShowButton: $('closeShowButton'), cancelShowButton: $('cancelShowButton'),
@@ -87,6 +88,7 @@
   let providerRefreshRunning = false;
   let lastShowTrigger = null;
   let lastShowOpenedByPointer = false;
+  let libraryRenderPending = false;
   const episodeCache = new Map();
   const seasonProgressCache = new Map();
   const seasonProgressRequests = new Map();
@@ -436,10 +438,19 @@
   }
   function savePrefs() { localStorage.setItem(PREFS_KEY, JSON.stringify(prefs)); updateTmdbUI(); applyFontSize(); applyTheme(); }
   function saveDropbox() { localStorage.setItem(DROPBOX_KEY, JSON.stringify(dbx)); updateDropboxUI(); }
+  function requestLibraryRender() {
+    if (els.showDialog?.open) { libraryRenderPending = true; return; }
+    render();
+  }
+  function flushPendingLibraryRender() {
+    if (!libraryRenderPending) return;
+    libraryRenderPending = false;
+    requestAnimationFrame(() => render());
+  }
   function saveState({ sync = true, rerender = true } = {}) {
     state = normalizeState(state);
     localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
-    if (rerender) render();
+    if (rerender) requestLibraryRender();
     if (sync && dbx.connected) scheduleSync();
   }
 
@@ -1284,16 +1295,16 @@
     setFavourite(Boolean(show?.favourite));
     els.showYear.value=show?.firstAirYear||'';els.showSeasons.value=show?.seasons??'';els.showEpisodes.value=show?.episodes??'';els.showRuntime.value=show?.runtime??'';els.showTotalMinutes.value=show?.totalMinutes??'';
     const seriesStatus=show?.seriesStatus||''; if(seriesStatus && ![...els.showSeriesStatus.options].some(o=>o.value===seriesStatus)){const option=document.createElement('option');option.value=seriesStatus;option.textContent=seriesStatus;els.showSeriesStatus.appendChild(option);} els.showSeriesStatus.value=seriesStatus;els.showNetwork.value=show?.network||'';els.showWatchingWith.value=show?.watchingWith||'';els.showStartedDate.value=show?.startedDate||'';els.showFinishedDate.value=show?.finishedDate||'';els.showAbandonedDate.value=show?.abandonedDate||'';els.showGenres.value=(show?.genres||[]).join(', ');els.showMetacritic.value=show?.metacritic||'';
-    els.showTags.value=(show?.tags||[]).join(', ');els.showNotes.value=show?.notes||'';refreshEditorChoices();setSelectValue(els.showCountry,show?.country||'');clearTimeout(autocompleteTimer);autocompleteTimer=null;els.lookupStatus.textContent=show?'Find details uses TVmaze to refresh landscape artwork and show metadata.':'Start typing a title for TVmaze suggestions, or use Find details.';els.lookupResults.hidden=true;els.lookupResults.replaceChildren();els.showTitle.setAttribute('aria-expanded','false');
+    els.showTags.value=(show?.tags||[]).join(', ');els.showNotes.value=show?.notes||'';refreshEditorChoices();setSelectValue(els.showCountry,show?.country||'');clearTimeout(autocompleteTimer);autocompleteTimer=null;els.lookupStatus.textContent=show?'Find details uses TVmaze to refresh poster artwork and show metadata.':'Start typing a title for TVmaze suggestions, or use Find details.';els.lookupResults.hidden=true;els.lookupResults.replaceChildren();els.showTitle.setAttribute('aria-expanded','false');
     const editableRun=activeViewingRun(draftMeta)||normalizeViewingRuns(draftMeta.viewingRuns).at(-1);if(editableRun){els.showStartedDate.value=editableRun.startedDate||els.showStartedDate.value;els.showFinishedDate.value=editableRun.finishedDate||els.showFinishedDate.value;els.showAbandonedDate.value=editableRun.abandonedDate||els.showAbandonedDate.value;if(editableRun.watchingWith&&!els.showWatchingWith.value)els.showWatchingWith.value=editableRun.watchingWith;}
-    if(els.markAllEpisodesWatched)els.markAllEpisodesWatched.checked=false;updateWatchedEpisodeChoice();renderViewingHistory();hideWatchingWithSuggestions();
+    if(els.markAllEpisodesWatched)els.markAllEpisodesWatched.checked=false;if(els.watchedEpisodeChoice)els.watchedEpisodeChoice.dataset.choice='';updateWatchedEpisodeChoice();renderViewingHistory();hideWatchingWithSuggestions();
     els.deleteShowButton.style.visibility=show?'visible':'hidden';updatePosterPreview();renderStreamingPreview();
     prepareEpisodeGuide(show);
     prepareCast(show);
     if(!els.showDialog.open){pushOverlayState('show');els.showDialog.showModal();}
     setTimeout(()=>els.showTitle.focus(),30);
   }
-  function closeShowDialog(skipHistory=false){clearTimeout(autocompleteTimer);autocompleteTimer=null;if(els.showDialog.open)els.showDialog.close(); if(lookupController){lookupController.abort();lookupController=null;}els.showTitle.setAttribute('aria-expanded','false');if(!skipHistory)removeOverlayState('show');}
+  function closeShowDialog(skipHistory=false){clearTimeout(autocompleteTimer);autocompleteTimer=null;if(els.showDialog.open)els.showDialog.close(); if(lookupController){lookupController.abort();lookupController=null;}els.showTitle.setAttribute('aria-expanded','false');if(!skipHistory)removeOverlayState('show');flushPendingLibraryRender();}
   function setFavourite(value){draftMeta.favourite=Boolean(value);els.showFavourite.classList.toggle('active',draftMeta.favourite);els.showFavourite.setAttribute('aria-pressed',String(draftMeta.favourite));els.showFavouriteText.textContent=draftMeta.favourite?'Favourite':'Not favourite';}
   function viewingStatusLabel(run){return run.status==='completed'?'Completed':run.status==='abandoned'?'Abandoned':'In progress';}
   function renderViewingHistory() {
@@ -1330,7 +1341,36 @@
     const watching=state.columns.find(c=>c.id==='watching'||c.name.toLowerCase()==='watching');if(watching)els.showLocation.value=`status:${watching.id}`;
     renderViewingHistory();loadEpisodeGuide(draftMeta,false);showToast('New rewatch started');
   }
-  function updateWatchedEpisodeChoice(){if(!els.watchedEpisodeChoice)return;const isWatched=els.showLocation.value===ARCHIVE_WATCHED;els.watchedEpisodeChoice.hidden=!isWatched;if(!isWatched&&els.markAllEpisodesWatched)els.markAllEpisodesWatched.checked=false;}
+  function updateWatchedEpisodeChoice({reset=false}={}){
+    if(!els.watchedEpisodeChoice)return;
+    const isWatched=els.showLocation.value===ARCHIVE_WATCHED;
+    els.watchedEpisodeChoice.hidden=!isWatched;
+    if(!isWatched){
+      if(els.markAllEpisodesWatched)els.markAllEpisodesWatched.checked=false;
+      els.watchedEpisodeChoice.dataset.choice='';
+      return;
+    }
+    if(reset)els.watchedEpisodeChoice.dataset.choice='';
+    const choice=els.watchedEpisodeChoice.dataset.choice||'';
+    if(els.markAllEpisodesWatched)els.markAllEpisodesWatched.checked=choice==='all';
+    [els.markAllEpisodesButton,els.chooseEpisodesButton,els.skipEpisodesButton].forEach(btn=>btn?.classList.remove('active'));
+    if(choice==='all')els.markAllEpisodesButton?.classList.add('active');
+    if(choice==='choose')els.chooseEpisodesButton?.classList.add('active');
+    if(choice==='none')els.skipEpisodesButton?.classList.add('active');
+    if(els.watchedEpisodeChoiceNote){
+      els.watchedEpisodeChoiceNote.textContent=choice==='all'?'All available episodes will be marked watched when you save. Historical episode dates will stay unknown.':choice==='choose'?'Choose the seasons or individual episodes you actually watched in the Episode Guide below.':choice==='none'?'The show will be saved as Watched without inventing episode history.':'Choose how TV should record the episode history for this watched show.';
+    }
+  }
+  async function chooseWatchedEpisodeHistory(choice){
+    if(!els.watchedEpisodeChoice||els.showLocation.value!==ARCHIVE_WATCHED)return;
+    els.watchedEpisodeChoice.dataset.choice=choice;
+    updateWatchedEpisodeChoice();
+    if(choice==='choose'){
+      const show=currentEpisodeShow()||draftMeta;
+      if(show?.tvmazeId)await loadEpisodeGuide(show,false);
+      requestAnimationFrame(()=>els.episodeGuideCard?.scrollIntoView({behavior:'smooth',block:'start'}));
+    }
+  }
   function updatePosterPreview(){setArtwork(els.posterPreview,els.showPoster.value);}
   function renderStreamingPreview(){els.streamingProvidersText.replaceChildren();const providers=cleanProviders(draftMeta.providers);if(providers.length){providers.forEach(p=>{const s=document.createElement('span');s.className='provider-pill';s.textContent=p;els.streamingProvidersText.appendChild(s);});els.streamingProvidersNote.textContent=draftMeta.providersUpdatedAt?`Updated ${new Date(draftMeta.providersUpdatedAt).toLocaleDateString()}`:'Subscription services in Canada';}else{els.streamingProvidersNote.textContent=prefs.tmdbCredential?'No subscription services found in Canada.':'Requires a TMDB credential in Settings.';}}
 
@@ -1474,7 +1514,7 @@
     const id=els.showId.value;if(!id)return;const show=state.shows.find(s=>s.id===id);if(!show)return;seasonProgressCache.delete(id);
     ['viewingRuns','currentViewingRunId','watchedEpisodes','episodeWatchDates','activeSeason','episodeProgress','startedDate','finishedDate','abandonedDate'].forEach(key=>{show[key]=clone(draftMeta[key]??show[key]);});
     if(els.showWatchingWith.value)show.watchingWith=safeText(els.showWatchingWith.value,60);
-    show.updatedAt=nowIso();localStorage.setItem(STORAGE_KEY,JSON.stringify(state));render();if(dbx.connected)scheduleSync();
+    show.updatedAt=nowIso();localStorage.setItem(STORAGE_KEY,JSON.stringify(state));requestLibraryRender();if(dbx.connected)scheduleSync();
   }
   function renderEpisodeGuide(episodes, progress) {
     els.episodeGuide.replaceChildren();els.episodeProgressSummary.replaceChildren();if(!episodes.length)return;
@@ -1495,7 +1535,7 @@
         const key=episodeDateKey(ep);const isWatched=watchedSet.has(key);const isNext=seasonNext&&episodeDateKey(seasonNext)===key;const item=document.createElement('details');item.className='episode-item';if(isWatched)item.classList.add('watched');if(isNext)item.classList.add('next');
         const row=document.createElement('summary');const check=document.createElement('span');check.className='episode-check';check.textContent=isWatched?'✓':'○';const code=document.createElement('span');code.className='episode-code';code.textContent=`S${ep.season} E${ep.number}`;const name=document.createElement('span');name.className='episode-name';name.textContent=ep.name;const runtime=document.createElement('span');runtime.className='episode-runtime';runtime.textContent=ep.runtime?`${ep.runtime}m`:'';row.append(check,code,name);if(isNext){const badge=document.createElement('span');badge.className='episode-next-badge';badge.textContent='Next';row.appendChild(badge);}row.appendChild(runtime);item.appendChild(row);
         const body=document.createElement('div');body.className='episode-body';const desc=document.createElement('p');desc.textContent=ep.summary;body.appendChild(desc);const watchedDate=tracking.dates[key];if(isWatched){const dateWrap=document.createElement('label');dateWrap.className='episode-date-editor';const dateLabel=document.createElement('span');dateLabel.textContent='Watched date';const dateInput=document.createElement('input');dateInput.type='date';dateInput.value=watchedDate||'';dateInput.setAttribute('aria-label',`Watched date for S${ep.season} E${ep.number}`);dateInput.onchange=()=>updateEpisodeWatchedDate(ep,episodes,dateInput.value);dateWrap.append(dateLabel,dateInput);body.appendChild(dateWrap);}
-        const actions=document.createElement('div');actions.className='episode-actions';const toggle=document.createElement('button');toggle.type='button';toggle.className='secondary-button episode-progress-button';toggle.textContent=isWatched?'Mark unwatched':'Mark watched';toggle.onclick=()=>toggleEpisodeWatched(ep,episodes);actions.appendChild(toggle);if(!isWatched){const through=document.createElement('button');through.type='button';through.className='text-button episode-through-button';through.textContent='Mark this season up to here';through.onclick=()=>markSeasonUpToEpisode(ep,episodes);actions.appendChild(through);}body.appendChild(actions);item.appendChild(body);list.appendChild(item);
+        const actions=document.createElement('div');actions.className='episode-actions';const toggle=document.createElement('button');toggle.type='button';toggle.className='secondary-button episode-progress-button';toggle.textContent=isWatched?'Mark unwatched':'Mark watched';toggle.onclick=()=>toggleEpisodeWatched(ep,episodes);actions.appendChild(toggle);if(!isWatched){const through=document.createElement('button');through.type='button';through.className='text-button episode-through-button';through.textContent='Mark this season up to here';through.onclick=()=>markSeasonUpToEpisode(ep,episodes);const seriesThrough=document.createElement('button');seriesThrough.type='button';seriesThrough.className='text-button episode-through-button';seriesThrough.textContent='Mark series up to here';seriesThrough.onclick=()=>markSeriesUpToEpisode(ep,episodes);actions.append(through,seriesThrough);}body.appendChild(actions);item.appendChild(body);list.appendChild(item);
       });block.appendChild(list);els.episodeGuide.appendChild(block);
     });
   }
@@ -1510,6 +1550,10 @@
   function markSeasonUpToEpisode(ep,episodes) {
     let tracking=trackingForDraft(episodes);let run=tracking.run;if(!run&&tracking.watched.length){draftMeta.watchedEpisodes=tracking.watched;draftMeta.activeSeason=tracking.activeSeason;}if(!run){run=ensureViewingRun(draftMeta,{startedDate:els.showStartedDate.value||todayIsoDate(),watchingWith:els.showWatchingWith.value});tracking=trackingForDraft(episodes);}
     const watched=new Set(tracking.watched);const dates={...tracking.dates};const today=todayIsoDate();episodes.filter(item=>item.season===ep.season&&item.number<=ep.number).forEach(item=>{const key=episodeDateKey(item);watched.add(key);if(!dates[key])dates[key]=today;});applyTrackingToDraft(episodes,{watched:[...watched],dates,activeSeason:ep.season,run});persistDraftTrackingIfNeeded();renderViewingHistory();renderEpisodeGuide(episodes,draftMeta.episodeProgress);showToast(`Season ${ep.season} saved through E${ep.number}`);
+  }
+  function markSeriesUpToEpisode(ep,episodes) {
+    let tracking=trackingForDraft(episodes);let run=tracking.run;if(!run&&tracking.watched.length){draftMeta.watchedEpisodes=tracking.watched;draftMeta.activeSeason=tracking.activeSeason;}if(!run){run=ensureViewingRun(draftMeta,{startedDate:els.showStartedDate.value||todayIsoDate(),watchingWith:els.showWatchingWith.value});tracking=trackingForDraft(episodes);}
+    const watched=new Set(tracking.watched);const dates={...tracking.dates};const today=todayIsoDate();episodes.filter(item=>item.season<ep.season||(item.season===ep.season&&item.number<=ep.number)).forEach(item=>{const key=episodeDateKey(item);watched.add(key);if(!dates[key])dates[key]=today;});applyTrackingToDraft(episodes,{watched:[...watched],dates,activeSeason:ep.season,run});persistDraftTrackingIfNeeded();renderViewingHistory();renderEpisodeGuide(episodes,draftMeta.episodeProgress);showToast(`Series saved through S${ep.season} E${ep.number}`);
   }
 
   function hideLookupSuggestions() {
@@ -1569,9 +1613,11 @@
       const [seasonsRes,episodesRes,imagesRes,castRes]=await Promise.all([fetch(`https://api.tvmaze.com/shows/${show.id}/seasons`),fetch(`https://api.tvmaze.com/shows/${show.id}/episodes`),fetch(`https://api.tvmaze.com/shows/${show.id}/images`),fetch(`https://api.tvmaze.com/shows/${show.id}/cast`)]);
       const seasons=seasonsRes.ok?await seasonsRes.json():[];const episodes=episodesRes.ok?await episodesRes.json():[];const images=imagesRes.ok?await imagesRes.json():[];const cast=castRes.ok?normalizeCast(await castRes.json()):[];castCache.set(show.id,cast);
       const normalizedEpisodes=normalizeTvmazeEpisodes(episodes);episodeCache.set(show.id, normalizedEpisodes);
+      const posters=images.filter(img=>img?.type==='poster'&&(img?.resolutions?.original?.url||img?.resolutions?.medium?.url));
       const backgrounds=images.filter(img=>img?.type==='background'&&img?.resolutions?.original?.url);
       const banners=images.filter(img=>img?.type==='banner'&&img?.resolutions?.original?.url);
-      const artwork=(backgrounds.find(img=>img.main)||backgrounds[0]||banners.find(img=>img.main)||banners[0])?.resolutions?.original?.url || episodes.find(e=>e?.image?.original)?.image?.original || episodes.find(e=>e?.image?.medium)?.image?.medium || show.image?.original || show.image?.medium || els.showPoster.value;
+      const posterImage=(posters.find(img=>img.main)||posters[0]);
+      const artwork=show.image?.original || show.image?.medium || posterImage?.resolutions?.original?.url || posterImage?.resolutions?.medium?.url || (backgrounds.find(img=>img.main)||backgrounds[0]||banners.find(img=>img.main)||banners[0])?.resolutions?.original?.url || episodes.find(e=>e?.image?.original)?.image?.original || episodes.find(e=>e?.image?.medium)?.image?.medium || els.showPoster.value;
       els.showTitle.value=show.name||els.showTitle.value;els.showPoster.value=artwork;
       els.showYear.value=show.premiered?show.premiered.slice(0,4):'';els.showGenres.value=(show.genres||[]).join(', ');
       els.showNetwork.value=show.network?.name||show.webChannel?.name||'';setSelectValue(els.showCountry,show.network?.country?.name||show.webChannel?.country?.name||'');const tvStatus=show.status||'';if(tvStatus && ![...els.showSeriesStatus.options].some(o=>o.value===tvStatus)){const option=document.createElement('option');option.value=tvStatus;option.textContent=tvStatus;els.showSeriesStatus.appendChild(option);}els.showSeriesStatus.value=tvStatus;renderEditorPicker('genres');
@@ -1579,7 +1625,7 @@
       const total=episodes.reduce((sum,e)=>sum+(Number(e.runtime)||0),0);els.showTotalMinutes.value=total||((runtime&&episodes.length)?runtime*episodes.length:'');
       if(!els.showMetacritic.value)els.showMetacritic.value=`https://www.metacritic.com/tv/${slugify(show.name)}/`;
       if(draftMeta.tvmazeId && draftMeta.tvmazeId!==show.id){draftMeta.episodeProgress=null;draftMeta.episodeWatchDates={};draftMeta.watchedEpisodes=[];draftMeta.activeSeason=null;draftMeta.viewingRuns=[];draftMeta.currentViewingRunId='';}draftMeta.tvmazeId=show.id;draftMeta.imdbId=show.externals?.imdb||'';draftMeta.tmdbId=null;draftMeta.cast=cast;updatePosterPreview();renderEpisodeGuide(normalizedEpisodes,draftMeta.episodeProgress||null);els.episodeGuideStatus.textContent=normalizedEpisodes.length?`${normalizedEpisodes.length} episodes · click an episode for its description.`:'No numbered episodes are available from TVmaze.';els.refreshEpisodesButton.disabled=false;renderCast(cast);els.castStatus.textContent=cast.length?`${cast.length} principal cast member${cast.length===1?'':'s'} from TVmaze.`:'No main cast is listed by TVmaze.';
-      els.lookupStatus.textContent='Details and landscape artwork added from TVmaze. You can edit anything before saving.';
+      els.lookupStatus.textContent='Details and poster artwork added from TVmaze. You can edit anything before saving.';
       if(prefs.tmdbCredential)await refreshDraftProviders();
     }catch(err){console.error(err);els.lookupStatus.textContent='Basic TVmaze details were found, but episode details could not be loaded.';}
   }
@@ -1690,8 +1736,24 @@
     return normalizeState({version:2,columnsUpdatedAt:new Date(Math.max(localColumnsTime,remoteColumnsTime)).toISOString(),unsortedOrder,columns,columnDeleted:columnTombs,shows,deleted:tombs,savedViews,savedViewsUpdatedAt});
   }
 
+  function isTvmazeHostedArtwork(url){return /^https?:\/\/static\.tvmaze\.com\/uploads\/images\//i.test(String(url||''));}
+  async function repairTvmazePostersOnce(){
+    if(localStorage.getItem(POSTER_REPAIR_KEY)==='done')return;
+    const candidates=state.shows.filter(show=>show.tvmazeId&&(!show.poster||isTvmazeHostedArtwork(show.poster)));
+    if(!candidates.length){localStorage.setItem(POSTER_REPAIR_KEY,'done');return;}
+    let changed=0;
+    for(let i=0;i<candidates.length;i+=6){
+      const chunk=candidates.slice(i,i+6);
+      await Promise.allSettled(chunk.map(async show=>{
+        try{const res=await fetch(`https://api.tvmaze.com/shows/${show.tvmazeId}`);if(!res.ok)return;const data=await res.json();const poster=safeUrl(data?.image?.original||data?.image?.medium||'');if(poster&&poster!==show.poster){show.poster=poster;changed++;}}catch(_){}
+      }));
+    }
+    localStorage.setItem(POSTER_REPAIR_KEY,'done');
+    if(changed){state=normalizeState(state);localStorage.setItem(STORAGE_KEY,JSON.stringify(state));requestLibraryRender();if(dbx.connected)scheduleSync();showToast(`Poster artwork repaired for ${changed} ${changed===1?'show':'shows'}`);}
+  }
+
   function scheduleSync(){clearTimeout(syncTimer);syncTimer=setTimeout(()=>syncWithDropbox(),900);}
-  async function syncWithDropbox({announce=false}={}){if(!dbx.connected)return;setSyncStatus('syncing','Dropbox · syncing…');try{const remote=await dropboxDownload();state=mergeStates(state,remote);localStorage.setItem(STORAGE_KEY,JSON.stringify(state));await dropboxUpload(state);dbx.lastSync=nowIso();saveDropbox();render();setSyncStatus('connected','Dropbox · synced');if(announce)showToast('Dropbox connected and synced');}catch(err){console.error(err);setSyncStatus('error','Dropbox · sync problem');showToast('Dropbox sync failed. Your TV library is still saved on this device.');}}
+  async function syncWithDropbox({announce=false}={}){if(!dbx.connected)return;setSyncStatus('syncing','Dropbox · syncing…');try{const remote=await dropboxDownload();state=mergeStates(state,remote);localStorage.setItem(STORAGE_KEY,JSON.stringify(state));await dropboxUpload(state);dbx.lastSync=nowIso();saveDropbox();requestLibraryRender();setSyncStatus('connected','Dropbox · synced');if(announce)showToast('Dropbox connected and synced');}catch(err){console.error(err);setSyncStatus('error','Dropbox · sync problem');showToast('Dropbox sync failed. Your TV library is still saved on this device.');}}
   function disconnectDropbox(){if(!confirm('Disconnect Dropbox on this device? Your local TV library will remain here.'))return;dbx={connected:false,appKey:dbx.appKey||''};saveDropbox();setSyncStatus('local','Saved on this device');showToast('Dropbox disconnected');}
   function setSyncStatus(kind,label){els.statusDot.className='status-dot';if(kind==='connected')els.statusDot.classList.add('connected');if(kind==='syncing')els.statusDot.classList.add('syncing');if(kind==='error')els.statusDot.classList.add('error');els.syncLabel.textContent=label;}
   function updateDropboxUI(){if(!els.dropboxAppKey)return;els.redirectUriText.value=getRedirectUri();els.dropboxAppKey.value=dbx.appKey||'';els.dropboxSetup.hidden=!!dbx.connected;els.dropboxConnected.hidden=!dbx.connected;els.dropboxStatus.textContent=dbx.connected?'Connected':'Not connected';if(dbx.connected)setSyncStatus('connected',dbx.lastSync?'Dropbox · synced':'Dropbox · connected');else setSyncStatus('local','Saved on this device');}
@@ -1710,7 +1772,7 @@
     els.searchInput.oninput=render;els.sortSelect.onchange=()=>{sortMode=els.sortSelect.value;render();};if(els.sortButton)els.sortButton.onclick=toggleSortMenu;if(els.sortScrim)els.sortScrim.onclick=()=>closeSortMenu();
     els.filterButton.onclick=openFilterDrawer;els.closeFilterButton.onclick=()=>closeFilterDrawer();els.backFilterButton.onclick=()=>closeFilterDrawer();els.drawerScrim.onclick=()=>closeFilterDrawer();els.applyFiltersButton.onclick=applyFilters;els.clearFiltersButton.onclick=clearFilterDraft;els.saveViewButton.onclick=saveCurrentView;
     [els.filterEpisodes,els.filterTime,els.filterYearFrom,els.filterYearTo,els.filterRating,els.filterFavourite,els.filterDateType,els.filterDateFrom,els.filterDateTo].forEach(el=>{el.addEventListener('change',readDraftScalarFilters);});
-    els.showForm.onsubmit=saveShowFromForm;els.closeShowButton.onclick=()=>closeShowDialog();els.backShowButton.onclick=()=>closeShowDialog();els.cancelShowButton.onclick=()=>closeShowDialog();els.deleteShowButton.onclick=deleteCurrentShow;els.lookupShowButton.onclick=lookupShows;els.showTitle.addEventListener('input',scheduleTitleAutocomplete);els.showTitle.addEventListener('keydown',e=>{if(e.key==='ArrowDown'&&!els.lookupResults.hidden){const first=lookupResultButtons()[0];if(first){e.preventDefault();first.focus();}}else if(e.key==='Enter'&&!els.lookupResults.hidden){const first=lookupResultButtons()[0];if(first){e.preventDefault();first.click();}}});els.showPoster.oninput=updatePosterPreview;els.showFavourite.onclick=()=>setFavourite(!draftMeta.favourite);els.showLocation.onchange=()=>{updateWatchedEpisodeChoice();renderViewingHistory();};if(els.startRewatchButton)els.startRewatchButton.onclick=startRewatch;els.refreshShowStreamingButton.onclick=refreshDraftProviders;els.refreshEpisodesButton.onclick=()=>loadEpisodeGuide(currentEpisodeShow()||draftMeta,true);
+    els.showForm.onsubmit=saveShowFromForm;els.closeShowButton.onclick=()=>closeShowDialog();els.backShowButton.onclick=()=>closeShowDialog();els.cancelShowButton.onclick=()=>closeShowDialog();els.deleteShowButton.onclick=deleteCurrentShow;els.lookupShowButton.onclick=lookupShows;els.showTitle.addEventListener('input',scheduleTitleAutocomplete);els.showTitle.addEventListener('keydown',e=>{if(e.key==='ArrowDown'&&!els.lookupResults.hidden){const first=lookupResultButtons()[0];if(first){e.preventDefault();first.focus();}}else if(e.key==='Enter'&&!els.lookupResults.hidden){const first=lookupResultButtons()[0];if(first){e.preventDefault();first.click();}}});els.showPoster.oninput=updatePosterPreview;els.showFavourite.onclick=()=>setFavourite(!draftMeta.favourite);els.showLocation.onchange=()=>{updateWatchedEpisodeChoice({reset:true});renderViewingHistory();};if(els.markAllEpisodesButton)els.markAllEpisodesButton.onclick=()=>chooseWatchedEpisodeHistory('all');if(els.chooseEpisodesButton)els.chooseEpisodesButton.onclick=()=>chooseWatchedEpisodeHistory('choose');if(els.skipEpisodesButton)els.skipEpisodesButton.onclick=()=>chooseWatchedEpisodeHistory('none');if(els.startRewatchButton)els.startRewatchButton.onclick=startRewatch;els.refreshShowStreamingButton.onclick=refreshDraftProviders;els.refreshEpisodesButton.onclick=()=>loadEpisodeGuide(currentEpisodeShow()||draftMeta,true);
     els.genreAddButton.onclick=()=>addPickerValue('genres');els.tagAddButton.onclick=()=>addPickerValue('tags');els.genreAddInput.onkeydown=e=>{if(e.key==='Enter'){e.preventDefault();addPickerValue('genres');}};els.tagAddInput.onkeydown=e=>{if(e.key==='Enter'){e.preventDefault();addPickerValue('tags');}};
     if(els.showWatchingWith){els.showWatchingWith.addEventListener('focus',renderWatchingWithSuggestions);els.showWatchingWith.addEventListener('input',renderWatchingWithSuggestions);els.showWatchingWith.addEventListener('keydown',e=>{if(e.key==='ArrowDown'&&!els.watchingWithSuggestions?.hidden){const first=els.watchingWithSuggestions.querySelector('button');if(first){e.preventDefault();first.focus();}}else if(e.key==='Escape')hideWatchingWithSuggestions();});}
     els.showDialog.addEventListener('keydown',e=>{
@@ -1771,6 +1833,7 @@
     matchMedia('(prefers-color-scheme: dark)').addEventListener?.('change',()=>{if(validTheme(prefs.theme)==='system')applyTheme();});
   applyFontSize(); applyTheme();
   render();
+    repairTvmazePostersOnce().catch(()=>{});
     if('serviceWorker' in navigator && location.protocol.startsWith('http'))navigator.serviceWorker.register('./service-worker.js').catch(()=>{});
     if(dbx.connected)syncWithDropbox().catch(()=>{});
   }
