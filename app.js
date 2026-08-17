@@ -1,7 +1,7 @@
 (() => {
   'use strict';
 
-  const APP_VERSION = '2.1.5';
+  const APP_VERSION = '2.2.0';
   const STORAGE_KEY = 'tvBoard.state.v1';
   const DROPBOX_KEY = 'tvBoard.dropbox.v1';
   const PKCE_KEY = 'tvBoard.pkce.v1';
@@ -26,6 +26,7 @@
     showDialog: $('showDialog'), showForm: $('showForm'), showDialogTitle: $('showDialogTitle'), showId: $('showId'), showTitle: $('showTitle'), showLocation: $('showLocation'), showRating: $('showRating'), showFavourite: $('showFavourite'), showFavouriteText: $('showFavouriteText'),
     showPoster: $('showPoster'), posterPreview: $('posterPreview'), lookupShowButton: $('lookupShowButton'), lookupStatus: $('lookupStatus'), lookupResults: $('lookupResults'), showYear: $('showYear'), showSeasons: $('showSeasons'), showEpisodes: $('showEpisodes'),
     showRuntime: $('showRuntime'), showTotalMinutes: $('showTotalMinutes'), showSeriesStatus: $('showSeriesStatus'), showNetwork: $('showNetwork'), showCountry: $('showCountry'), showWatchingWith: $('showWatchingWith'), showGenres: $('showGenres'), showMetacritic: $('showMetacritic'),
+    networkOptions: $('networkOptions'), countryOptions: $('countryOptions'), watchingWithOptions: $('watchingWithOptions'), genresPicker: $('genresPicker'), genresPickerSummary: $('genresPickerSummary'), genreChoices: $('genreChoices'), genreAddInput: $('genreAddInput'), genreAddButton: $('genreAddButton'), tagsPicker: $('tagsPicker'), tagsPickerSummary: $('tagsPickerSummary'), tagChoices: $('tagChoices'), tagAddInput: $('tagAddInput'), tagAddButton: $('tagAddButton'),
     streamingProvidersText: $('streamingProvidersText'), streamingProvidersNote: $('streamingProvidersNote'), refreshShowStreamingButton: $('refreshShowStreamingButton'), showTags: $('showTags'), showNotes: $('showNotes'),
     deleteShowButton: $('deleteShowButton'), closeShowButton: $('closeShowButton'), cancelShowButton: $('cancelShowButton'),
     statusesDialog: $('statusesDialog'), closeStatusesButton: $('closeStatusesButton'), statusManager: $('statusManager'), addStatusForm: $('addStatusForm'), newStatusName: $('newStatusName'),
@@ -789,6 +790,53 @@
     state.columns.push({id,name:text.slice(0,50),order:state.columns.length,color:defaultColour(state.columns.length),updatedAt:t});state.columnsUpdatedAt=t;saveState();renderStatusManager();
   }
 
+  const STANDARD_GENRES = ['Action','Adventure','Animation','Comedy','Crime','Documentary','Drama','Family','Fantasy','History','Horror','Music','Mystery','Romance','Science Fiction','Sport','Thriller','War','Western'];
+  const COMMON_NETWORKS = ['Apple TV+','BBC','CBC','Crave','Disney+','HBO','HBO Max','ITV','Netflix','Paramount+','PBS','Prime Video','StackTV'];
+  const COMMON_COUNTRIES = ['Australia','Canada','France','Germany','Ireland','Italy','Japan','New Zealand','South Korea','Spain','Sweden','United Kingdom','United States'];
+
+  function populateDatalist(el, values) {
+    if (!el) return;
+    el.replaceChildren();
+    uniqueSorted(values).forEach(value => { const option=document.createElement('option'); option.value=value; el.appendChild(option); });
+  }
+  function refreshEditorChoices() {
+    populateDatalist(els.networkOptions, [...COMMON_NETWORKS, ...state.shows.flatMap(s=>allNetworkValues(s))]);
+    populateDatalist(els.countryOptions, [...COMMON_COUNTRIES, ...state.shows.map(s=>s.country).filter(Boolean)]);
+    populateDatalist(els.watchingWithOptions, state.shows.map(s=>s.watchingWith).filter(Boolean));
+    renderEditorPicker('genres');
+    renderEditorPicker('tags');
+  }
+  function editorPickerConfig(kind) {
+    if (kind === 'genres') return { hidden:els.showGenres, choices:els.genreChoices, summary:els.genresPickerSummary, addInput:els.genreAddInput, source:uniqueSorted([...STANDARD_GENRES, ...state.shows.flatMap(s=>s.genres||[])]) };
+    return { hidden:els.showTags, choices:els.tagChoices, summary:els.tagsPickerSummary, addInput:els.tagAddInput, source:uniqueSorted(state.shows.flatMap(s=>s.tags||[])) };
+  }
+  function pickerValues(kind) { const cfg=editorPickerConfig(kind); return cleanTags(splitComma(cfg.hidden.value)); }
+  function updatePickerSummary(kind) {
+    const cfg=editorPickerConfig(kind); if (!cfg.summary) return;
+    const selected=pickerValues(kind); cfg.summary.replaceChildren();
+    if (!selected.length) cfg.summary.textContent = kind === 'genres' ? 'Choose genres' : 'Choose tags';
+    else selected.forEach(value => { const chip=document.createElement('span'); chip.className='picker-summary-chip'; chip.textContent=value; cfg.summary.appendChild(chip); });
+  }
+  function setPickerValues(kind, values, rerender=true) {
+    const cfg=editorPickerConfig(kind); cfg.hidden.value=cleanTags(values).join(', ');
+    if (rerender) renderEditorPicker(kind); else updatePickerSummary(kind);
+  }
+  function renderEditorPicker(kind) {
+    const cfg=editorPickerConfig(kind); if (!cfg.hidden || !cfg.choices || !cfg.summary) return;
+    const selected=pickerValues(kind); updatePickerSummary(kind); cfg.choices.replaceChildren();
+    const source=uniqueSorted([...cfg.source, ...selected]);
+    if (!source.length) { const empty=document.createElement('span'); empty.className='helper'; empty.textContent='No saved values yet'; cfg.choices.appendChild(empty); return; }
+    source.forEach(value => {
+      const button=document.createElement('button'); button.type='button'; button.className=`choice-pill${selected.some(v=>v.toLowerCase()===value.toLowerCase())?' selected':''}`; button.textContent=value;
+      button.onclick=(event)=>{ event.preventDefault(); event.stopPropagation(); const current=pickerValues(kind); const has=current.some(v=>v.toLowerCase()===value.toLowerCase()); const next=has ? current.filter(v=>v.toLowerCase()!==value.toLowerCase()) : [...current,value]; setPickerValues(kind,next,false); button.classList.toggle('selected',!has); };
+      cfg.choices.appendChild(button);
+    });
+  }
+  function addPickerValue(kind) {
+    const cfg=editorPickerConfig(kind); const value=String(cfg.addInput.value||'').trim(); if(!value)return;
+    setPickerValues(kind,[...pickerValues(kind),value]); cfg.addInput.value=''; cfg.addInput.focus();
+  }
+
   function fillLocationOptions(selected) {
     els.showLocation.replaceChildren();
     state.columns.forEach(c=>{const o=document.createElement('option');o.value=`status:${c.id}`;o.textContent=c.name;els.showLocation.appendChild(o);});
@@ -804,8 +852,8 @@
     const location=show?.archive||`status:${show?.columnId||state.columns[0].id}`;fillLocationOptions(location);
     setFavourite(Boolean(show?.favourite));
     els.showYear.value=show?.firstAirYear||'';els.showSeasons.value=show?.seasons??'';els.showEpisodes.value=show?.episodes??'';els.showRuntime.value=show?.runtime??'';els.showTotalMinutes.value=show?.totalMinutes??'';
-    els.showSeriesStatus.value=show?.seriesStatus||'';els.showNetwork.value=show?.network||'';els.showCountry.value=show?.country||'';els.showWatchingWith.value=show?.watchingWith||'';els.showGenres.value=(show?.genres||[]).join(', ');els.showMetacritic.value=show?.metacritic||'';
-    els.showTags.value=(show?.tags||[]).join(', ');els.showNotes.value=show?.notes||'';els.lookupStatus.textContent='Find details uses TVmaze to fill landscape artwork, genres, year, network, seasons, episodes and runtime.';els.lookupResults.hidden=true;els.lookupResults.replaceChildren();
+    const seriesStatus=show?.seriesStatus||''; if(seriesStatus && ![...els.showSeriesStatus.options].some(o=>o.value===seriesStatus)){const option=document.createElement('option');option.value=seriesStatus;option.textContent=seriesStatus;els.showSeriesStatus.appendChild(option);} els.showSeriesStatus.value=seriesStatus;els.showNetwork.value=show?.network||'';els.showCountry.value=show?.country||'';els.showWatchingWith.value=show?.watchingWith||'';els.showGenres.value=(show?.genres||[]).join(', ');els.showMetacritic.value=show?.metacritic||'';
+    els.showTags.value=(show?.tags||[]).join(', ');els.showNotes.value=show?.notes||'';refreshEditorChoices();els.lookupStatus.textContent='Find details uses TVmaze to fill landscape artwork, genres, year, network, seasons, episodes and runtime.';els.lookupResults.hidden=true;els.lookupResults.replaceChildren();
     els.deleteShowButton.style.visibility=show?'visible':'hidden';updatePosterPreview();renderStreamingPreview();
     if(!els.showDialog.open)els.showDialog.showModal();
     setTimeout(()=>els.showTitle.focus(),30);
@@ -844,7 +892,7 @@
       const artwork=(backgrounds.find(img=>img.main)||backgrounds[0]||banners.find(img=>img.main)||banners[0])?.resolutions?.original?.url || show.image?.original || show.image?.medium || els.showPoster.value;
       els.showTitle.value=show.name||els.showTitle.value;els.showPoster.value=artwork;
       els.showYear.value=show.premiered?show.premiered.slice(0,4):'';els.showGenres.value=(show.genres||[]).join(', ');
-      els.showNetwork.value=show.network?.name||show.webChannel?.name||'';els.showCountry.value=show.network?.country?.name||show.webChannel?.country?.name||'';els.showSeriesStatus.value=show.status||'';
+      els.showNetwork.value=show.network?.name||show.webChannel?.name||'';els.showCountry.value=show.network?.country?.name||show.webChannel?.country?.name||'';const tvStatus=show.status||'';if(tvStatus && ![...els.showSeriesStatus.options].some(o=>o.value===tvStatus)){const option=document.createElement('option');option.value=tvStatus;option.textContent=tvStatus;els.showSeriesStatus.appendChild(option);}els.showSeriesStatus.value=tvStatus;renderEditorPicker('genres');
       els.showSeasons.value=seasons.length||'';els.showEpisodes.value=episodes.length||'';const runtime=show.averageRuntime||show.runtime||medianRuntime(episodes);els.showRuntime.value=runtime||'';
       const total=episodes.reduce((sum,e)=>sum+(Number(e.runtime)||0),0);els.showTotalMinutes.value=total||((runtime&&episodes.length)?runtime*episodes.length:'');
       if(!els.showMetacritic.value)els.showMetacritic.value=`https://www.metacritic.com/tv/${slugify(show.name)}/`;
@@ -940,6 +988,7 @@
     els.filterButton.onclick=openFilterDrawer;els.closeFilterButton.onclick=closeFilterDrawer;els.drawerScrim.onclick=closeFilterDrawer;els.applyFiltersButton.onclick=applyFilters;els.clearFiltersButton.onclick=clearFilterDraft;els.saveViewButton.onclick=saveCurrentView;
     [els.filterEpisodes,els.filterTime,els.filterYearFrom,els.filterYearTo,els.filterRating,els.filterFavourite].forEach(el=>{el.addEventListener('change',readDraftScalarFilters);});
     els.showForm.onsubmit=saveShowFromForm;els.closeShowButton.onclick=closeShowDialog;els.cancelShowButton.onclick=closeShowDialog;els.deleteShowButton.onclick=deleteCurrentShow;els.lookupShowButton.onclick=lookupShows;els.showPoster.oninput=updatePosterPreview;els.showFavourite.onclick=()=>setFavourite(!draftMeta.favourite);els.refreshShowStreamingButton.onclick=refreshDraftProviders;
+    els.genreAddButton.onclick=()=>addPickerValue('genres');els.tagAddButton.onclick=()=>addPickerValue('tags');els.genreAddInput.onkeydown=e=>{if(e.key==='Enter'){e.preventDefault();addPickerValue('genres');}};els.tagAddInput.onkeydown=e=>{if(e.key==='Enter'){e.preventDefault();addPickerValue('tags');}};
     els.showDialog.addEventListener('close', () => {
       const trigger = lastShowTrigger;
       const openedByPointer = lastShowOpenedByPointer;

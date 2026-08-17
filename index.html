@@ -53,7 +53,7 @@
 
       <div class="sidebar-footer">
         <button class="nav-item" id="settingsButton"><span class="nav-icon" data-icon="settings"></span><span>Settings</span></button>
-        <div class="version">TV v2.1.5</div>
+        <div class="version">TV v2.2.0</div>
       </div>
     </aside>
 
@@ -197,14 +197,31 @@
           <div class="field-grid three">
             <label><span>Typical episode (min)</span><input id="showRuntime" type="number" min="0"></label>
             <label><span>Total runtime (min)</span><input id="showTotalMinutes" type="number" min="0"></label>
-            <label><span>Series status</span><input id="showSeriesStatus" maxlength="50" placeholder="Running / Ended"></label>
+            <label><span>Series status</span><select id="showSeriesStatus">
+              <option value="">Unknown</option>
+              <option value="Running">Running</option>
+              <option value="Ended">Ended</option>
+              <option value="Upcoming">Upcoming</option>
+              <option value="In Development">In Development</option>
+              <option value="To Be Determined">To Be Determined</option>
+            </select></label>
           </div>
           <div class="field-grid two">
-            <label><span>Network / service</span><input id="showNetwork" maxlength="100"></label>
-            <label><span>Country</span><input id="showCountry" maxlength="80"></label>
+            <label><span>Network / service</span><input id="showNetwork" maxlength="100" list="networkOptions" autocomplete="off"><datalist id="networkOptions"></datalist></label>
+            <label><span>Country</span><input id="showCountry" maxlength="80" list="countryOptions" autocomplete="off"><datalist id="countryOptions"></datalist></label>
           </div>
-          <label><span>Watching with</span><input id="showWatchingWith" maxlength="60" placeholder="e.g. P"><small>Use this to filter active shows by who you are watching them with.</small></label>
-          <label><span>Genres</span><input id="showGenres" placeholder="Drama, Crime, Thriller"><small>Separate genres with commas.</small></label>
+          <label><span>Watching with</span><input id="showWatchingWith" maxlength="60" list="watchingWithOptions" placeholder="Choose or type a name" autocomplete="off"><datalist id="watchingWithOptions"></datalist><small>Choose someone you already use, or type a new name.</small></label>
+          <label><span>Genres</span>
+            <input id="showGenres" type="hidden">
+            <details class="multi-picker" id="genresPicker">
+              <summary><span id="genresPickerSummary">Choose genres</span><span class="picker-chevron" aria-hidden="true">⌄</span></summary>
+              <div class="multi-picker-panel">
+                <div class="multi-picker-choices" id="genreChoices"></div>
+                <div class="picker-add"><input id="genreAddInput" maxlength="40" placeholder="Add another genre"><button type="button" class="secondary-button" id="genreAddButton">Add</button></div>
+              </div>
+            </details>
+            <small>Select one or more genres.</small>
+          </label>
           <label><span>Metacritic page</span><input id="showMetacritic" type="url" placeholder="https://www.metacritic.com/tv/…"></label>
 
           <div class="stream-box">
@@ -212,7 +229,17 @@
             <div id="streamingProvidersText" class="provider-pills"></div>
           </div>
 
-          <label><span>Tags</span><input id="showTags" placeholder="British, family, comfort"><small>Separate tags with commas.</small></label>
+          <label><span>Tags</span>
+            <input id="showTags" type="hidden">
+            <details class="multi-picker" id="tagsPicker">
+              <summary><span id="tagsPickerSummary">Choose tags</span><span class="picker-chevron" aria-hidden="true">⌄</span></summary>
+              <div class="multi-picker-panel">
+                <div class="multi-picker-choices" id="tagChoices"></div>
+                <div class="picker-add"><input id="tagAddInput" maxlength="40" placeholder="Add a new tag"><button type="button" class="secondary-button" id="tagAddButton">Add</button></div>
+              </div>
+            </details>
+            <small>Select existing tags or add a new one.</small>
+          </label>
           <label><span>Notes</span><textarea id="showNotes" rows="5" maxlength="4000"></textarea></label>
         </div>
       </div>
@@ -277,7 +304,7 @@
         </div>
       </section>
     </div>
-    <div class="settings-footer">TV v2.1.5</div>
+    <div class="settings-footer">TV v2.2.0</div>
   </dialog>
 
   <div class="toast" id="toast" role="status" aria-live="polite"></div>
