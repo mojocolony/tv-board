@@ -177,6 +177,12 @@ label small { margin-top: 5px; }
 .manager-row input { width: 100%; min-height: 34px; border: 0; background: transparent; outline: 0; font-weight: 700; }
 .manager-actions { display: flex; gap: 4px; }
 .manager-actions button { min-width: 32px; height: 32px; border: 1px solid var(--line); border-radius: 8px; background: #faf7f0; }
+.manager-status-swatch { width: 34px; height: 30px; display: block; border: 1px solid var(--line); border-radius: 7px; box-shadow: inset 0 0 0 3px #fffdf8; }
+.manager-fixed-status { min-height: 34px; display: flex; align-items: baseline; gap: 8px; min-width: 0; }
+.manager-fixed-status strong { font-size: 14px; }
+.manager-fixed-status small { color: var(--muted); font-size: 10px; font-weight: 600; white-space: nowrap; }
+.manager-row-built-in { background: #faf8f3; }
+.manager-row-built-in .manager-actions button:disabled { opacity: .38; cursor: default; }
 .inline-form { display: flex; gap: 7px; padding: 0 20px 20px; }
 .inline-form input { flex: 1; }
 .settings-sections { display: grid; gap: 10px; padding: 16px 20px 20px; }

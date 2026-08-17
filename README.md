@@ -1,4 +1,4 @@
-# TV v2.5.0
+# TV v2.5.1
 
 TV is the redesigned successor to TV Board. It keeps the existing data/storage contracts while replacing the Kanban board with a scalable visual list library.
 
@@ -31,6 +31,13 @@ Opening TV on a browser that already used TV Board will migrate the existing rec
 - TMDB / JustWatch Canadian streaming lookup remains available
 - JSON import/export remains available
 - Dropbox OAuth 2 + PKCE sync remains available
+
+## New in v2.5.1
+
+- Built-in Unsorted now appears in Manage Statuses and can be reordered with the other Library statuses.
+- Unsorted remains protected from rename/delete because it represents shows with no assigned status.
+- Accidental real statuses named Unsorted are folded back into the built-in view without losing assigned shows.
+- The Unsorted order is preserved in local data, backups and Dropbox sync.
 
 ## GitHub Pages
 

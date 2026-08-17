@@ -1,7 +1,7 @@
 (() => {
   'use strict';
 
-  const APP_VERSION = '2.5.0';
+  const APP_VERSION = '2.5.1';
   const STORAGE_KEY = 'tvBoard.state.v1';
   const DROPBOX_KEY = 'tvBoard.dropbox.v1';
   const PKCE_KEY = 'tvBoard.pkce.v1';
@@ -184,6 +184,7 @@
     return {
       version: 2,
       columnsUpdatedAt: t,
+      unsortedOrder: 0,
       columns: [
         { id: 'watching', name: 'Watching', order: 0, color: defaultColour(0), updatedAt: t },
         { id: 'next', name: 'Next', order: 1, color: defaultColour(1), updatedAt: t },
@@ -218,8 +219,17 @@
       const tomb = colTombs.get(c.id);
       return !tomb || new Date(c.updatedAt) > new Date(tomb.deletedAt);
     }).sort((a,b) => a.order - b.order || a.name.localeCompare(b.name));
+
+    // “Unsorted” is a built-in virtual status (blank columnId), not a real column.
+    // Older builds allowed a real status with the same name to be created; fold it
+    // back into the built-in status and use its position as the initial order hint.
+    const accidentalUnsortedIndex = columns.findIndex(c => c.id.toLowerCase() === UNSORTED || c.name.trim().toLowerCase() === 'unsorted');
+    const accidentalUnsortedIds = new Set(columns.filter(c => c.id.toLowerCase() === UNSORTED || c.name.trim().toLowerCase() === 'unsorted').map(c => c.id));
+    columns = columns.filter(c => !accidentalUnsortedIds.has(c.id));
     if (!columns.length) columns = fallback.columns;
     columns.forEach((c,i) => { c.order = i; c.color = safeColour(c.color, i); });
+    const rawUnsortedOrder = Number(raw.unsortedOrder);
+    const unsortedOrder = Math.max(0, Math.min(columns.length, Number.isFinite(rawUnsortedOrder) ? Math.round(rawUnsortedOrder) : (accidentalUnsortedIndex >= 0 ? accidentalUnsortedIndex : 0)));
     const legacyWithColumns = new Map(columns.filter(c => /^with\s+/i.test(c.name)).map(c => [c.id, c.name.replace(/^with\s+/i, '').trim()]));
     const watchingColumn = columns.find(c => c.id === 'watching' || c.name.toLowerCase() === 'watching');
     if (watchingColumn && legacyWithColumns.size) {
@@ -237,7 +247,7 @@
       return {
         id: safeText(s.id, 100),
         title: safeText(s.title, 120),
-        columnId: String(s.columnId || '') === '' ? '' : (legacyWithColumns.has(String(s.columnId)) && watchingColumn ? watchingColumn.id : (validIds.has(String(s.columnId)) ? String(s.columnId) : first)),
+        columnId: String(s.columnId || '') === '' || accidentalUnsortedIds.has(String(s.columnId)) ? '' : (legacyWithColumns.has(String(s.columnId)) && watchingColumn ? watchingColumn.id : (validIds.has(String(s.columnId)) ? String(s.columnId) : first)),
         archive,
         poster: safeUrl(s.poster || ''),
         metacritic: safeUrl(s.metacritic || ''),
@@ -283,6 +293,7 @@
     return {
       version: 2,
       columnsUpdatedAt: legacyColumnsUpdatedAt,
+      unsortedOrder,
       columns,
       columnDeleted,
       shows: survivingShows,
@@ -369,6 +380,14 @@
     if (!show.columnId) return { id: UNSORTED, name: 'Unsorted', color: '#77766f', archive: false, virtual: true };
     return state.columns.find(c => c.id === show.columnId) || { id: UNSORTED, name: 'Unsorted', color: '#77766f', archive: false, virtual: true };
   }
+  function statusOrderItems() {
+    const columns = [...state.columns].sort((a,b) => a.order - b.order || a.name.localeCompare(b.name));
+    const position = Math.max(0, Math.min(columns.length, Number.isFinite(Number(state.unsortedOrder)) ? Math.round(Number(state.unsortedOrder)) : 0));
+    const items = columns.map((column, index) => ({ id: column.id, name: column.name, color: statusNavColour(column, index), column, virtual: false }));
+    items.splice(position, 0, { id: UNSORTED, name: 'Unsorted', color: '#9a968d', column: null, virtual: true });
+    return items;
+  }
+
   function effectiveTotalMinutes(show) {
     if (Number.isFinite(show.totalMinutes) && show.totalMinutes > 0) return show.totalMinutes;
     if (Number.isFinite(show.episodes) && show.episodes > 0 && Number.isFinite(show.runtime) && show.runtime > 0) return show.episodes * show.runtime;
@@ -549,19 +568,14 @@
     els.abandonedCount.textContent = state.shows.filter(s => s.archive === ARCHIVE_ABANDONED).length;
 
     els.statusNav.replaceChildren();
-    {
+    statusOrderItems().forEach(item => {
       const btn = document.createElement('button');
-      btn.className = 'nav-item status-nav unsorted-status'; btn.dataset.view = UNSORTED;
-      btn.style.setProperty('--status-nav-color', '#9a968d');
-      btn.innerHTML = `<span class="nav-icon">${iconSvg('bookmark')}</span><span class="nav-item-label">Unsorted</span><span class="nav-count">${activeShows.filter(s => !s.columnId).length}</span>`;
-      els.statusNav.appendChild(btn);
-    }
-    state.columns.forEach(c => {
-      const btn = document.createElement('button');
-      btn.className = `nav-item status-nav${c.name.length > 18 ? ' long-status' : ''}`; btn.dataset.view = `status:${c.id}`;
-      btn.style.setProperty('--status-nav-color', statusNavColour(c, c.order));
-      btn.innerHTML = `<span class="nav-icon">${iconSvg('bookmark')}</span><span class="nav-item-label"></span><span class="nav-count">${activeShows.filter(s => s.columnId === c.id).length}</span>`;
-      btn.children[1].textContent = c.name;
+      btn.className = `nav-item status-nav${item.virtual ? ' unsorted-status' : ''}${item.name.length > 18 ? ' long-status' : ''}`;
+      btn.dataset.view = item.virtual ? UNSORTED : `status:${item.id}`;
+      btn.style.setProperty('--status-nav-color', item.color);
+      const count = item.virtual ? activeShows.filter(s => !s.columnId).length : activeShows.filter(s => s.columnId === item.id).length;
+      btn.innerHTML = `<span class="nav-icon">${iconSvg('bookmark')}</span><span class="nav-item-label"></span><span class="nav-count">${count}</span>`;
+      btn.children[1].textContent = item.name;
       els.statusNav.appendChild(btn);
     });
 
@@ -779,7 +793,7 @@
   function renderFilterControls() {
     filterDraft = normalizeFilters(filterDraft);
     els.filterStatuses.replaceChildren();
-    [{id:UNSORTED,name:'Unsorted'}, ...state.columns.map(c => ({ id:c.id, name:c.name })), {id:ARCHIVE_WATCHED,name:'Watched'}, {id:ARCHIVE_ABANDONED,name:'Abandoned'}].forEach(item => {
+    [...statusOrderItems().map(item => ({ id:item.id, name:item.name })), {id:ARCHIVE_WATCHED,name:'Watched'}, {id:ARCHIVE_ABANDONED,name:'Abandoned'}].forEach(item => {
       const label = document.createElement('label'); label.className = 'check-option';
       const cb = document.createElement('input'); cb.type='checkbox'; cb.checked = filterDraft.statuses.includes(item.id);
       cb.onchange = () => toggleDraftArray('statuses', item.id, cb.checked);
@@ -871,24 +885,39 @@
 
   function renderStatusManager() {
     els.statusManager.replaceChildren();
-    state.columns.forEach((c,index) => {
-      const row=document.createElement('div'); row.className='manager-row';
+    const items = statusOrderItems();
+    items.forEach((item,index) => {
+      const row=document.createElement('div'); row.className=`manager-row${item.virtual?' manager-row-built-in':''}`;
       const left=document.createElement('div');left.style.cssText='display:grid;grid-template-columns:36px minmax(0,1fr);gap:7px;align-items:center;';
-      const color=document.createElement('input');color.type='color';color.value=safeColour(c.color,index);color.title='Status colour';color.style.cssText='width:34px;height:30px;padding:2px;border:1px solid var(--line);border-radius:7px;background:#fff;';
-      color.onchange=()=>{c.color=color.value;c.updatedAt=nowIso();state.columnsUpdatedAt=c.updatedAt;saveState();};
-      const name=document.createElement('input');name.value=c.name;name.maxLength=50;name.onchange=()=>{const val=name.value.trim();if(!val){name.value=c.name;return;}c.name=val;c.updatedAt=nowIso();state.columnsUpdatedAt=c.updatedAt;saveState();renderStatusManager();};
-      left.append(color,name);
+      if (item.virtual) {
+        const swatch=document.createElement('span');swatch.className='manager-status-swatch';swatch.style.background=item.color;swatch.setAttribute('aria-hidden','true');
+        const name=document.createElement('div');name.className='manager-fixed-status';name.innerHTML='<strong>Unsorted</strong><small>Built-in · blank status</small>';
+        left.append(swatch,name);
+      } else {
+        const c=item.column;
+        const color=document.createElement('input');color.type='color';color.value=safeColour(c.color,c.order);color.title='Status colour';color.style.cssText='width:34px;height:30px;padding:2px;border:1px solid var(--line);border-radius:7px;background:#fff;';
+        color.onchange=()=>{c.color=color.value;c.updatedAt=nowIso();state.columnsUpdatedAt=c.updatedAt;saveState();};
+        const name=document.createElement('input');name.value=c.name;name.maxLength=50;name.onchange=()=>{const val=name.value.trim();if(!val){name.value=c.name;return;}if(val.toLowerCase()==='unsorted'){showToast('Unsorted is built in');name.value=c.name;return;}c.name=val;c.updatedAt=nowIso();state.columnsUpdatedAt=c.updatedAt;saveState();renderStatusManager();};
+        left.append(color,name);
+      }
       const actions=document.createElement('div');actions.className='manager-actions';
-      const up=document.createElement('button');up.type='button';up.textContent='↑';up.disabled=index===0;up.onclick=()=>moveStatus(index,-1);
-      const down=document.createElement('button');down.type='button';down.textContent='↓';down.disabled=index===state.columns.length-1;down.onclick=()=>moveStatus(index,1);
-      const del=document.createElement('button');del.type='button';del.textContent='×';del.title='Delete status';del.disabled=state.columns.length===1;del.onclick=()=>deleteStatus(c.id);
-      actions.append(up,down,del);row.append(left,actions);els.statusManager.appendChild(row);
+      const up=document.createElement('button');up.type='button';up.textContent='↑';up.title='Move up';up.disabled=index===0;up.onclick=()=>moveStatus(index,-1);
+      const down=document.createElement('button');down.type='button';down.textContent='↓';down.title='Move down';down.disabled=index===items.length-1;down.onclick=()=>moveStatus(index,1);
+      actions.append(up,down);
+      if (item.virtual) {
+        const locked=document.createElement('button');locked.type='button';locked.textContent='×';locked.disabled=true;locked.title='Unsorted is built in and cannot be deleted';locked.setAttribute('aria-label','Unsorted cannot be deleted');actions.appendChild(locked);
+      } else {
+        const del=document.createElement('button');del.type='button';del.textContent='×';del.title='Delete status';del.disabled=state.columns.length===1;del.onclick=()=>deleteStatus(item.id);actions.appendChild(del);
+      }
+      row.append(left,actions);els.statusManager.appendChild(row);
     });
   }
   function moveStatus(index,delta) {
-    const target=index+delta;if(target<0||target>=state.columns.length)return;
-    [state.columns[index],state.columns[target]]=[state.columns[target],state.columns[index]];
-    const t=nowIso();state.columns.forEach((c,i)=>{c.order=i;c.updatedAt=t;});state.columnsUpdatedAt=t;saveState();renderStatusManager();
+    const items=statusOrderItems();const target=index+delta;if(target<0||target>=items.length)return;
+    [items[index],items[target]]=[items[target],items[index]];
+    const t=nowIso();state.unsortedOrder=items.findIndex(item=>item.virtual);
+    state.columns=items.filter(item=>!item.virtual).map(item=>item.column);
+    state.columns.forEach((c,i)=>{c.order=i;c.updatedAt=t;});state.columnsUpdatedAt=t;saveState();renderStatusManager();
   }
   function deleteStatus(id) {
     const c=state.columns.find(x=>x.id===id);if(!c||state.columns.length===1)return;
@@ -902,6 +931,7 @@
   }
   function addStatus(name) {
     const text=name.trim();if(!text)return;
+    if(text.toLowerCase()==='unsorted'){showToast('Unsorted is built in. Reorder it above.');return;}
     if(state.columns.some(c=>c.name.toLowerCase()===text.toLowerCase())){showToast('That status already exists');return;}
     const t=nowIso();const base=slugify(text)||'status';let id=base;let i=2;while(state.columns.some(c=>c.id===id))id=`${base}-${i++}`;
     state.columns.push({id,name:text.slice(0,50),order:state.columns.length,color:defaultColour(state.columns.length),updatedAt:t});state.columnsUpdatedAt=t;saveState();renderStatusManager();
@@ -956,8 +986,7 @@
 
   function fillLocationOptions(selected) {
     els.showLocation.replaceChildren();
-    const u=document.createElement('option');u.value=UNSORTED;u.textContent='Unsorted';els.showLocation.appendChild(u);
-    state.columns.forEach(c=>{const o=document.createElement('option');o.value=`status:${c.id}`;o.textContent=c.name;els.showLocation.appendChild(o);});
+    statusOrderItems().forEach(item=>{const o=document.createElement('option');o.value=item.virtual?UNSORTED:`status:${item.id}`;o.textContent=item.name;els.showLocation.appendChild(o);});
     const w=document.createElement('option');w.value=ARCHIVE_WATCHED;w.textContent='Watched';els.showLocation.appendChild(w);
     const a=document.createElement('option');a.value=ARCHIVE_ABANDONED;a.textContent='Abandoned';els.showLocation.appendChild(a);
     els.showLocation.value=selected&&[...els.showLocation.options].some(o=>o.value===selected)?selected:UNSORTED;
@@ -1271,7 +1300,8 @@
     const validCols=new Set(columns.map(c=>c.id));const first=columns[0].id;const shows=[...showMap.values()].filter(s=>{const tomb=tombMap.get(s.id);return !tomb||Date.parse(s.updatedAt)>Date.parse(tomb.deletedAt);}).map(s=>({...s,columnId:s.columnId===''?'':(validCols.has(s.columnId)?s.columnId:first)}));
 
     const localViewsTime=Date.parse(local.savedViewsUpdatedAt||0)||0;const remoteViewsTime=Date.parse(remote.savedViewsUpdatedAt||0)||0;const savedViews=clone(remoteViewsTime>localViewsTime?remote.savedViews:local.savedViews);const savedViewsUpdatedAt=remoteViewsTime>localViewsTime?remote.savedViewsUpdatedAt:local.savedViewsUpdatedAt;
-    return normalizeState({version:2,columnsUpdatedAt:new Date(Math.max(Date.parse(local.columnsUpdatedAt)||0,Date.parse(remote.columnsUpdatedAt)||0)).toISOString(),columns,columnDeleted:columnTombs,shows,deleted:tombs,savedViews,savedViewsUpdatedAt});
+    const localColumnsTime=Date.parse(local.columnsUpdatedAt||0)||0;const remoteColumnsTime=Date.parse(remote.columnsUpdatedAt||0)||0;const unsortedOrder=remoteColumnsTime>localColumnsTime?remote.unsortedOrder:local.unsortedOrder;
+    return normalizeState({version:2,columnsUpdatedAt:new Date(Math.max(localColumnsTime,remoteColumnsTime)).toISOString(),unsortedOrder,columns,columnDeleted:columnTombs,shows,deleted:tombs,savedViews,savedViewsUpdatedAt});
   }
 
   function scheduleSync(){clearTimeout(syncTimer);syncTimer=setTimeout(()=>syncWithDropbox(),900);}
