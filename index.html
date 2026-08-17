@@ -53,7 +53,7 @@
 
       <div class="sidebar-footer">
         <button class="nav-item" id="settingsButton"><span class="nav-icon" data-icon="settings"></span><span>Settings</span></button>
-        <div class="version">TV v2.2.0</div>
+        <div class="version">TV v2.3.0</div>
       </div>
     </aside>
 
@@ -229,6 +229,15 @@
             <div id="streamingProvidersText" class="provider-pills"></div>
           </div>
 
+          <section class="episode-guide-card" id="episodeGuideCard">
+            <div class="setting-title-row episode-guide-heading">
+              <div><strong>Episode Guide</strong><div class="helper" id="episodeGuideStatus">Episode descriptions and viewing progress from TVmaze.</div></div>
+              <button type="button" class="text-button" id="refreshEpisodesButton">Refresh</button>
+            </div>
+            <div class="episode-progress-summary" id="episodeProgressSummary"></div>
+            <div class="episode-guide" id="episodeGuide"></div>
+          </section>
+
           <label><span>Tags</span>
             <input id="showTags" type="hidden">
             <details class="multi-picker" id="tagsPicker">
@@ -304,7 +313,7 @@
         </div>
       </section>
     </div>
-    <div class="settings-footer">TV v2.2.0</div>
+    <div class="settings-footer">TV v2.3.0</div>
   </dialog>
 
   <div class="toast" id="toast" role="status" aria-live="polite"></div>

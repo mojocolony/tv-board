@@ -1,4 +1,4 @@
-# TV v2.2.0
+# TV v2.3.0
 
 TV is the redesigned successor to TV Board. It keeps the existing data/storage contracts while replacing the Kanban board with a scalable visual list library.
 
@@ -41,3 +41,12 @@ Because the app keeps `/tv-board.json`, you do not need to create a new Dropbox 
 ## Before replacing the live app
 
 Export a backup from the current TV Board app. The redesign is migration-compatible, but having a plain JSON backup is still prudent before a major interface release.
+
+
+## v2.3.0
+
+- Episode guide with TVmaze descriptions and per-show viewing progress.
+- “Mark up to here as watched” progress control and next-episode indicator.
+- Alphabetical title sorting ignores leading The, A and An.
+- More generous sidebar section spacing.
+- Export/Import backup controls now match visually at every font size.

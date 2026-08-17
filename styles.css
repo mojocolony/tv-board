@@ -18,6 +18,7 @@
   --sidebar: 245px;
 }
 * { box-sizing: border-box; }
+[hidden] { display: none !important; }
 html, body { margin: 0; min-height: 100%; background: var(--paper); color: var(--ink); }
 body { font-family: ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; -webkit-font-smoothing: antialiased; }
 button, input, select, textarea { font: inherit; color: inherit; }
@@ -346,3 +347,47 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
 @media (max-width: 900px) { .row-poster { width: 106px; } }
 @media (max-width: 720px) { .row-poster { width: 96px; } }
 @media (max-width: 430px) { .row-poster { width: 88px; } }
+
+
+/* TV v2.3 — episode progress, cleaner settings, sidebar rhythm */
+.nav-section { margin-bottom: 30px; }
+.nav-label { margin-bottom: 9px; }
+.nav-label-inline { margin-top: 17px; }
+.nav-section:last-child { margin-bottom: 18px; }
+.file-button { cursor: pointer; min-height: 42px; padding: 0 14px; font-size: calc(12px * var(--tv-font-scale)); font-weight: 750; line-height: 1; }
+.settings-card .button-row > .secondary-button, .settings-card .button-row > .file-button { align-self: stretch; }
+.episode-guide-card { margin-top: 2px; border: 1px solid var(--line); border-radius: 11px; background: rgba(255,255,255,.42); padding: 12px; }
+.episode-guide-heading { align-items: flex-start; }
+.episode-guide-heading strong { font-size: calc(14px * var(--tv-font-scale)); }
+.episode-progress-summary { margin-top: 9px; }
+.progress-callout { display: flex; flex-direction: column; gap: 2px; padding: 9px 11px; border-radius: 9px; background: var(--app-blue-soft); color: #43576e; }
+.progress-callout strong { font-size: calc(11.5px * var(--tv-font-scale)); }
+.progress-callout span, .progress-callout.quiet { font-size: calc(10px * var(--tv-font-scale)); }
+.progress-callout.quiet { display: block; color: var(--muted); background: #efebe2; }
+.episode-guide { display: flex; flex-direction: column; gap: 7px; margin-top: 10px; }
+.episode-empty { margin: 9px 0 1px; color: var(--muted); font-size: calc(10px * var(--tv-font-scale)); }
+.season-block { border: 1px solid var(--line); border-radius: 9px; overflow: hidden; background: #fffdf9; }
+.season-block > summary { min-height: 40px; display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 0 11px; list-style: none; cursor: pointer; }
+.season-block > summary::-webkit-details-marker, .episode-item > summary::-webkit-details-marker { display: none; }
+.season-block > summary strong { font-size: calc(11.5px * var(--tv-font-scale)); }
+.season-block > summary span { color: var(--muted); font-size: calc(9.5px * var(--tv-font-scale)); }
+.episode-list { border-top: 1px solid var(--line); }
+.episode-item { border-bottom: 1px solid #ebe6dc; }
+.episode-item:last-child { border-bottom: 0; }
+.episode-item > summary { min-height: 39px; display: grid; grid-template-columns: 18px 52px minmax(0,1fr) auto auto; align-items: center; gap: 7px; padding: 0 10px; list-style: none; cursor: pointer; }
+.episode-item > summary:hover { background: rgba(119,141,169,.06); }
+.episode-check { color: #aaa59b; font-size: 14px; }
+.episode-item.watched .episode-check { color: var(--app-blue-deep); font-weight: 800; }
+.episode-code { color: var(--muted); font-size: calc(9.5px * var(--tv-font-scale)); font-weight: 800; }
+.episode-name { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: calc(10.5px * var(--tv-font-scale)); font-weight: 650; }
+.episode-runtime { color: var(--muted); font-size: calc(9px * var(--tv-font-scale)); }
+.episode-next-badge { padding: 2px 6px; border-radius: 999px; background: var(--app-blue-soft); color: var(--app-blue-deep); font-size: calc(8.5px * var(--tv-font-scale)); font-weight: 800; text-transform: uppercase; letter-spacing: .04em; }
+.episode-body { padding: 0 10px 10px 87px; }
+.episode-body p { margin: 0 0 9px; color: #595953; font-size: calc(10px * var(--tv-font-scale)); line-height: 1.5; }
+.episode-progress-button { min-height: 34px; font-size: calc(9.5px * var(--tv-font-scale)); }
+@media (max-width: 720px) {
+  .nav-section { margin-bottom: 27px; }
+  .episode-item > summary { grid-template-columns: 18px 48px minmax(0,1fr) auto; }
+  .episode-runtime { display: none; }
+  .episode-body { padding-left: 10px; }
+}

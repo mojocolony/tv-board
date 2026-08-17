@@ -1,7 +1,7 @@
 (() => {
   'use strict';
 
-  const APP_VERSION = '2.2.0';
+  const APP_VERSION = '2.3.0';
   const STORAGE_KEY = 'tvBoard.state.v1';
   const DROPBOX_KEY = 'tvBoard.dropbox.v1';
   const PKCE_KEY = 'tvBoard.pkce.v1';
@@ -34,7 +34,7 @@
     settingsDialog: $('settingsDialog'), closeSettingsButton: $('closeSettingsButton'), openStatusesButton: $('openStatusesButton'), exportButton: $('exportButton'), importInput: $('importInput'),
     tmdbStatus: $('tmdbStatus'), tmdbCredential: $('tmdbCredential'), tmdbTestMessage: $('tmdbTestMessage'), saveTmdbButton: $('saveTmdbButton'), refreshProvidersButton: $('refreshProvidersButton'),
     dropboxStatus: $('dropboxStatus'), dropboxSetup: $('dropboxSetup'), dropboxConnected: $('dropboxConnected'), dropboxAppKey: $('dropboxAppKey'), redirectUriText: $('redirectUriText'), copyRedirectButton: $('copyRedirectButton'),
-    connectDropboxButton: $('connectDropboxButton'), syncNowButton: $('syncNowButton'), disconnectDropboxButton: $('disconnectDropboxButton'), fontSizeSelector: $('fontSizeSelector'), toast: $('toast')
+    connectDropboxButton: $('connectDropboxButton'), syncNowButton: $('syncNowButton'), disconnectDropboxButton: $('disconnectDropboxButton'), fontSizeSelector: $('fontSizeSelector'), episodeGuideCard: $('episodeGuideCard'), episodeGuideStatus: $('episodeGuideStatus'), episodeProgressSummary: $('episodeProgressSummary'), episodeGuide: $('episodeGuide'), refreshEpisodesButton: $('refreshEpisodesButton'), toast: $('toast')
   };
 
   const ICONS = {
@@ -53,6 +53,7 @@
     tag: '<path d="M20 13 13 20l-9-9V4h7l9 9Z"/><circle cx="8.5" cy="8.5" r="1"/>',
     menu: '<path d="M4 6h16M4 12h16M4 18h16"/>',
     bookmark: '<path d="M6 3h12v18l-6-4-6 4V3Z"/>',
+    play: '<path d="m7 4 13 8-13 8V4Z"/>',
     chevron: '<path d="m9 18 6-6-6-6"/>'
   };
 
@@ -139,6 +140,25 @@
     return `rgba(${(n >> 16) & 255},${(n >> 8) & 255},${n & 255},${alpha})`;
   }
 
+  function normalizeEpisodeProgress(value) {
+    if (!value || typeof value !== 'object') return null;
+    const season = positiveIntegerOrNull(value.season ?? value.throughSeason);
+    const episode = positiveIntegerOrNull(value.episode ?? value.throughEpisode);
+    if (!season || !episode) return null;
+    return {
+      season, episode,
+      episodeId: positiveIntegerOrNull(value.episodeId ?? value.throughEpisodeId),
+      title: safeText(value.title || value.throughTitle || '', 160),
+      nextSeason: positiveIntegerOrNull(value.nextSeason),
+      nextEpisode: positiveIntegerOrNull(value.nextEpisode),
+      nextEpisodeId: positiveIntegerOrNull(value.nextEpisodeId),
+      nextTitle: safeText(value.nextTitle || '', 160),
+      watchedCount: positiveIntegerOrNull(value.watchedCount),
+      totalCount: positiveIntegerOrNull(value.totalCount),
+      updatedAt: validDateString(value.updatedAt) ? value.updatedAt : nowIso()
+    };
+  }
+
   function defaultState() {
     const t = nowIso();
     return {
@@ -221,6 +241,7 @@
         providers: cleanProviders(s.providers),
         providersUpdatedAt: validDateString(s.providersUpdatedAt) ? s.providersUpdatedAt : null,
         providerLink: safeUrl(s.providerLink || ''),
+        episodeProgress: normalizeEpisodeProgress(s.episodeProgress || s.progress),
         order: Number.isFinite(Number(s.order)) ? Number(s.order) : index,
         createdAt,
         updatedAt
@@ -408,26 +429,33 @@
     return true;
   }
 
+  function titleSortKey(title) {
+    return String(title || '').trim().replace(/^(?:the|an|a)\s+/i, '').trim() || String(title || '').trim();
+  }
+  function compareShowTitles(a, b) {
+    const primary = titleSortKey(a.title).localeCompare(titleSortKey(b.title), undefined, { sensitivity: 'base' });
+    return primary || a.title.localeCompare(b.title, undefined, { sensitivity: 'base' });
+  }
   function sortShows(shows) {
     const sorted = [...shows];
     const nvl = (n, fallback) => Number.isFinite(n) ? n : fallback;
     sorted.sort((a,b) => {
       switch (sortMode) {
-        case 'added': return Date.parse(b.createdAt) - Date.parse(a.createdAt) || a.title.localeCompare(b.title);
-        case 'title-asc': return a.title.localeCompare(b.title, undefined, { sensitivity: 'base' });
-        case 'title-desc': return b.title.localeCompare(a.title, undefined, { sensitivity: 'base' });
-        case 'year-desc': return nvl(b.firstAirYear, -1) - nvl(a.firstAirYear, -1) || a.title.localeCompare(b.title);
-        case 'year-asc': return nvl(a.firstAirYear, 9999) - nvl(b.firstAirYear, 9999) || a.title.localeCompare(b.title);
-        case 'rating-desc': return b.rating - a.rating || a.title.localeCompare(b.title);
-        case 'rating-asc': return a.rating - b.rating || a.title.localeCompare(b.title);
-        case 'episodes-asc': return nvl(a.episodes, 999999) - nvl(b.episodes, 999999) || a.title.localeCompare(b.title);
-        case 'episodes-desc': return nvl(b.episodes, -1) - nvl(a.episodes, -1) || a.title.localeCompare(b.title);
-        case 'time-asc': return nvl(effectiveTotalMinutes(a), 9999999) - nvl(effectiveTotalMinutes(b), 9999999) || a.title.localeCompare(b.title);
-        case 'time-desc': return nvl(effectiveTotalMinutes(b), -1) - nvl(effectiveTotalMinutes(a), -1) || a.title.localeCompare(b.title);
-        case 'network': return showNetworkLabel(a).localeCompare(showNetworkLabel(b), undefined, { sensitivity: 'base' }) || a.title.localeCompare(b.title);
-        case 'status': return statusFor(a).name.localeCompare(statusFor(b).name) || a.title.localeCompare(b.title);
+        case 'added': return Date.parse(b.createdAt) - Date.parse(a.createdAt) || compareShowTitles(a,b);
+        case 'title-asc': return compareShowTitles(a,b);
+        case 'title-desc': return compareShowTitles(b,a);
+        case 'year-desc': return nvl(b.firstAirYear, -1) - nvl(a.firstAirYear, -1) || compareShowTitles(a,b);
+        case 'year-asc': return nvl(a.firstAirYear, 9999) - nvl(b.firstAirYear, 9999) || compareShowTitles(a,b);
+        case 'rating-desc': return b.rating - a.rating || compareShowTitles(a,b);
+        case 'rating-asc': return a.rating - b.rating || compareShowTitles(a,b);
+        case 'episodes-asc': return nvl(a.episodes, 999999) - nvl(b.episodes, 999999) || compareShowTitles(a,b);
+        case 'episodes-desc': return nvl(b.episodes, -1) - nvl(a.episodes, -1) || compareShowTitles(a,b);
+        case 'time-asc': return nvl(effectiveTotalMinutes(a), 9999999) - nvl(effectiveTotalMinutes(b), 9999999) || compareShowTitles(a,b);
+        case 'time-desc': return nvl(effectiveTotalMinutes(b), -1) - nvl(effectiveTotalMinutes(a), -1) || compareShowTitles(a,b);
+        case 'network': return showNetworkLabel(a).localeCompare(showNetworkLabel(b), undefined, { sensitivity: 'base' }) || compareShowTitles(a,b);
+        case 'status': return statusFor(a).name.localeCompare(statusFor(b).name) || compareShowTitles(a,b);
         case 'recent':
-        default: return Date.parse(b.updatedAt) - Date.parse(a.updatedAt) || a.title.localeCompare(b.title);
+        default: return Date.parse(b.updatedAt) - Date.parse(a.updatedAt) || compareShowTitles(a,b);
       }
     });
     return sorted;
@@ -586,10 +614,11 @@
     titleLine.appendChild(title);
     if (show.favourite) { const heart = document.createElement('span'); heart.className = 'heart'; heart.innerHTML = iconSvg('heart'); titleLine.appendChild(heart); }
     main.appendChild(titleLine);
-    const subParts = [showNetworkLabel(show), show.firstAirYear, ...show.genres.slice(0,3)].filter(Boolean);
+    const subParts = [showNetworkLabel(show), show.firstAirYear].filter(Boolean);
     const sub = document.createElement('div'); sub.className = 'row-sub'; sub.textContent = subParts.join(' · '); main.appendChild(sub);
     const meta = document.createElement('div'); meta.className = 'row-meta';
     if (show.seasons !== null) meta.appendChild(metaSpan('library', `${show.seasons} ${show.seasons === 1 ? 'season' : 'seasons'}`));
+    if (!show.archive && show.episodeProgress) { const p = show.episodeProgress; const progressText = p.nextSeason && p.nextEpisode ? `Next: S${p.nextSeason} E${p.nextEpisode}` : 'All episodes watched'; meta.appendChild(metaSpan('play', progressText)); }
     if (show.episodes !== null) meta.appendChild(metaSpan('tv', `${show.episodes} ${show.episodes === 1 ? 'episode' : 'episodes'}`));
     const duration = formatDuration(effectiveTotalMinutes(show));
     if (duration) meta.appendChild(metaSpan('clock', `~${duration}`));
@@ -598,10 +627,10 @@
 
     const personal = document.createElement('div'); personal.className = 'row-personal';
     const rating = document.createElement('div'); rating.className = 'rating-text'; rating.textContent = formatRating(show.rating); personal.appendChild(rating);
-    if (show.tags.length) {
-      const tags = document.createElement('div'); tags.className = 'tags-mini';
-      show.tags.slice(0,4).forEach(t => { const tag = document.createElement('span'); tag.className = 'tag-mini'; tag.textContent = t; tags.appendChild(tag); });
-      personal.appendChild(tags);
+    if (show.genres.length) {
+      const genres = document.createElement('div'); genres.className = 'tags-mini';
+      show.genres.slice(0,4).forEach(g => { const genre = document.createElement('span'); genre.className = 'tag-mini'; genre.textContent = g; genres.appendChild(genre); });
+      personal.appendChild(genres);
     }
 
     const pill = document.createElement('span'); pill.className = `status-pill${status.archive ? ' archive' : ''}`; pill.textContent = status.name;
@@ -855,6 +884,7 @@
     const seriesStatus=show?.seriesStatus||''; if(seriesStatus && ![...els.showSeriesStatus.options].some(o=>o.value===seriesStatus)){const option=document.createElement('option');option.value=seriesStatus;option.textContent=seriesStatus;els.showSeriesStatus.appendChild(option);} els.showSeriesStatus.value=seriesStatus;els.showNetwork.value=show?.network||'';els.showCountry.value=show?.country||'';els.showWatchingWith.value=show?.watchingWith||'';els.showGenres.value=(show?.genres||[]).join(', ');els.showMetacritic.value=show?.metacritic||'';
     els.showTags.value=(show?.tags||[]).join(', ');els.showNotes.value=show?.notes||'';refreshEditorChoices();els.lookupStatus.textContent='Find details uses TVmaze to fill landscape artwork, genres, year, network, seasons, episodes and runtime.';els.lookupResults.hidden=true;els.lookupResults.replaceChildren();
     els.deleteShowButton.style.visibility=show?'visible':'hidden';updatePosterPreview();renderStreamingPreview();
+    prepareEpisodeGuide(show);
     if(!els.showDialog.open)els.showDialog.showModal();
     setTimeout(()=>els.showTitle.focus(),30);
   }
@@ -862,6 +892,122 @@
   function setFavourite(value){draftMeta.favourite=Boolean(value);els.showFavourite.classList.toggle('active',draftMeta.favourite);els.showFavourite.setAttribute('aria-pressed',String(draftMeta.favourite));els.showFavouriteText.textContent=draftMeta.favourite?'Favourite':'Not favourite';}
   function updatePosterPreview(){const url=safeUrl(els.showPoster.value);els.posterPreview.replaceChildren();if(url){const img=new Image();img.src=url;img.alt='';img.onerror=()=>{els.posterPreview.innerHTML=`<div class="poster-fallback">${iconSvg('tv')}</div>`;};els.posterPreview.appendChild(img);}else els.posterPreview.innerHTML=`<div class="poster-fallback">${iconSvg('tv')}</div>`;}
   function renderStreamingPreview(){els.streamingProvidersText.replaceChildren();const providers=cleanProviders(draftMeta.providers);if(providers.length){providers.forEach(p=>{const s=document.createElement('span');s.className='provider-pill';s.textContent=p;els.streamingProvidersText.appendChild(s);});els.streamingProvidersNote.textContent=draftMeta.providersUpdatedAt?`Updated ${new Date(draftMeta.providersUpdatedAt).toLocaleDateString()}`:'Subscription services in Canada';}else{els.streamingProvidersNote.textContent=prefs.tmdbCredential?'No subscription services found in Canada.':'Requires a TMDB credential in Settings.';}}
+
+  function normalizeTvmazeEpisodes(items) {
+    if (!Array.isArray(items)) return [];
+    return items.filter(e => e && Number(e.season) > 0 && Number(e.number) > 0).map(e => ({
+      id: positiveIntegerOrNull(e.id),
+      season: Number(e.season),
+      number: Number(e.number),
+      name: safeText(e.name || `Episode ${e.number}`, 180),
+      runtime: positiveIntegerOrNull(e.runtime),
+      summary: episodeSummaryText(e.summary),
+      airdate: safeText(e.airdate || '', 20)
+    })).sort((a,b) => a.season - b.season || a.number - b.number);
+  }
+  function episodeSummaryText(html) {
+    if (!html) return 'No description is available for this episode.';
+    const node = document.createElement('div'); node.innerHTML = String(html);
+    return safeText((node.textContent || node.innerText || '').replace(/\s+/g, ' ').trim(), 1200) || 'No description is available for this episode.';
+  }
+  function episodeProgressIndex(progress, episodes) {
+    if (!progress || !episodes.length) return -1;
+    let i = progress.episodeId ? episodes.findIndex(e => e.id === progress.episodeId) : -1;
+    if (i < 0) i = episodes.findIndex(e => e.season === progress.season && e.number === progress.episode);
+    return i;
+  }
+  function progressFromEpisode(ep, episodes) {
+    const idx = episodes.findIndex(e => (ep.id && e.id === ep.id) || (e.season === ep.season && e.number === ep.number));
+    const next = idx >= 0 ? episodes[idx + 1] : null;
+    return { season: ep.season, episode: ep.number, episodeId: ep.id || null, title: ep.name || '', nextSeason: next?.season || null, nextEpisode: next?.number || null, nextEpisodeId: next?.id || null, nextTitle: next?.name || '', watchedCount: idx >= 0 ? idx + 1 : null, totalCount: episodes.length || null, updatedAt: nowIso() };
+  }
+  function currentEpisodeShow() {
+    const id = els.showId.value;
+    return id ? state.shows.find(s => s.id === id) || null : null;
+  }
+  async function prepareEpisodeGuide(show) {
+    els.episodeGuide.replaceChildren();
+    els.episodeProgressSummary.replaceChildren();
+    if (!show?.tvmazeId) {
+      els.episodeGuideStatus.textContent = 'Use Find details to connect this show to TVmaze and load its episodes.';
+      const p=document.createElement('p');p.className='episode-empty';p.textContent='Episode descriptions will appear here once TVmaze details are linked.';els.episodeGuide.appendChild(p);
+      els.refreshEpisodesButton.disabled = true;
+      return;
+    }
+    els.refreshEpisodesButton.disabled = false;
+    await loadEpisodeGuide(show, false);
+  }
+  async function loadEpisodeGuide(show=currentEpisodeShow() || draftMeta, force=false) {
+    const tvmazeId = positiveIntegerOrNull(show?.tvmazeId || draftMeta.tvmazeId);
+    if (!tvmazeId) return;
+    els.episodeGuideStatus.textContent = 'Loading episode descriptions…';
+    try {
+      let episodes = !force ? episodeCache.get(tvmazeId) : null;
+      if (!episodes) {
+        const res = await fetch(`https://api.tvmaze.com/shows/${tvmazeId}/episodes`);
+        if (!res.ok) throw new Error('TVmaze episode lookup failed');
+        episodes = normalizeTvmazeEpisodes(await res.json());
+        episodeCache.set(tvmazeId, episodes);
+      }
+      renderEpisodeGuide(episodes, show?.episodeProgress || draftMeta.episodeProgress || null);
+      els.episodeGuideStatus.textContent = episodes.length ? `${episodes.length} episodes · click an episode for its description.` : 'No numbered episodes are available from TVmaze.';
+    } catch (err) {
+      console.error(err); els.episodeGuideStatus.textContent = 'Episode descriptions could not be loaded just now.';
+      const p=document.createElement('p');p.className='episode-empty';p.textContent='Try Refresh again later.';els.episodeGuide.replaceChildren(p);
+    }
+  }
+  function renderEpisodeGuide(episodes, progress) {
+    els.episodeGuide.replaceChildren();
+    els.episodeProgressSummary.replaceChildren();
+    if (!episodes.length) return;
+    const progressIndex = episodeProgressIndex(progress, episodes);
+    const next = episodes[progressIndex + 1] || (progressIndex < 0 ? episodes[0] : null);
+    if (progressIndex >= 0) {
+      const summary=document.createElement('div');summary.className='progress-callout';
+      const strong=document.createElement('strong'); strong.textContent = next ? `Next: S${next.season} E${next.number} — ${next.name}` : 'All available episodes watched';
+      const small=document.createElement('span'); small.textContent = `${progressIndex + 1} of ${episodes.length} episodes watched`; summary.append(strong,small); els.episodeProgressSummary.appendChild(summary);
+    } else {
+      const summary=document.createElement('div');summary.className='progress-callout quiet';summary.textContent=`No viewing progress recorded · ${episodes.length} episodes available`;els.episodeProgressSummary.appendChild(summary);
+    }
+    const seasons = new Map();
+    episodes.forEach((ep, idx) => { if(!seasons.has(ep.season)) seasons.set(ep.season, []); seasons.get(ep.season).push([ep,idx]); });
+    const nextIndex = progressIndex + 1;
+    seasons.forEach((entries, season) => {
+      const block=document.createElement('details');block.className='season-block';
+      if (entries.some(([,idx]) => idx === nextIndex) || (!progress && season === episodes[0].season)) block.open=true;
+      const head=document.createElement('summary');
+      const label=document.createElement('strong');label.textContent=`Season ${season}`;
+      const watched=entries.filter(([,idx]) => idx <= progressIndex).length;
+      const count=document.createElement('span');count.textContent=`${watched}/${entries.length} watched`;head.append(label,count);block.appendChild(head);
+      const list=document.createElement('div');list.className='episode-list';
+      entries.forEach(([ep,idx]) => {
+        const item=document.createElement('details');item.className='episode-item';
+        if(idx <= progressIndex)item.classList.add('watched');if(idx===nextIndex)item.classList.add('next');
+        const row=document.createElement('summary');
+        const check=document.createElement('span');check.className='episode-check';check.textContent=idx<=progressIndex?'✓':'○';
+        const code=document.createElement('span');code.className='episode-code';code.textContent=`S${ep.season} E${ep.number}`;
+        const name=document.createElement('span');name.className='episode-name';name.textContent=ep.name;
+        const runtime=document.createElement('span');runtime.className='episode-runtime';runtime.textContent=ep.runtime?`${ep.runtime}m`:'';
+        row.append(check,code,name);if(idx===nextIndex){const badge=document.createElement('span');badge.className='episode-next-badge';badge.textContent='Next';row.appendChild(badge);}row.appendChild(runtime);item.appendChild(row);
+        const body=document.createElement('div');body.className='episode-body';
+        const desc=document.createElement('p');desc.textContent=ep.summary;body.appendChild(desc);
+        if(idx !== progressIndex) { const mark=document.createElement('button');mark.type='button';mark.className='secondary-button episode-progress-button';mark.textContent='Mark up to here as watched';mark.onclick=()=>markUpToEpisode(ep,episodes);body.appendChild(mark); }
+        item.appendChild(body);list.appendChild(item);
+      });
+      block.appendChild(list);els.episodeGuide.appendChild(block);
+    });
+  }
+  function markUpToEpisode(ep, episodes) {
+    const progress = progressFromEpisode(ep, episodes);
+    draftMeta.episodeProgress = progress;
+    const id = els.showId.value;
+    if (id) {
+      const show=state.shows.find(s=>s.id===id);
+      if(show){show.episodeProgress=progress;show.updatedAt=nowIso();localStorage.setItem(STORAGE_KEY,JSON.stringify(state));render();if(dbx.connected)scheduleSync();}
+    }
+    renderEpisodeGuide(episodes, progress);
+    showToast(`Progress saved through S${ep.season} E${ep.number}`);
+  }
 
   async function lookupShows() {
     const q=els.showTitle.value.trim();if(!q){els.lookupStatus.textContent='Enter a title first.';return;}
@@ -887,6 +1033,7 @@
     try{
       const [seasonsRes,episodesRes,imagesRes]=await Promise.all([fetch(`https://api.tvmaze.com/shows/${show.id}/seasons`),fetch(`https://api.tvmaze.com/shows/${show.id}/episodes`),fetch(`https://api.tvmaze.com/shows/${show.id}/images`)]);
       const seasons=seasonsRes.ok?await seasonsRes.json():[];const episodes=episodesRes.ok?await episodesRes.json():[];const images=imagesRes.ok?await imagesRes.json():[];
+      const normalizedEpisodes=normalizeTvmazeEpisodes(episodes);episodeCache.set(show.id, normalizedEpisodes);
       const backgrounds=images.filter(img=>img?.type==='background'&&img?.resolutions?.original?.url);
       const banners=images.filter(img=>img?.type==='banner'&&img?.resolutions?.original?.url);
       const artwork=(backgrounds.find(img=>img.main)||backgrounds[0]||banners.find(img=>img.main)||banners[0])?.resolutions?.original?.url || show.image?.original || show.image?.medium || els.showPoster.value;
@@ -896,7 +1043,7 @@
       els.showSeasons.value=seasons.length||'';els.showEpisodes.value=episodes.length||'';const runtime=show.averageRuntime||show.runtime||medianRuntime(episodes);els.showRuntime.value=runtime||'';
       const total=episodes.reduce((sum,e)=>sum+(Number(e.runtime)||0),0);els.showTotalMinutes.value=total||((runtime&&episodes.length)?runtime*episodes.length:'');
       if(!els.showMetacritic.value)els.showMetacritic.value=`https://www.metacritic.com/tv/${slugify(show.name)}/`;
-      draftMeta.tvmazeId=show.id;draftMeta.imdbId=show.externals?.imdb||'';draftMeta.tmdbId=null;updatePosterPreview();
+      if(draftMeta.tvmazeId && draftMeta.tvmazeId!==show.id)draftMeta.episodeProgress=null;draftMeta.tvmazeId=show.id;draftMeta.imdbId=show.externals?.imdb||'';draftMeta.tmdbId=null;updatePosterPreview();renderEpisodeGuide(normalizedEpisodes,draftMeta.episodeProgress||null);els.episodeGuideStatus.textContent=normalizedEpisodes.length?`${normalizedEpisodes.length} episodes · click an episode for its description.`:'No numbered episodes are available from TVmaze.';els.refreshEpisodesButton.disabled=false;
       els.lookupStatus.textContent='Details and landscape artwork added from TVmaze. You can edit anything before saving.';
       if(prefs.tmdbCredential)await refreshDraftProviders();
     }catch(err){console.error(err);els.lookupStatus.textContent='Basic TVmaze details were found, but episode details could not be loaded.';}
@@ -911,7 +1058,7 @@
       id:existing?.id||uuid(),title:els.showTitle.value.trim().slice(0,120),columnId:state.columns.some(c=>c.id===selectedColumn)?selectedColumn:state.columns[0].id,archive,
       poster:safeUrl(els.showPoster.value),metacritic:safeUrl(els.showMetacritic.value),seasons:integerOrNull(els.showSeasons.value),episodes:integerOrNull(els.showEpisodes.value),runtime:integerOrNull(els.showRuntime.value),totalMinutes:integerOrNull(els.showTotalMinutes.value),
       genres:cleanGenres(splitComma(els.showGenres.value)),network:safeText(els.showNetwork.value,100),country:safeText(els.showCountry.value,80),seriesStatus:safeText(els.showSeriesStatus.value,50),watchingWith:safeText(els.showWatchingWith.value,60),favourite:Boolean(draftMeta.favourite),
-      rating:clampRating(els.showRating.value),tags:cleanTags(splitComma(els.showTags.value)),notes:String(els.showNotes.value||'').slice(0,4000),firstAirYear:positiveIntegerOrNull(els.showYear.value),providers:cleanProviders(draftMeta.providers),providerLink:safeUrl(draftMeta.providerLink||''),providersUpdatedAt:validDateString(draftMeta.providersUpdatedAt)?draftMeta.providersUpdatedAt:null,
+      rating:clampRating(els.showRating.value),tags:cleanTags(splitComma(els.showTags.value)),notes:String(els.showNotes.value||'').slice(0,4000),firstAirYear:positiveIntegerOrNull(els.showYear.value),providers:cleanProviders(draftMeta.providers),providerLink:safeUrl(draftMeta.providerLink||''),providersUpdatedAt:validDateString(draftMeta.providersUpdatedAt)?draftMeta.providersUpdatedAt:null,episodeProgress:normalizeEpisodeProgress(draftMeta.episodeProgress),
       tvmazeId:positiveIntegerOrNull(draftMeta.tvmazeId),imdbId:safeText(draftMeta.imdbId,40),tmdbId:positiveIntegerOrNull(draftMeta.tmdbId),order,createdAt:existing?.createdAt||t,updatedAt:t
     };
   }
@@ -987,7 +1134,7 @@
     els.searchInput.oninput=render;els.sortSelect.onchange=()=>{sortMode=els.sortSelect.value;render();};
     els.filterButton.onclick=openFilterDrawer;els.closeFilterButton.onclick=closeFilterDrawer;els.drawerScrim.onclick=closeFilterDrawer;els.applyFiltersButton.onclick=applyFilters;els.clearFiltersButton.onclick=clearFilterDraft;els.saveViewButton.onclick=saveCurrentView;
     [els.filterEpisodes,els.filterTime,els.filterYearFrom,els.filterYearTo,els.filterRating,els.filterFavourite].forEach(el=>{el.addEventListener('change',readDraftScalarFilters);});
-    els.showForm.onsubmit=saveShowFromForm;els.closeShowButton.onclick=closeShowDialog;els.cancelShowButton.onclick=closeShowDialog;els.deleteShowButton.onclick=deleteCurrentShow;els.lookupShowButton.onclick=lookupShows;els.showPoster.oninput=updatePosterPreview;els.showFavourite.onclick=()=>setFavourite(!draftMeta.favourite);els.refreshShowStreamingButton.onclick=refreshDraftProviders;
+    els.showForm.onsubmit=saveShowFromForm;els.closeShowButton.onclick=closeShowDialog;els.cancelShowButton.onclick=closeShowDialog;els.deleteShowButton.onclick=deleteCurrentShow;els.lookupShowButton.onclick=lookupShows;els.showPoster.oninput=updatePosterPreview;els.showFavourite.onclick=()=>setFavourite(!draftMeta.favourite);els.refreshShowStreamingButton.onclick=refreshDraftProviders;els.refreshEpisodesButton.onclick=()=>loadEpisodeGuide(currentEpisodeShow()||draftMeta,true);
     els.genreAddButton.onclick=()=>addPickerValue('genres');els.tagAddButton.onclick=()=>addPickerValue('tags');els.genreAddInput.onkeydown=e=>{if(e.key==='Enter'){e.preventDefault();addPickerValue('genres');}};els.tagAddInput.onkeydown=e=>{if(e.key==='Enter'){e.preventDefault();addPickerValue('tags');}};
     els.showDialog.addEventListener('close', () => {
       const trigger = lastShowTrigger;
