@@ -1,7 +1,7 @@
 (() => {
   'use strict';
 
-  const APP_VERSION = '2.8.0';
+  const APP_VERSION = '2.8.1';
   const STORAGE_KEY = 'tvBoard.state.v1';
   const DROPBOX_KEY = 'tvBoard.dropbox.v1';
   const PKCE_KEY = 'tvBoard.pkce.v1';
@@ -1503,11 +1503,21 @@
     const next=entries.find(ep=>!watchedSet.has(episodeDateKey(ep)))||null;
     return {season:last.season,episode:last.number,episodeId:last.id||null,title:last.name||'',nextSeason:next?.season||null,nextEpisode:next?.number||null,nextEpisodeId:next?.id||null,nextTitle:next?.name||'',watchedCount:watchedSet.size,totalCount:episodes.length||null,seasonWatchedCount:watchedEntries.length,seasonTotalCount:entries.length,seasonRemaining:Math.max(0,entries.length-watchedEntries.length),updatedAt:nowIso()};
   }
+  function draftIsCurrentlyWatching() {
+    const watching=state.columns.find(c=>c.id==='watching'||String(c.name||'').toLowerCase()==='watching');
+    return Boolean(watching && els.showLocation.value===`status:${watching.id}`);
+  }
+  function watchedDateForInteraction() { return draftIsCurrentlyWatching() ? todayIsoDate() : ''; }
   function applyTrackingToDraft(episodes,{watched,dates,activeSeason,run}) {
     const cleanWatched=normalizeWatchedEpisodes(watched,dates);const cleanDates=normalizeEpisodeWatchDates(dates);const season=positiveIntegerOrNull(activeSeason);
     draftMeta.watchedEpisodes=cleanWatched;draftMeta.episodeWatchDates=cleanDates;draftMeta.activeSeason=season;draftMeta.episodeProgress=progressFromTracking(episodes,cleanWatched,season);
-    if(run){run.watchedEpisodes=cleanWatched;run.episodeWatchDates=cleanDates;run.activeSeason=season;run.updatedAt=nowIso();if(!run.startedDate)run.startedDate=todayIsoDate();run.watchingWith=safeText(els.showWatchingWith.value||run.watchingWith,60);draftMeta.currentViewingRunId=run.id;}
-    if(!draftMeta.startedDate && cleanWatched.length)draftMeta.startedDate=todayIsoDate();
+    const currentViewing=draftIsCurrentlyWatching();
+    if(run){
+      run.watchedEpisodes=cleanWatched;run.episodeWatchDates=cleanDates;run.activeSeason=season;run.updatedAt=nowIso();
+      if(currentViewing&&!run.startedDate)run.startedDate=validIsoDate(els.showStartedDate.value)||todayIsoDate();
+      run.watchingWith=safeText(els.showWatchingWith.value||run.watchingWith,60);draftMeta.currentViewingRunId=run.status==='in-progress'?run.id:draftMeta.currentViewingRunId;
+    }
+    if(currentViewing&&!draftMeta.startedDate&&cleanWatched.length)draftMeta.startedDate=validIsoDate(els.showStartedDate.value)||run?.startedDate||todayIsoDate();
     els.showStartedDate.value=draftMeta.startedDate||run?.startedDate||els.showStartedDate.value;
   }
   function persistDraftTrackingIfNeeded() {
@@ -1540,20 +1550,20 @@
     });
   }
   function toggleEpisodeWatched(ep,episodes) {
-    let tracking=trackingForDraft(episodes);let run=tracking.run;if(!run&&tracking.watched.length){draftMeta.watchedEpisodes=tracking.watched;draftMeta.activeSeason=tracking.activeSeason;}if(!run){run=ensureViewingRun(draftMeta,{startedDate:els.showStartedDate.value||todayIsoDate(),watchingWith:els.showWatchingWith.value});tracking=trackingForDraft(episodes);}
-    const watched=new Set(tracking.watched);const dates={...tracking.dates};const key=episodeDateKey(ep);if(watched.has(key)){watched.delete(key);delete dates[key];}else{watched.add(key);if(!dates[key])dates[key]=todayIsoDate();}
+    let tracking=trackingForDraft(episodes);let run=tracking.run;if(!run&&tracking.watched.length){draftMeta.watchedEpisodes=tracking.watched;draftMeta.activeSeason=tracking.activeSeason;}if(!run&&draftIsCurrentlyWatching()){run=ensureViewingRun(draftMeta,{startedDate:els.showStartedDate.value||todayIsoDate(),watchingWith:els.showWatchingWith.value});tracking=trackingForDraft(episodes);}
+    const watched=new Set(tracking.watched);const dates={...tracking.dates};const key=episodeDateKey(ep);if(watched.has(key)){watched.delete(key);delete dates[key];}else{watched.add(key);const watchedDate=watchedDateForInteraction();if(watchedDate&&!dates[key])dates[key]=watchedDate;}
     applyTrackingToDraft(episodes,{watched:[...watched],dates,activeSeason:ep.season,run});persistDraftTrackingIfNeeded();renderViewingHistory();renderEpisodeGuide(episodes,draftMeta.episodeProgress);showToast(watched.has(key)?`S${ep.season} E${ep.number} marked watched`:`S${ep.season} E${ep.number} marked unwatched`);
   }
   function updateEpisodeWatchedDate(ep,episodes,value) {
     const tracking=trackingForDraft(episodes);const run=tracking.run;const dates={...tracking.dates};const key=episodeDateKey(ep);const date=validIsoDate(value);if(date)dates[key]=date;else delete dates[key];applyTrackingToDraft(episodes,{watched:tracking.watched,dates,activeSeason:tracking.activeSeason||ep.season,run});persistDraftTrackingIfNeeded();renderViewingHistory();renderEpisodeGuide(episodes,draftMeta.episodeProgress);showToast(date?'Watched date updated':'Watched date cleared');
   }
   function markSeasonUpToEpisode(ep,episodes) {
-    let tracking=trackingForDraft(episodes);let run=tracking.run;if(!run&&tracking.watched.length){draftMeta.watchedEpisodes=tracking.watched;draftMeta.activeSeason=tracking.activeSeason;}if(!run){run=ensureViewingRun(draftMeta,{startedDate:els.showStartedDate.value||todayIsoDate(),watchingWith:els.showWatchingWith.value});tracking=trackingForDraft(episodes);}
-    const watched=new Set(tracking.watched);const dates={...tracking.dates};const today=todayIsoDate();episodes.filter(item=>item.season===ep.season&&item.number<=ep.number).forEach(item=>{const key=episodeDateKey(item);watched.add(key);if(!dates[key])dates[key]=today;});applyTrackingToDraft(episodes,{watched:[...watched],dates,activeSeason:ep.season,run});persistDraftTrackingIfNeeded();renderViewingHistory();renderEpisodeGuide(episodes,draftMeta.episodeProgress);showToast(`Season ${ep.season} saved through E${ep.number}`);
+    let tracking=trackingForDraft(episodes);let run=tracking.run;if(!run&&tracking.watched.length){draftMeta.watchedEpisodes=tracking.watched;draftMeta.activeSeason=tracking.activeSeason;}if(!run&&draftIsCurrentlyWatching()){run=ensureViewingRun(draftMeta,{startedDate:els.showStartedDate.value||todayIsoDate(),watchingWith:els.showWatchingWith.value});tracking=trackingForDraft(episodes);}
+    const watched=new Set(tracking.watched);const dates={...tracking.dates};const watchedDate=watchedDateForInteraction();episodes.filter(item=>item.season===ep.season&&item.number<=ep.number).forEach(item=>{const key=episodeDateKey(item);watched.add(key);if(watchedDate&&!dates[key])dates[key]=watchedDate;});applyTrackingToDraft(episodes,{watched:[...watched],dates,activeSeason:ep.season,run});persistDraftTrackingIfNeeded();renderViewingHistory();renderEpisodeGuide(episodes,draftMeta.episodeProgress);showToast(`Season ${ep.season} saved through E${ep.number}`);
   }
   function markSeriesUpToEpisode(ep,episodes) {
-    let tracking=trackingForDraft(episodes);let run=tracking.run;if(!run&&tracking.watched.length){draftMeta.watchedEpisodes=tracking.watched;draftMeta.activeSeason=tracking.activeSeason;}if(!run){run=ensureViewingRun(draftMeta,{startedDate:els.showStartedDate.value||todayIsoDate(),watchingWith:els.showWatchingWith.value});tracking=trackingForDraft(episodes);}
-    const watched=new Set(tracking.watched);const dates={...tracking.dates};const today=todayIsoDate();episodes.filter(item=>item.season<ep.season||(item.season===ep.season&&item.number<=ep.number)).forEach(item=>{const key=episodeDateKey(item);watched.add(key);if(!dates[key])dates[key]=today;});applyTrackingToDraft(episodes,{watched:[...watched],dates,activeSeason:ep.season,run});persistDraftTrackingIfNeeded();renderViewingHistory();renderEpisodeGuide(episodes,draftMeta.episodeProgress);showToast(`Series saved through S${ep.season} E${ep.number}`);
+    let tracking=trackingForDraft(episodes);let run=tracking.run;if(!run&&tracking.watched.length){draftMeta.watchedEpisodes=tracking.watched;draftMeta.activeSeason=tracking.activeSeason;}if(!run&&draftIsCurrentlyWatching()){run=ensureViewingRun(draftMeta,{startedDate:els.showStartedDate.value||todayIsoDate(),watchingWith:els.showWatchingWith.value});tracking=trackingForDraft(episodes);}
+    const watched=new Set(tracking.watched);const dates={...tracking.dates};const watchedDate=watchedDateForInteraction();episodes.filter(item=>item.season<ep.season||(item.season===ep.season&&item.number<=ep.number)).forEach(item=>{const key=episodeDateKey(item);watched.add(key);if(watchedDate&&!dates[key])dates[key]=watchedDate;});applyTrackingToDraft(episodes,{watched:[...watched],dates,activeSeason:ep.season,run});persistDraftTrackingIfNeeded();renderViewingHistory();renderEpisodeGuide(episodes,draftMeta.episodeProgress);showToast(`Series saved through S${ep.season} E${ep.number}`);
   }
 
   function hideLookupSuggestions() {

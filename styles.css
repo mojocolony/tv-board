@@ -852,3 +852,14 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
   .field-grid.three > :last-child { grid-column:auto; }
   .field-grid.three > label { min-width:0; }
 }
+
+
+/* TV v2.8.1 — phone artwork scale + honest historical dates */
+:root[data-theme="dark"] .row-poster,
+:root[data-theme="dark"] .poster-preview { background:#111311; }
+:root[data-theme="dark"] .row-poster.portrait-source::before,
+:root[data-theme="dark"] .poster-preview.portrait-source::before { opacity:0; }
+@media (max-width:430px) {
+  .show-row:not(.watching-now-row), .watching-now-row { grid-template-columns:104px minmax(0,1fr) !important; column-gap:12px !important; }
+  .show-row:not(.watching-now-row) .row-poster, .watching-now-row .row-poster { width:104px !important; }
+}

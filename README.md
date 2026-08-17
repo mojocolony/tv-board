@@ -1,4 +1,4 @@
-# TV v2.8.0
+# TV v2.8.1
 
 TV is the redesigned successor to TV Board. It keeps the existing data/storage contracts while replacing the Kanban board with a scalable visual list library.
 
@@ -33,6 +33,12 @@ Opening TV on a browser that already used TV Board will migrate the existing rec
 - Dropbox OAuth 2 + PKCE sync remains available
 
 
+
+
+## New in v2.8.1
+- Phone-only artwork thumbnails are slightly larger; desktop and iPad sizing are unchanged.
+- Dark mode uses a charcoal fill behind portrait posters instead of the pale/blurred side treatment.
+- Historical episode marking no longer invents a start date or watched date. Dates are recorded automatically only during an active Watching run; older dates remain blank unless entered manually.
 
 ## New in v2.8.0
 
