@@ -242,11 +242,11 @@ code { font-size: .95em; }
 }
 
 /* TV v2.1 — landscape artwork + per-device reading size */
-.show-row { grid-template-columns: 108px minmax(0, 1fr) minmax(150px, .42fr) auto; min-height: 103px; }
-.row-poster { width: 108px; height: 81px; aspect-ratio: 4 / 3; }
-.row-poster img { object-fit: cover; object-position: center; }
-.poster-preview { aspect-ratio: 4 / 3; }
-.poster-preview img { object-fit: cover; object-position: center; }
+.show-row { grid-template-columns: 120px minmax(0, 1fr) minmax(150px, .42fr) auto; min-height: 90px; }
+.row-poster { width: 120px; aspect-ratio: 16 / 9; height: auto; background: #e8e4db; }
+.row-poster img { width: 100%; height: 100%; object-fit: contain; object-position: center; }
+.poster-preview { aspect-ratio: 16 / 9; background: #e8e4db; }
+.poster-preview img { width: 100%; height: 100%; object-fit: contain; object-position: center; }
 .show-edit-layout { grid-template-columns: 230px minmax(0,1fr); }
 
 .font-size-selector { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
@@ -271,14 +271,14 @@ h1 { font-size: calc(44px * var(--tv-font-scale)); }
 .settings-card h3 { font-size: calc(16px * var(--tv-font-scale)); }
 
 @media (max-width: 900px) {
-  .show-row { grid-template-columns: 96px minmax(0,1fr) auto; }
-  .row-poster { width: 96px; height: 72px; }
+  .show-row { grid-template-columns: 106px minmax(0,1fr) auto; }
+  .row-poster { width: 106px; height: auto; }
   .show-edit-layout { grid-template-columns: 190px minmax(0,1fr); }
 }
 @media (max-width: 720px) {
   h1 { font-size: calc(34px * var(--tv-font-scale)); }
-  .show-row { min-height: 90px; grid-template-columns: 88px minmax(0,1fr); }
-  .row-poster { width: 88px; height: 66px; }
+  .show-row { min-height: 80px; grid-template-columns: 96px minmax(0,1fr); }
+  .row-poster { width: 96px; height: auto; }
   .row-title { font-size: calc(18px * var(--tv-font-scale)); }
   .row-sub { font-size: calc(10.5px * var(--tv-font-scale)); }
   .row-meta { font-size: calc(10px * var(--tv-font-scale)); }
@@ -286,6 +286,6 @@ h1 { font-size: calc(44px * var(--tv-font-scale)); }
   .font-size-selector { grid-template-columns: 1fr 1fr; }
 }
 @media (max-width: 430px) {
-  .show-row { grid-template-columns: 80px minmax(0,1fr); }
-  .row-poster { width: 80px; height: 60px; }
+  .show-row { grid-template-columns: 88px minmax(0,1fr); }
+  .row-poster { width: 88px; height: auto; }
 }
