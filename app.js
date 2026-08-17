@@ -1,7 +1,7 @@
 (() => {
   'use strict';
 
-  const APP_VERSION = '2.7.0';
+  const APP_VERSION = '2.7.1';
   const STORAGE_KEY = 'tvBoard.state.v1';
   const DROPBOX_KEY = 'tvBoard.dropbox.v1';
   const PKCE_KEY = 'tvBoard.pkce.v1';
@@ -20,7 +20,7 @@
     alphabetJump: $('alphabetJump'),
     manageSavedViewsButton: $('manageSavedViewsButton'), settingsButton: $('settingsButton'), backFilterButton: $('backFilterButton'), backShowButton: $('backShowButton'), backStatusesButton: $('backStatusesButton'),
     viewTitle: $('viewTitle'), viewSubtitle: $('viewSubtitle'), syncChip: $('syncChip'), statusDot: $('statusDot'), syncLabel: $('syncLabel'),
-    addShowButton: $('addShowButton'), emptyAddButton: $('emptyAddButton'), searchInput: $('searchInput'), filterButton: $('filterButton'), filterBadge: $('filterBadge'), sortSelect: $('sortSelect'), sortControl: $('sortControl'), sortButton: $('sortButton'), sortButtonLabel: $('sortButtonLabel'), sortMenu: $('sortMenu'),
+    addShowButton: $('addShowButton'), emptyAddButton: $('emptyAddButton'), searchInput: $('searchInput'), filterButton: $('filterButton'), filterBadge: $('filterBadge'), sortSelect: $('sortSelect'), sortControl: $('sortControl'), sortButton: $('sortButton'), sortButtonLabel: $('sortButtonLabel'), sortMenu: $('sortMenu'), sortScrim: $('sortScrim'),
     activeFilters: $('activeFilters'), showList: $('showList'), emptyState: $('emptyState'), emptyTitle: $('emptyTitle'), emptyText: $('emptyText'), footerMessage: $('footerMessage'),
     filterDrawer: $('filterDrawer'), drawerScrim: $('drawerScrim'), closeFilterButton: $('closeFilterButton'), filterStatuses: $('filterStatuses'), filterGenres: $('filterGenres'), filterEpisodes: $('filterEpisodes'),
     filterTime: $('filterTime'), filterWatchingWith: $('filterWatchingWith'), filterLetters: $('filterLetters'), filterYearFrom: $('filterYearFrom'), filterYearTo: $('filterYearTo'), filterRating: $('filterRating'), filterFavourite: $('filterFavourite'), filterDateType: $('filterDateType'), filterDateFrom: $('filterDateFrom'), filterDateTo: $('filterDateTo'), filterNetworks: $('filterNetworks'), filterTags: $('filterTags'),
@@ -88,6 +88,8 @@
   let lastShowTrigger = null;
   let lastShowOpenedByPointer = false;
   const episodeCache = new Map();
+  const seasonProgressCache = new Map();
+  const seasonProgressRequests = new Map();
   const castCache = new Map();
 
   function nowIso() { return new Date().toISOString(); }
@@ -751,10 +753,22 @@
   function renderSortControl() {
     if(!els.sortSelect||!els.sortMenu||!els.sortButtonLabel)return;
     els.sortSelect.value=sortMode;const selected=els.sortSelect.selectedOptions?.[0];els.sortButtonLabel.textContent=selected?.textContent||'Sort';
-    els.sortMenu.replaceChildren();[...els.sortSelect.options].forEach(option=>{const button=document.createElement('button');button.type='button';button.className=`sort-menu-item${option.value===sortMode?' active':''}`;button.setAttribute('role','menuitemradio');button.setAttribute('aria-checked',String(option.value===sortMode));button.textContent=option.textContent;button.onclick=()=>{sortMode=option.value;els.sortSelect.value=sortMode;els.sortMenu.hidden=true;els.sortButton.setAttribute('aria-expanded','false');render();};els.sortMenu.appendChild(button);});
+    els.sortMenu.replaceChildren();[...els.sortSelect.options].forEach(option=>{const button=document.createElement('button');button.type='button';button.className=`sort-menu-item${option.value===sortMode?' active':''}`;button.setAttribute('role','menuitemradio');button.setAttribute('aria-checked',String(option.value===sortMode));button.textContent=option.textContent;button.onclick=()=>{sortMode=option.value;els.sortSelect.value=sortMode;closeSortMenu();render();};els.sortMenu.appendChild(button);});
   }
-  function closeSortMenu(){if(!els.sortMenu)return;els.sortMenu.hidden=true;els.sortButton?.setAttribute('aria-expanded','false');}
-  function toggleSortMenu(){if(!els.sortMenu)return;const opening=els.sortMenu.hidden;els.sortMenu.hidden=!opening;els.sortButton?.setAttribute('aria-expanded',String(opening));if(opening)renderSortControl();}
+  function closeSortMenu({restoreFocus=false}={}) {
+    if(!els.sortMenu)return;
+    els.sortMenu.hidden=true;els.sortButton?.setAttribute('aria-expanded','false');if(els.sortScrim)els.sortScrim.hidden=true;document.body.classList.remove('sort-menu-open');
+    if(!els.sidebar.classList.contains('open')&&!els.filterDrawer.classList.contains('open'))document.body.style.overflow='';
+    if(restoreFocus)els.sortButton?.focus();
+  }
+  function toggleSortMenu() {
+    if(!els.sortMenu)return;
+    const opening=els.sortMenu.hidden;if(!opening){closeSortMenu();return;}
+    renderSortControl();els.sortMenu.hidden=false;els.sortButton?.setAttribute('aria-expanded','true');
+    const phone=window.matchMedia('(max-width: 720px)').matches;
+    if(phone){if(els.sortScrim)els.sortScrim.hidden=false;document.body.classList.add('sort-menu-open');document.body.style.overflow='hidden';}
+    requestAnimationFrame(()=>els.sortMenu.querySelector('.sort-menu-item.active')?.scrollIntoView({block:'nearest'}));
+  }
   function renderHeader() {
     const [title] = currentViewInfo();
     const shows = currentShows();
@@ -800,6 +814,64 @@
     }));
   }
 
+  function seasonProgressInfo(show) {
+    const p=show?.episodeProgress;
+    if(!p)return null;
+    const season=positiveIntegerOrNull(p.nextSeason || show.activeSeason || p.season);
+    if(!season)return null;
+    const cached=seasonProgressCache.get(show.id);
+    if(cached&&cached.season===season)return cached;
+    if(p.seasonTotalCount&&p.seasonRemaining!==null&&p.seasonRemaining!==undefined){
+      return {season,total:p.seasonTotalCount,watched:p.seasonWatchedCount||Math.max(0,p.seasonTotalCount-p.seasonRemaining),remaining:Math.max(0,p.seasonRemaining)};
+    }
+    return null;
+  }
+
+  async function hydrateSeasonProgress(show) {
+    if(!show?.id||show.archive||!show.tvmazeId||!show.episodeProgress)return;
+    const targetSeason=positiveIntegerOrNull(show.episodeProgress.nextSeason || show.activeSeason || show.episodeProgress.season);
+    const cached=seasonProgressCache.get(show.id);
+    if((cached&&cached.season===targetSeason)||seasonProgressRequests.has(show.id))return;
+    if(cached)seasonProgressCache.delete(show.id);
+    const request=(async()=>{
+      try{
+        let episodes=episodeCache.get(show.tvmazeId);
+        if(!episodes){
+          const res=await fetch(`https://api.tvmaze.com/shows/${show.tvmazeId}/episodes`);
+          if(!res.ok)return;
+          episodes=normalizeTvmazeEpisodes(await res.json());
+          episodeCache.set(show.tvmazeId,episodes);
+        }
+        const p=show.episodeProgress;
+        const season=positiveIntegerOrNull(p.nextSeason || show.activeSeason || p.season);
+        const entries=episodes.filter(ep=>ep.season===season);
+        if(!season||!entries.length)return;
+        const tracking=episodeTracking(show);
+        const watchedSet=new Set(tracking.watchedEpisodes);
+        let watched=entries.filter(ep=>watchedSet.has(episodeDateKey(ep))).length;
+        let remaining=entries.length-watched;
+        // Pre-v2.7 progress markers may not yet have episode-level states. Their
+        // next episode is still enough to derive progress inside this season.
+        if(!watchedSet.size&&p.nextSeason===season&&p.nextEpisode){
+          remaining=entries.filter(ep=>ep.number>=p.nextEpisode).length;
+          watched=Math.max(0,entries.length-remaining);
+        }else if(!watchedSet.size&&!p.nextSeason&&p.season===season){
+          remaining=0;watched=entries.length;
+        }
+        seasonProgressCache.set(show.id,{season,total:entries.length,watched,remaining});
+        if(document.querySelector(`.show-row[data-show-id="${CSS.escape(show.id)}"]`)){
+          renderShowList();renderIcons(els.showList);
+        }
+      }catch(err){console.warn('Could not calculate current-season progress',err);}
+      finally{seasonProgressRequests.delete(show.id);}
+    })();
+    seasonProgressRequests.set(show.id,request);
+  }
+
+  function queueSeasonProgressHydration(shows) {
+    shows.filter(show=>!show.archive&&show.tvmazeId&&show.episodeProgress).forEach(hydrateSeasonProgress);
+  }
+
   function renderShowList() {
     const shows = currentShows();
     els.showList.replaceChildren();
@@ -812,6 +884,7 @@
       return;
     }
     for (const show of shows) els.showList.appendChild(activeView==='watching-now'?buildWatchingNowRow(show):buildShowRow(show));
+    queueSeasonProgressHydration(shows);
   }
 
   function setArtwork(container, url) {
@@ -839,7 +912,9 @@
     const meta = document.createElement('div'); meta.className = 'row-meta';
     if (show.seasons !== null) meta.appendChild(metaSpan('library', `${show.seasons} ${show.seasons === 1 ? 'season' : 'seasons'}`));
     if (!show.archive && show.episodeProgress) { const p = show.episodeProgress; const progressText = p.nextSeason && p.nextEpisode ? `Next: S${p.nextSeason} E${p.nextEpisode}` : `Season ${p.season} complete`; meta.appendChild(metaSpan('play', progressText)); }
-    if (show.episodes !== null) meta.appendChild(metaSpan('tv', `${show.episodes} ${show.episodes === 1 ? 'episode' : 'episodes'}`));
+    const seasonInfo=!show.archive?seasonProgressInfo(show):null;
+    if(seasonInfo&&seasonInfo.remaining>0) meta.appendChild(metaSpan('tv', `${seasonInfo.remaining} left in S${seasonInfo.season}`));
+    else if(!show.episodeProgress&&show.episodes !== null) meta.appendChild(metaSpan('tv', `${show.episodes} ${show.episodes === 1 ? 'episode' : 'episodes'}`));
     const duration = formatDuration(effectiveTotalMinutes(show));
     if (duration) meta.appendChild(metaSpan('clock', duration));
     if (show.country) meta.appendChild(metaSpan('calendar', show.country));
@@ -1363,8 +1438,16 @@
     // Older TV versions stored a single linear progress marker. Preserve that known
     // progress once, but all new tracking is episode-by-episode and season-aware.
     if(!watched.length && draftMeta.episodeProgress && episodes.length){
-      const legacyIndex=episodeProgressIndex(draftMeta.episodeProgress,episodes);
-      if(legacyIndex>=0)watched=episodes.slice(0,legacyIndex+1).map(episodeDateKey);
+      const legacy=draftMeta.episodeProgress;
+      const legacySeason=positiveIntegerOrNull(legacy.season);
+      const legacyEpisode=positiveIntegerOrNull(legacy.episode);
+      if(legacySeason&&legacyEpisode){
+        // Older TV builds stored one linear “through here” marker. Do not infer
+        // that every earlier season was watched; preserve only known progress
+        // inside the season the user was actually in.
+        watched=episodes.filter(ep=>ep.season===legacySeason&&ep.number<=legacyEpisode).map(episodeDateKey);
+        activeSeason=positiveIntegerOrNull(legacy.nextSeason)||legacySeason;
+      }
     }
     return {run,dates,watched,activeSeason};
   }
@@ -1388,7 +1471,7 @@
     els.showStartedDate.value=draftMeta.startedDate||run?.startedDate||els.showStartedDate.value;
   }
   function persistDraftTrackingIfNeeded() {
-    const id=els.showId.value;if(!id)return;const show=state.shows.find(s=>s.id===id);if(!show)return;
+    const id=els.showId.value;if(!id)return;const show=state.shows.find(s=>s.id===id);if(!show)return;seasonProgressCache.delete(id);
     ['viewingRuns','currentViewingRunId','watchedEpisodes','episodeWatchDates','activeSeason','episodeProgress','startedDate','finishedDate','abandonedDate'].forEach(key=>{show[key]=clone(draftMeta[key]??show[key]);});
     if(els.showWatchingWith.value)show.watchingWith=safeText(els.showWatchingWith.value,60);
     show.updatedAt=nowIso();localStorage.setItem(STORAGE_KEY,JSON.stringify(state));render();if(dbx.connected)scheduleSync();
@@ -1624,7 +1707,7 @@
   function bindEvents(){
     els.mobileMenuButton.onclick=openMobileNav;els.sidebarScrim.onclick=closeMobileNav;
     els.addShowButton.onclick=()=>openShowDialog();els.emptyAddButton.onclick=()=>openShowDialog();
-    els.searchInput.oninput=render;els.sortSelect.onchange=()=>{sortMode=els.sortSelect.value;render();};if(els.sortButton)els.sortButton.onclick=toggleSortMenu;
+    els.searchInput.oninput=render;els.sortSelect.onchange=()=>{sortMode=els.sortSelect.value;render();};if(els.sortButton)els.sortButton.onclick=toggleSortMenu;if(els.sortScrim)els.sortScrim.onclick=()=>closeSortMenu();
     els.filterButton.onclick=openFilterDrawer;els.closeFilterButton.onclick=()=>closeFilterDrawer();els.backFilterButton.onclick=()=>closeFilterDrawer();els.drawerScrim.onclick=()=>closeFilterDrawer();els.applyFiltersButton.onclick=applyFilters;els.clearFiltersButton.onclick=clearFilterDraft;els.saveViewButton.onclick=saveCurrentView;
     [els.filterEpisodes,els.filterTime,els.filterYearFrom,els.filterYearTo,els.filterRating,els.filterFavourite,els.filterDateType,els.filterDateFrom,els.filterDateTo].forEach(el=>{el.addEventListener('change',readDraftScalarFilters);});
     els.showForm.onsubmit=saveShowFromForm;els.closeShowButton.onclick=()=>closeShowDialog();els.backShowButton.onclick=()=>closeShowDialog();els.cancelShowButton.onclick=()=>closeShowDialog();els.deleteShowButton.onclick=deleteCurrentShow;els.lookupShowButton.onclick=lookupShows;els.showTitle.addEventListener('input',scheduleTitleAutocomplete);els.showTitle.addEventListener('keydown',e=>{if(e.key==='ArrowDown'&&!els.lookupResults.hidden){const first=lookupResultButtons()[0];if(first){e.preventDefault();first.focus();}}else if(e.key==='Enter'&&!els.lookupResults.hidden){const first=lookupResultButtons()[0];if(first){e.preventDefault();first.click();}}});els.showPoster.oninput=updatePosterPreview;els.showFavourite.onclick=()=>setFavourite(!draftMeta.favourite);els.showLocation.onchange=()=>{updateWatchedEpisodeChoice();renderViewingHistory();};if(els.startRewatchButton)els.startRewatchButton.onclick=startRewatch;els.refreshShowStreamingButton.onclick=refreshDraftProviders;els.refreshEpisodesButton.onclick=()=>loadEpisodeGuide(currentEpisodeShow()||draftMeta,true);
@@ -1662,8 +1745,9 @@
       closeTopOverlayDirect();
     });
     document.addEventListener('pointerdown',e=>{if(els.sortControl&&!els.sortControl.contains(e.target))closeSortMenu();if(els.watchingWithSuggestions&&!els.watchingWithSuggestions.hidden&&!e.target.closest('.watching-with-field'))hideWatchingWithSuggestions();});
+    window.addEventListener('resize',()=>{if(els.sortMenu&&!els.sortMenu.hidden)closeSortMenu();},{passive:true});
     document.addEventListener('keydown',e=>{
-      if(e.key==='Escape'){if(els.sortMenu&&!els.sortMenu.hidden){closeSortMenu();return;}if(els.watchingWithSuggestions&&!els.watchingWithSuggestions.hidden){hideWatchingWithSuggestions();return;}if(history.state?.tvOverlay){history.back();return;}if(closeTopOverlayDirect())return;}
+      if(e.key==='Escape'){if(els.sortMenu&&!els.sortMenu.hidden){closeSortMenu({restoreFocus:true});return;}if(els.watchingWithSuggestions&&!els.watchingWithSuggestions.hidden){hideWatchingWithSuggestions();return;}if(history.state?.tvOverlay){history.back();return;}if(closeTopOverlayDirect())return;}
       const target=e.target;const element=target instanceof HTMLElement ? target : null;
       if(e.key==='Enter'&&els.showDialog.open&&!e.defaultPrevented&&!e.metaKey&&!e.ctrlKey&&!e.altKey){
         if(element?.closest('textarea,button,summary,details,[contenteditable="true"]'))return;

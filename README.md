@@ -1,4 +1,4 @@
-# TV v2.7.0
+# TV v2.7.1
 
 TV is the redesigned successor to TV Board. It keeps the existing data/storage contracts while replacing the Kanban board with a scalable visual list library.
 
@@ -32,6 +32,13 @@ Opening TV on a browser that already used TV Board will migrate the existing rec
 - JSON import/export remains available
 - Dropbox OAuth 2 + PKCE sync remains available
 
+
+## New in v2.7.1
+
+- Current-season progress now appears directly in library rows (for example, `Next: S12 E5 · 6 left in S12`) once TVmaze episode data is available.
+- Legacy single progress markers no longer imply that every earlier season was watched.
+- Sort is a compact two-column anchored popover on desktop, a touch-sized constrained popover on iPad, and a bottom sheet on iPhone.
+- Removed the nested/double outline from the Sort control; keyboard focus still has a clear accessibility ring.
 
 ## New in v2.7.0
 
