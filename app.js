@@ -1,7 +1,7 @@
 (() => {
   'use strict';
 
-  const APP_VERSION = '2.1.4';
+  const APP_VERSION = '2.1.5';
   const STORAGE_KEY = 'tvBoard.state.v1';
   const DROPBOX_KEY = 'tvBoard.dropbox.v1';
   const PKCE_KEY = 'tvBoard.pkce.v1';
@@ -80,6 +80,8 @@
   let syncTimer = null;
   let toastTimer = null;
   let providerRefreshRunning = false;
+  let lastShowTrigger = null;
+  let lastShowOpenedByPointer = false;
 
   function nowIso() { return new Date().toISOString(); }
   function uuid() { return crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}-${Math.random().toString(16).slice(2)}`; }
@@ -604,7 +606,11 @@
     const pill = document.createElement('span'); pill.className = `status-pill${status.archive ? ' archive' : ''}`; pill.textContent = status.name;
     if (!status.archive) { pill.style.background = hexAlpha(status.color, .12); pill.style.color = status.color; }
     row.append(poster, main, personal, pill);
-    row.addEventListener('click', () => openShowDialog(show));
+    row.addEventListener('click', (event) => {
+      lastShowTrigger = row;
+      lastShowOpenedByPointer = event.detail > 0;
+      openShowDialog(show);
+    });
     return row;
   }
   function metaSpan(icon, text) { const span = document.createElement('span'); span.innerHTML = `${iconSvg(icon)}<b></b>`; span.querySelector('b').style.fontWeight = '500'; span.querySelector('b').textContent = text; return span; }
@@ -934,6 +940,13 @@
     els.filterButton.onclick=openFilterDrawer;els.closeFilterButton.onclick=closeFilterDrawer;els.drawerScrim.onclick=closeFilterDrawer;els.applyFiltersButton.onclick=applyFilters;els.clearFiltersButton.onclick=clearFilterDraft;els.saveViewButton.onclick=saveCurrentView;
     [els.filterEpisodes,els.filterTime,els.filterYearFrom,els.filterYearTo,els.filterRating,els.filterFavourite].forEach(el=>{el.addEventListener('change',readDraftScalarFilters);});
     els.showForm.onsubmit=saveShowFromForm;els.closeShowButton.onclick=closeShowDialog;els.cancelShowButton.onclick=closeShowDialog;els.deleteShowButton.onclick=deleteCurrentShow;els.lookupShowButton.onclick=lookupShows;els.showPoster.oninput=updatePosterPreview;els.showFavourite.onclick=()=>setFavourite(!draftMeta.favourite);els.refreshShowStreamingButton.onclick=refreshDraftProviders;
+    els.showDialog.addEventListener('close', () => {
+      const trigger = lastShowTrigger;
+      const openedByPointer = lastShowOpenedByPointer;
+      lastShowTrigger = null;
+      lastShowOpenedByPointer = false;
+      if (openedByPointer && trigger?.isConnected) requestAnimationFrame(() => trigger.blur());
+    });
     els.settingsButton.onclick=openSettings;els.closeSettingsButton.onclick=()=>els.settingsDialog.close();els.openStatusesButton.onclick=()=>{renderStatusManager();els.statusesDialog.showModal();};els.closeStatusesButton.onclick=()=>els.statusesDialog.close();
     els.addStatusForm.onsubmit=e=>{e.preventDefault();addStatus(els.newStatusName.value);els.newStatusName.value='';};
     els.manageSavedViewsButton.onclick=()=>{renderSavedViewManager();els.savedViewsDialog.showModal();};els.closeSavedViewsButton.onclick=()=>els.savedViewsDialog.close();

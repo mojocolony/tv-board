@@ -88,6 +88,7 @@ h3 { font-size: 15px; }
 .show-row { position: relative; min-height: 116px; display: grid; grid-template-columns: 68px minmax(0, 1fr) minmax(150px, .42fr) auto; gap: 16px; align-items: center; padding: 10px 14px 10px 10px; border: 0; border-bottom: 1px solid var(--line); background: transparent; width: 100%; text-align: left; cursor: pointer; }
 .show-row:last-child { border-bottom: 0; }
 .show-row:hover { background: rgba(255,255,255,.64); }
+.show-row:focus-visible { outline: 0; box-shadow: inset 4px 0 0 var(--app-blue); background: rgba(119,141,169,.07); }
 .row-poster { width: 68px; height: 96px; border-radius: 8px; overflow: hidden; background: linear-gradient(135deg,#d9d1c2,#f4eee2 54%,#c5beb0); box-shadow: 0 2px 8px rgba(30,28,24,.08); }
 .row-poster img { width: 100%; height: 100%; object-fit: cover; display: block; }
 .row-poster .poster-fallback { width: 100%; height: 100%; display: grid; place-items: center; color: rgba(47,46,42,.38); }
