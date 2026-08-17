@@ -1,7 +1,7 @@
 (() => {
   'use strict';
 
-  const APP_VERSION = '2.0.0';
+  const APP_VERSION = '2.1.0';
   const STORAGE_KEY = 'tvBoard.state.v1';
   const DROPBOX_KEY = 'tvBoard.dropbox.v1';
   const PKCE_KEY = 'tvBoard.pkce.v1';
@@ -15,17 +15,17 @@
   const $ = id => document.getElementById(id);
   const els = {
     sidebar: $('sidebar'), sidebarScrim: $('sidebarScrim'), mobileMenuButton: $('mobileMenuButton'),
-    statusNav: $('statusNav'), savedViewsNav: $('savedViewsNav'), allCount: $('allCount'), favouritesCount: $('favouritesCount'), watchedCount: $('watchedCount'), abandonedCount: $('abandonedCount'),
+    statusNav: $('statusNav'), watchingWithSection: $('watchingWithSection'), watchingWithNav: $('watchingWithNav'), savedViewsNav: $('savedViewsNav'), allCount: $('allCount'), favouritesCount: $('favouritesCount'), watchedCount: $('watchedCount'), abandonedCount: $('abandonedCount'),
     manageSavedViewsButton: $('manageSavedViewsButton'), settingsButton: $('settingsButton'),
     viewTitle: $('viewTitle'), viewSubtitle: $('viewSubtitle'), syncChip: $('syncChip'), statusDot: $('statusDot'), syncLabel: $('syncLabel'),
     addShowButton: $('addShowButton'), emptyAddButton: $('emptyAddButton'), searchInput: $('searchInput'), filterButton: $('filterButton'), filterBadge: $('filterBadge'), sortSelect: $('sortSelect'),
     activeFilters: $('activeFilters'), showList: $('showList'), emptyState: $('emptyState'), emptyTitle: $('emptyTitle'), emptyText: $('emptyText'), footerMessage: $('footerMessage'),
     filterDrawer: $('filterDrawer'), drawerScrim: $('drawerScrim'), closeFilterButton: $('closeFilterButton'), filterStatuses: $('filterStatuses'), filterGenres: $('filterGenres'), filterEpisodes: $('filterEpisodes'),
-    filterTime: $('filterTime'), filterYearFrom: $('filterYearFrom'), filterYearTo: $('filterYearTo'), filterRating: $('filterRating'), filterFavourite: $('filterFavourite'), filterNetworks: $('filterNetworks'), filterTags: $('filterTags'),
+    filterTime: $('filterTime'), filterWatchingWith: $('filterWatchingWith'), filterYearFrom: $('filterYearFrom'), filterYearTo: $('filterYearTo'), filterRating: $('filterRating'), filterFavourite: $('filterFavourite'), filterNetworks: $('filterNetworks'), filterTags: $('filterTags'),
     clearFiltersButton: $('clearFiltersButton'), saveViewButton: $('saveViewButton'), applyFiltersButton: $('applyFiltersButton'),
     showDialog: $('showDialog'), showForm: $('showForm'), showDialogTitle: $('showDialogTitle'), showId: $('showId'), showTitle: $('showTitle'), showLocation: $('showLocation'), showRating: $('showRating'), showFavourite: $('showFavourite'), showFavouriteText: $('showFavouriteText'),
     showPoster: $('showPoster'), posterPreview: $('posterPreview'), lookupShowButton: $('lookupShowButton'), lookupStatus: $('lookupStatus'), lookupResults: $('lookupResults'), showYear: $('showYear'), showSeasons: $('showSeasons'), showEpisodes: $('showEpisodes'),
-    showRuntime: $('showRuntime'), showTotalMinutes: $('showTotalMinutes'), showSeriesStatus: $('showSeriesStatus'), showNetwork: $('showNetwork'), showCountry: $('showCountry'), showGenres: $('showGenres'), showMetacritic: $('showMetacritic'),
+    showRuntime: $('showRuntime'), showTotalMinutes: $('showTotalMinutes'), showSeriesStatus: $('showSeriesStatus'), showNetwork: $('showNetwork'), showCountry: $('showCountry'), showWatchingWith: $('showWatchingWith'), showGenres: $('showGenres'), showMetacritic: $('showMetacritic'),
     streamingProvidersText: $('streamingProvidersText'), streamingProvidersNote: $('streamingProvidersNote'), refreshShowStreamingButton: $('refreshShowStreamingButton'), showTags: $('showTags'), showNotes: $('showNotes'),
     deleteShowButton: $('deleteShowButton'), closeShowButton: $('closeShowButton'), cancelShowButton: $('cancelShowButton'),
     statusesDialog: $('statusesDialog'), closeStatusesButton: $('closeStatusesButton'), statusManager: $('statusManager'), addStatusForm: $('addStatusForm'), newStatusName: $('newStatusName'),
@@ -33,7 +33,7 @@
     settingsDialog: $('settingsDialog'), closeSettingsButton: $('closeSettingsButton'), openStatusesButton: $('openStatusesButton'), exportButton: $('exportButton'), importInput: $('importInput'),
     tmdbStatus: $('tmdbStatus'), tmdbCredential: $('tmdbCredential'), tmdbTestMessage: $('tmdbTestMessage'), saveTmdbButton: $('saveTmdbButton'), refreshProvidersButton: $('refreshProvidersButton'),
     dropboxStatus: $('dropboxStatus'), dropboxSetup: $('dropboxSetup'), dropboxConnected: $('dropboxConnected'), dropboxAppKey: $('dropboxAppKey'), redirectUriText: $('redirectUriText'), copyRedirectButton: $('copyRedirectButton'),
-    connectDropboxButton: $('connectDropboxButton'), syncNowButton: $('syncNowButton'), disconnectDropboxButton: $('disconnectDropboxButton'), toast: $('toast')
+    connectDropboxButton: $('connectDropboxButton'), syncNowButton: $('syncNowButton'), disconnectDropboxButton: $('disconnectDropboxButton'), fontSizeSelector: $('fontSizeSelector'), toast: $('toast')
   };
 
   const ICONS = {
@@ -177,6 +177,12 @@
     }).sort((a,b) => a.order - b.order || a.name.localeCompare(b.name));
     if (!columns.length) columns = fallback.columns;
     columns.forEach((c,i) => { c.order = i; c.color = safeColour(c.color, i); });
+    const legacyWithColumns = new Map(columns.filter(c => /^with\s+/i.test(c.name)).map(c => [c.id, c.name.replace(/^with\s+/i, '').trim()]));
+    const watchingColumn = columns.find(c => c.id === 'watching' || c.name.toLowerCase() === 'watching');
+    if (watchingColumn && legacyWithColumns.size) {
+      columns = columns.filter(c => !legacyWithColumns.has(c.id));
+      columns.forEach((c,i) => { c.order = i; });
+    }
     const validIds = new Set(columns.map(c => c.id));
     const first = columns[0].id;
 
@@ -188,7 +194,7 @@
       return {
         id: safeText(s.id, 100),
         title: safeText(s.title, 120),
-        columnId: validIds.has(String(s.columnId)) ? String(s.columnId) : first,
+        columnId: legacyWithColumns.has(String(s.columnId)) && watchingColumn ? watchingColumn.id : (validIds.has(String(s.columnId)) ? String(s.columnId) : first),
         archive,
         poster: safeUrl(s.poster || ''),
         metacritic: safeUrl(s.metacritic || ''),
@@ -200,6 +206,7 @@
         network: safeText(s.network || s.webChannel || '', 100),
         country: safeText(s.country || '', 80),
         seriesStatus: safeText(s.seriesStatus || s.status || '', 50),
+        watchingWith: safeText(s.watchingWith || s.viewingWith || legacyWithColumns.get(String(s.columnId)) || '', 60),
         favourite: Boolean(s.favourite || s.favorite),
         tags: Array.isArray(s.tags) ? cleanTags(s.tags) : cleanTags(splitComma(s.tags)),
         rating: clampRating(s.rating),
@@ -265,8 +272,8 @@
   function loadPrefs() {
     try {
       const parsed = JSON.parse(localStorage.getItem(PREFS_KEY));
-      return parsed && typeof parsed === 'object' ? { tmdbCredential: '', ...parsed } : { tmdbCredential: '' };
-    } catch (_) { return { tmdbCredential: '' }; }
+      return parsed && typeof parsed === 'object' ? { tmdbCredential: '', fontSize: 'standard', ...parsed } : { tmdbCredential: '', fontSize: 'standard' };
+    } catch (_) { return { tmdbCredential: '', fontSize: 'standard' }; }
   }
   function loadUi() {
     try {
@@ -278,7 +285,7 @@
     ui = { activeView, filters, sort: sortMode };
     localStorage.setItem(UI_KEY, JSON.stringify(ui));
   }
-  function savePrefs() { localStorage.setItem(PREFS_KEY, JSON.stringify(prefs)); updateTmdbUI(); }
+  function savePrefs() { localStorage.setItem(PREFS_KEY, JSON.stringify(prefs)); updateTmdbUI(); applyFontSize(); }
   function saveDropbox() { localStorage.setItem(DROPBOX_KEY, JSON.stringify(dbx)); updateDropboxUI(); }
   function saveState({ sync = true, rerender = true } = {}) {
     state = normalizeState(state);
@@ -288,12 +295,13 @@
   }
 
   function emptyFilters() {
-    return { statuses: [], genres: [], episodes: '', time: '', yearFrom: '', yearTo: '', rating: '', favourite: '', networks: [], tags: [] };
+    return { statuses: [], watchingWith: [], genres: [], episodes: '', time: '', yearFrom: '', yearTo: '', rating: '', favourite: '', networks: [], tags: [] };
   }
   function normalizeFilters(raw) {
     const f = { ...emptyFilters(), ...(raw || {}) };
     return {
       statuses: cleanList(f.statuses, 50, 100),
+      watchingWith: cleanList(f.watchingWith, 50, 60),
       genres: cleanGenres(f.genres),
       episodes: ['','1-6','7-12','13-24','25-49','50+'].includes(f.episodes) ? f.episodes : '',
       time: ['','under5','under10','10-20','20-40','40+'].includes(f.time) ? f.time : '',
@@ -345,6 +353,11 @@
     if (activeView === ARCHIVE_WATCHED) return show.archive === ARCHIVE_WATCHED;
     if (activeView === ARCHIVE_ABANDONED) return show.archive === ARCHIVE_ABANDONED;
     if (activeView.startsWith('status:')) return !show.archive && show.columnId === activeView.slice(7);
+    if (activeView.startsWith('with:')) {
+      const who = decodeURIComponent(activeView.slice(5)).toLowerCase();
+      const watching = state.columns.find(c => c.id === 'watching' || c.name.toLowerCase() === 'watching');
+      return !show.archive && (!watching || show.columnId === watching.id) && show.watchingWith.toLowerCase() === who;
+    }
     if (activeView.startsWith('saved:')) return true;
     return true;
   }
@@ -352,12 +365,13 @@
   function searchMatch(show) {
     const q = els.searchInput.value.trim().toLowerCase();
     if (!q) return true;
-    const haystack = [show.title, show.network, show.country, show.seriesStatus, ...(show.genres || []), ...(show.providers || []), ...(show.tags || []), show.notes].join(' ').toLowerCase();
+    const haystack = [show.title, show.network, show.country, show.seriesStatus, show.watchingWith, ...(show.genres || []), ...(show.providers || []), ...(show.tags || []), show.notes].join(' ').toLowerCase();
     return haystack.includes(q);
   }
 
   function filtersMatch(show, f = filters) {
     if (f.statuses.length && !f.statuses.includes(statusFor(show).id)) return false;
+    if (f.watchingWith.length && !f.watchingWith.some(w => show.watchingWith.toLowerCase() === w.toLowerCase())) return false;
     if (f.genres.length && !f.genres.some(g => show.genres.some(sg => sg.toLowerCase() === g.toLowerCase()))) return false;
     if (f.networks.length) {
       const values = allNetworkValues(show).map(x => x.toLowerCase());
@@ -425,6 +439,10 @@
     if (activeView === 'favourites') return ['Favourites', 'Shows you have marked as favourites.'];
     if (activeView === ARCHIVE_WATCHED) return ['Watched', 'Shows you have finished.'];
     if (activeView === ARCHIVE_ABANDONED) return ['Abandoned', 'Shows you stopped watching.'];
+    if (activeView.startsWith('with:')) {
+      const who = decodeURIComponent(activeView.slice(5));
+      return [`With ${who}`, `Shows you are currently watching with ${who}.`];
+    }
     if (activeView.startsWith('status:')) {
       const c = state.columns.find(x => x.id === activeView.slice(7));
       return [c?.name || 'Status', `Shows currently marked ${c?.name || 'with this status'}.`];
@@ -436,9 +454,17 @@
     return ['All Shows', 'Every show in your TV library.'];
   }
 
+  function validFontSize(value){ return ['small','standard','large','extra-large'].includes(value) ? value : 'standard'; }
+  function applyFontSize(){
+    prefs.fontSize=validFontSize(prefs.fontSize); document.documentElement.dataset.fontSize=prefs.fontSize;
+    if(els.fontSizeSelector) els.fontSizeSelector.querySelectorAll('[data-font-size]').forEach(btn=>btn.classList.toggle('active',btn.dataset.fontSize===prefs.fontSize));
+  }
+
   function render() {
+    applyFontSize();
     state = normalizeState(state);
     if (activeView.startsWith('status:') && !state.columns.some(c => c.id === activeView.slice(7))) activeView = 'all';
+    if (activeView.startsWith('with:') && !decodeURIComponent(activeView.slice(5))) activeView = 'all';
     if (activeView.startsWith('saved:') && !state.savedViews.some(v => v.id === activeView.slice(6))) activeView = 'all';
     saveUi();
     renderNavigation();
@@ -464,6 +490,16 @@
       btn.innerHTML = `<span class="nav-icon">${iconSvg('bookmark')}</span><span></span><span class="nav-count">${activeShows.filter(s => s.columnId === c.id).length}</span>`;
       btn.children[1].textContent = c.name;
       els.statusNav.appendChild(btn);
+    });
+
+    const watching = state.columns.find(c => c.id === 'watching' || c.name.toLowerCase() === 'watching');
+    const withValues = cleanList(state.shows.filter(s => !s.archive && (!watching || s.columnId === watching.id)).map(s => s.watchingWith).filter(Boolean), 50, 60).sort((a,b) => a.localeCompare(b, undefined, { sensitivity: 'base' }));
+    els.watchingWithNav.replaceChildren();
+    els.watchingWithSection.hidden = withValues.length === 0;
+    withValues.forEach(who => {
+      const btn=document.createElement('button'); btn.className='nav-item'; btn.dataset.view=`with:${encodeURIComponent(who)}`;
+      btn.innerHTML=`<span class="nav-icon">${iconSvg('heart')}</span><span></span><span class="nav-count">${state.shows.filter(s => !s.archive && (!watching || s.columnId===watching.id) && s.watchingWith.toLowerCase()===who.toLowerCase()).length}</span>`;
+      btn.children[1].textContent=`With ${who}`; els.watchingWithNav.appendChild(btn);
     });
 
     els.savedViewsNav.replaceChildren();
@@ -574,13 +610,14 @@
   function metaSpan(icon, text) { const span = document.createElement('span'); span.innerHTML = `${iconSvg(icon)}<b></b>`; span.querySelector('b').style.fontWeight = '500'; span.querySelector('b').textContent = text; return span; }
 
   function filterCount(f) {
-    return f.statuses.length + f.genres.length + f.networks.length + f.tags.length + [f.episodes, f.time, f.yearFrom, f.yearTo, f.rating, f.favourite].filter(Boolean).length;
+    return f.statuses.length + f.watchingWith.length + f.genres.length + f.networks.length + f.tags.length + [f.episodes, f.time, f.yearFrom, f.yearTo, f.rating, f.favourite].filter(Boolean).length;
   }
 
   function renderActiveFilters() {
     els.activeFilters.replaceChildren();
     const chips = [];
     filters.statuses.forEach(id => chips.push([`status:${id}`, statusName(id)]));
+    filters.watchingWith.forEach(w => chips.push([`with:${w}`, `With ${w}`]));
     filters.genres.forEach(v => chips.push([`genre:${v}`, v]));
     filters.networks.forEach(v => chips.push([`network:${v}`, v]));
     filters.tags.forEach(v => chips.push([`tag:${v}`, `#${v}`]));
@@ -599,6 +636,7 @@
   }
   function removeFilter(key) {
     if (key.startsWith('status:')) filters.statuses = filters.statuses.filter(x => x !== key.slice(7));
+    else if (key.startsWith('with:')) filters.watchingWith = filters.watchingWith.filter(x => x !== key.slice(5));
     else if (key.startsWith('genre:')) filters.genres = filters.genres.filter(x => x !== key.slice(6));
     else if (key.startsWith('network:')) filters.networks = filters.networks.filter(x => x !== key.slice(8));
     else if (key.startsWith('tag:')) filters.tags = filters.tags.filter(x => x !== key.slice(4));
@@ -633,6 +671,8 @@
       cb.onchange = () => toggleDraftArray('statuses', item.id, cb.checked);
       const span = document.createElement('span'); span.textContent = item.name; label.append(cb,span); els.filterStatuses.appendChild(label);
     });
+    const watchingWith = uniqueSorted(state.shows.map(s => s.watchingWith).filter(Boolean));
+    renderChoicePills(els.filterWatchingWith, watchingWith, filterDraft.watchingWith, 'watchingWith');
     const genres = uniqueSorted(state.shows.flatMap(s => s.genres || []));
     renderChoicePills(els.filterGenres, genres, filterDraft.genres, 'genres');
     const networks = uniqueSorted(state.shows.flatMap(s => allNetworkValues(s)));
@@ -758,8 +798,8 @@
     const location=show?.archive||`status:${show?.columnId||state.columns[0].id}`;fillLocationOptions(location);
     setFavourite(Boolean(show?.favourite));
     els.showYear.value=show?.firstAirYear||'';els.showSeasons.value=show?.seasons??'';els.showEpisodes.value=show?.episodes??'';els.showRuntime.value=show?.runtime??'';els.showTotalMinutes.value=show?.totalMinutes??'';
-    els.showSeriesStatus.value=show?.seriesStatus||'';els.showNetwork.value=show?.network||'';els.showCountry.value=show?.country||'';els.showGenres.value=(show?.genres||[]).join(', ');els.showMetacritic.value=show?.metacritic||'';
-    els.showTags.value=(show?.tags||[]).join(', ');els.showNotes.value=show?.notes||'';els.lookupStatus.textContent='Find details uses TVmaze to fill artwork, genres, year, network, seasons, episodes and runtime.';els.lookupResults.hidden=true;els.lookupResults.replaceChildren();
+    els.showSeriesStatus.value=show?.seriesStatus||'';els.showNetwork.value=show?.network||'';els.showCountry.value=show?.country||'';els.showWatchingWith.value=show?.watchingWith||'';els.showGenres.value=(show?.genres||[]).join(', ');els.showMetacritic.value=show?.metacritic||'';
+    els.showTags.value=(show?.tags||[]).join(', ');els.showNotes.value=show?.notes||'';els.lookupStatus.textContent='Find details uses TVmaze to fill landscape artwork, genres, year, network, seasons, episodes and runtime.';els.lookupResults.hidden=true;els.lookupResults.replaceChildren();
     els.deleteShowButton.style.visibility=show?'visible':'hidden';updatePosterPreview();renderStreamingPreview();
     if(!els.showDialog.open)els.showDialog.showModal();
     setTimeout(()=>els.showTitle.focus(),30);
@@ -791,16 +831,19 @@
   async function applyTvmazeShow(show) {
     els.lookupStatus.textContent='Loading episodes and seasons…';els.lookupResults.hidden=true;
     try{
-      const [seasonsRes,episodesRes]=await Promise.all([fetch(`https://api.tvmaze.com/shows/${show.id}/seasons`),fetch(`https://api.tvmaze.com/shows/${show.id}/episodes`)]);
-      const seasons=seasonsRes.ok?await seasonsRes.json():[];const episodes=episodesRes.ok?await episodesRes.json():[];
-      els.showTitle.value=show.name||els.showTitle.value;els.showPoster.value=show.image?.original||show.image?.medium||els.showPoster.value;
+      const [seasonsRes,episodesRes,imagesRes]=await Promise.all([fetch(`https://api.tvmaze.com/shows/${show.id}/seasons`),fetch(`https://api.tvmaze.com/shows/${show.id}/episodes`),fetch(`https://api.tvmaze.com/shows/${show.id}/images`)]);
+      const seasons=seasonsRes.ok?await seasonsRes.json():[];const episodes=episodesRes.ok?await episodesRes.json():[];const images=imagesRes.ok?await imagesRes.json():[];
+      const backgrounds=images.filter(img=>img?.type==='background'&&img?.resolutions?.original?.url);
+      const banners=images.filter(img=>img?.type==='banner'&&img?.resolutions?.original?.url);
+      const artwork=(backgrounds.find(img=>img.main)||backgrounds[0]||banners.find(img=>img.main)||banners[0])?.resolutions?.original?.url || show.image?.original || show.image?.medium || els.showPoster.value;
+      els.showTitle.value=show.name||els.showTitle.value;els.showPoster.value=artwork;
       els.showYear.value=show.premiered?show.premiered.slice(0,4):'';els.showGenres.value=(show.genres||[]).join(', ');
       els.showNetwork.value=show.network?.name||show.webChannel?.name||'';els.showCountry.value=show.network?.country?.name||show.webChannel?.country?.name||'';els.showSeriesStatus.value=show.status||'';
       els.showSeasons.value=seasons.length||'';els.showEpisodes.value=episodes.length||'';const runtime=show.averageRuntime||show.runtime||medianRuntime(episodes);els.showRuntime.value=runtime||'';
       const total=episodes.reduce((sum,e)=>sum+(Number(e.runtime)||0),0);els.showTotalMinutes.value=total||((runtime&&episodes.length)?runtime*episodes.length:'');
       if(!els.showMetacritic.value)els.showMetacritic.value=`https://www.metacritic.com/tv/${slugify(show.name)}/`;
       draftMeta.tvmazeId=show.id;draftMeta.imdbId=show.externals?.imdb||'';draftMeta.tmdbId=null;updatePosterPreview();
-      els.lookupStatus.textContent='Details added from TVmaze. You can edit anything before saving.';
+      els.lookupStatus.textContent='Details and landscape artwork added from TVmaze. You can edit anything before saving.';
       if(prefs.tmdbCredential)await refreshDraftProviders();
     }catch(err){console.error(err);els.lookupStatus.textContent='Basic TVmaze details were found, but episode details could not be loaded.';}
   }
@@ -813,7 +856,7 @@
       ...(existing||{}),...draftMeta,
       id:existing?.id||uuid(),title:els.showTitle.value.trim().slice(0,120),columnId:state.columns.some(c=>c.id===selectedColumn)?selectedColumn:state.columns[0].id,archive,
       poster:safeUrl(els.showPoster.value),metacritic:safeUrl(els.showMetacritic.value),seasons:integerOrNull(els.showSeasons.value),episodes:integerOrNull(els.showEpisodes.value),runtime:integerOrNull(els.showRuntime.value),totalMinutes:integerOrNull(els.showTotalMinutes.value),
-      genres:cleanGenres(splitComma(els.showGenres.value)),network:safeText(els.showNetwork.value,100),country:safeText(els.showCountry.value,80),seriesStatus:safeText(els.showSeriesStatus.value,50),favourite:Boolean(draftMeta.favourite),
+      genres:cleanGenres(splitComma(els.showGenres.value)),network:safeText(els.showNetwork.value,100),country:safeText(els.showCountry.value,80),seriesStatus:safeText(els.showSeriesStatus.value,50),watchingWith:safeText(els.showWatchingWith.value,60),favourite:Boolean(draftMeta.favourite),
       rating:clampRating(els.showRating.value),tags:cleanTags(splitComma(els.showTags.value)),notes:String(els.showNotes.value||'').slice(0,4000),firstAirYear:positiveIntegerOrNull(els.showYear.value),providers:cleanProviders(draftMeta.providers),providerLink:safeUrl(draftMeta.providerLink||''),providersUpdatedAt:validDateString(draftMeta.providersUpdatedAt)?draftMeta.providersUpdatedAt:null,
       tvmazeId:positiveIntegerOrNull(draftMeta.tvmazeId),imdbId:safeText(draftMeta.imdbId,40),tmdbId:positiveIntegerOrNull(draftMeta.tmdbId),order,createdAt:existing?.createdAt||t,updatedAt:t
     };
@@ -904,7 +947,9 @@
     renderIcons();bindEvents();els.sortSelect.value=sortMode;
     await handleDropboxCallback();
     if(activeView.startsWith('saved:')){const v=state.savedViews.find(x=>x.id===activeView.slice(6));if(v){filters=normalizeFilters(v.filters);sortMode=v.sort;}else activeView='all';}
-    render();
+    if(els.fontSizeSelector) els.fontSizeSelector.addEventListener('click', event=>{ const btn=event.target.closest('[data-font-size]'); if(!btn)return; prefs.fontSize=validFontSize(btn.dataset.fontSize); savePrefs(); showToast(`Font size: ${btn.textContent}`); });
+  applyFontSize();
+  render();
     if('serviceWorker' in navigator && location.protocol.startsWith('http'))navigator.serviceWorker.register('./service-worker.js').catch(()=>{});
     if(dbx.connected)syncWithDropbox().catch(()=>{});
   }

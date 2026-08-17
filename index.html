@@ -32,6 +32,11 @@
           <div id="statusNav"></div>
         </div>
 
+        <div class="nav-section" id="watchingWithSection" hidden>
+          <div class="nav-label">Watching With</div>
+          <div id="watchingWithNav"></div>
+        </div>
+
         <div class="nav-section">
           <div class="nav-label">My TV</div>
           <button class="nav-item" data-view="favourites"><span class="nav-icon" data-icon="heart"></span><span>Favourites</span><span class="nav-count" id="favouritesCount">0</span></button>
@@ -48,7 +53,7 @@
 
       <div class="sidebar-footer">
         <button class="nav-item" id="settingsButton"><span class="nav-icon" data-icon="settings"></span><span>Settings</span></button>
-        <div class="version">TV v2.0.0</div>
+        <div class="version">TV v2.1.0</div>
       </div>
     </aside>
 
@@ -120,6 +125,10 @@
         <div class="check-grid" id="filterStatuses"></div>
       </div>
       <div class="filter-section">
+        <div class="filter-heading">Watching With</div>
+        <div class="choice-list" id="filterWatchingWith"></div>
+      </div>
+      <div class="filter-section">
         <div class="filter-heading">Genre</div>
         <div class="choice-list" id="filterGenres"></div>
       </div>
@@ -164,7 +173,7 @@
       <div class="show-edit-layout">
         <div class="poster-editor">
           <div class="poster-preview" id="posterPreview"><div class="poster-fallback"><span data-icon="tv"></span></div></div>
-          <label><span>Poster image URL</span><input id="showPoster" type="url" placeholder="https://…"></label>
+          <label><span>Artwork image URL</span><input id="showPoster" type="url" placeholder="https://…"></label>
         </div>
         <div class="show-fields">
           <div class="lookup-row">
@@ -194,6 +203,7 @@
             <label><span>Network / service</span><input id="showNetwork" maxlength="100"></label>
             <label><span>Country</span><input id="showCountry" maxlength="80"></label>
           </div>
+          <label><span>Watching with</span><input id="showWatchingWith" maxlength="60" placeholder="e.g. P"><small>Use this to filter active shows by who you are watching them with.</small></label>
           <label><span>Genres</span><input id="showGenres" placeholder="Drama, Crime, Thriller"><small>Separate genres with commas.</small></label>
           <label><span>Metacritic page</span><input id="showMetacritic" type="url" placeholder="https://www.metacritic.com/tv/…"></label>
 
@@ -233,6 +243,15 @@
         <div class="setting-title-row"><div><h3>Statuses</h3><p>Manage Watching, Next, Someday and any other active statuses.</p></div><button class="secondary-button" id="openStatusesButton">Manage</button></div>
       </section>
       <section class="settings-card">
+        <div class="setting-title-row"><div><h3>Font Size</h3><p>Choose the reading size for TV on this device.</p></div></div>
+        <div class="font-size-selector" id="fontSizeSelector" role="group" aria-label="Font size">
+          <button type="button" data-font-size="small">Small</button>
+          <button type="button" data-font-size="standard">Standard</button>
+          <button type="button" data-font-size="large">Large</button>
+          <button type="button" data-font-size="extra-large">Extra Large</button>
+        </div>
+      </section>
+      <section class="settings-card">
         <h3>This device</h3>
         <p>TV always works locally in this browser. Export a JSON backup at any time.</p>
         <div class="button-row"><button class="secondary-button" id="exportButton">Export backup</button><label class="secondary-button file-button">Import backup<input type="file" id="importInput" accept="application/json,.json" hidden></label></div>
@@ -258,7 +277,7 @@
         </div>
       </section>
     </div>
-    <div class="settings-footer">TV v2.0.0</div>
+    <div class="settings-footer">TV v2.1.0</div>
   </dialog>
 
   <div class="toast" id="toast" role="status" aria-live="polite"></div>

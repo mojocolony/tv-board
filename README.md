@@ -1,4 +1,4 @@
-# TV v2.0.0
+# TV v2.1.0
 
 TV is the redesigned successor to TV Board. It keeps the existing data/storage contracts while replacing the Kanban board with a scalable visual list library.
 
@@ -13,7 +13,7 @@ TV intentionally keeps the same browser storage keys and the same private Dropbo
 
 Opening TV on a browser that already used TV Board will migrate the existing records in place. Existing columns become statuses. Watched and Abandoned remain archives. Existing posters, ratings, tags, notes, TVmaze IDs, TMDB IDs and streaming providers are retained.
 
-## New in v2
+## New in v2.1
 
 - One visual master list instead of Kanban columns
 - Sidebar status views
@@ -22,7 +22,9 @@ Opening TV on a browser that already used TV Board will migrate the existing rec
 - Sorting by title, date, year, rating, episode count, total time, network/service and status
 - Saved filter views
 - Editable/reorderable statuses with status colours
-- Compact poster rows for large libraries
+- Compact 4:3 landscape artwork rows for large libraries
+- “With P”–style legacy columns migrate to Watching + a “Watching with” filter
+- Persistent Small / Standard / Large / Extra Large font-size selector
 - Mobile off-canvas navigation and filter drawer
 - Expanded show metadata: genre, network/service, country, runtime and series status
 - TVmaze lookup remains available

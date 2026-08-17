@@ -240,3 +240,52 @@ code { font-size: .95em; }
   .field-grid.three { grid-template-columns: 1fr 1fr; }
   .check-grid { grid-template-columns: 1fr; }
 }
+
+/* TV v2.1 — landscape artwork + per-device reading size */
+.show-row { grid-template-columns: 108px minmax(0, 1fr) minmax(150px, .42fr) auto; min-height: 103px; }
+.row-poster { width: 108px; height: 81px; aspect-ratio: 4 / 3; }
+.row-poster img { object-fit: cover; object-position: center; }
+.poster-preview { aspect-ratio: 4 / 3; }
+.poster-preview img { object-fit: cover; object-position: center; }
+.show-edit-layout { grid-template-columns: 230px minmax(0,1fr); }
+
+.font-size-selector { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
+.font-size-selector button { min-height: 38px; border: 1px solid var(--line); border-radius: 9px; background: #fffdf9; color: var(--muted); font-weight: 750; cursor: pointer; }
+.font-size-selector button.active { background: var(--ink); border-color: var(--ink); color: #fff; }
+
+:root { --tv-font-scale: 1; }
+:root[data-font-size="small"] { --tv-font-scale: .90; }
+:root[data-font-size="standard"] { --tv-font-scale: 1; }
+:root[data-font-size="large"] { --tv-font-scale: 1.16; }
+:root[data-font-size="extra-large"] { --tv-font-scale: 1.32; }
+
+.nav-item { font-size: calc(12px * var(--tv-font-scale)); }
+.nav-label, .version, .view-subtitle, .sync-chip, .toolbar-button, .sort-wrap select, .filter-chip, .main-footer { font-size: calc(11px * var(--tv-font-scale)); }
+h1 { font-size: calc(44px * var(--tv-font-scale)); }
+.row-title { font-size: calc(21px * var(--tv-font-scale)); }
+.row-sub { font-size: calc(11.5px * var(--tv-font-scale)); }
+.row-meta, .rating-text, .status-pill, .tag-mini { font-size: calc(11px * var(--tv-font-scale)); }
+.filter-heading, label > span, .helper, small, .check-option, .choice-pill, .settings-card p, .settings-footer { font-size: calc(10px * var(--tv-font-scale)); }
+.show-fields input, .show-fields select, .show-fields textarea, .poster-editor input, .settings-card input, .filter-section input, .filter-section select, button { font-size: calc(12px * var(--tv-font-scale)); }
+.modal-header h2 { font-size: calc(29px * var(--tv-font-scale)); }
+.settings-card h3 { font-size: calc(16px * var(--tv-font-scale)); }
+
+@media (max-width: 900px) {
+  .show-row { grid-template-columns: 96px minmax(0,1fr) auto; }
+  .row-poster { width: 96px; height: 72px; }
+  .show-edit-layout { grid-template-columns: 190px minmax(0,1fr); }
+}
+@media (max-width: 720px) {
+  h1 { font-size: calc(34px * var(--tv-font-scale)); }
+  .show-row { min-height: 90px; grid-template-columns: 88px minmax(0,1fr); }
+  .row-poster { width: 88px; height: 66px; }
+  .row-title { font-size: calc(18px * var(--tv-font-scale)); }
+  .row-sub { font-size: calc(10.5px * var(--tv-font-scale)); }
+  .row-meta { font-size: calc(10px * var(--tv-font-scale)); }
+  .poster-editor { grid-template-columns: 118px minmax(0,1fr); }
+  .font-size-selector { grid-template-columns: 1fr 1fr; }
+}
+@media (max-width: 430px) {
+  .show-row { grid-template-columns: 80px minmax(0,1fr); }
+  .row-poster { width: 80px; height: 60px; }
+}
