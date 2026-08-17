@@ -53,7 +53,7 @@
 
       <div class="sidebar-footer">
         <button class="nav-item" id="settingsButton"><span class="nav-icon" data-icon="settings"></span><span>Settings</span></button>
-        <div class="version">TV v2.4.0</div>
+        <div class="version">TV v2.5.0</div>
       </div>
     </aside>
 
@@ -182,11 +182,11 @@
         </div>
         <div class="show-fields">
           <div class="lookup-row">
-            <label class="grow"><span>Title</span><input id="showTitle" required maxlength="120" autocomplete="off"></label>
+            <label class="grow"><span>Title</span><input id="showTitle" required maxlength="120" autocomplete="off" role="combobox" aria-autocomplete="list" aria-controls="lookupResults" aria-expanded="false"></label>
             <button type="button" class="secondary-button lookup-button" id="lookupShowButton">Find details</button>
           </div>
           <div class="helper" id="lookupStatus">Find details uses TVmaze to fill artwork, genres, year, network, seasons, episodes and runtime.</div>
-          <div class="lookup-results" id="lookupResults" hidden></div>
+          <div class="lookup-results" id="lookupResults" role="listbox" aria-label="TVmaze show suggestions" hidden></div>
 
           <div class="field-grid three">
             <label><span>Status</span><select id="showLocation"></select></label>
@@ -309,7 +309,7 @@
       <section class="settings-card">
         <div class="setting-title-row"><div><h3>Canadian Streaming</h3><p>TMDB provides JustWatch-powered subscription availability in Canada.</p></div><span class="settings-status" id="tmdbStatus">Not configured</span></div>
         <label><span>TMDB API Read Access Token or API Key</span><input id="tmdbCredential" type="password" autocomplete="off" placeholder="Stored only in this browser"></label>
-        <div class="button-row"><button class="secondary-button" id="saveTmdbButton">Save & test</button><button class="text-button" id="refreshProvidersButton">Refresh all shows</button></div>
+        <div class="button-row"><button class="secondary-button" id="saveTmdbButton">Save & test</button><button class="text-button" id="refreshProvidersButton">Refresh JustWatch data for all shows</button></div>
         <div class="helper" id="tmdbTestMessage"></div>
         <p class="legal-note">This product uses the TMDB API but is not endorsed or certified by TMDB. Streaming availability data is provided by JustWatch via TMDB.</p>
       </section>
@@ -327,7 +327,7 @@
         </div>
       </section>
     </div>
-    <div class="settings-footer">TV v2.4.0</div>
+    <div class="settings-footer">TV v2.5.0</div>
   </dialog>
 
   <div class="toast" id="toast" role="status" aria-live="polite"></div>

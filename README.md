@@ -1,4 +1,4 @@
-# TV v2.4.0
+# TV v2.5.0
 
 TV is the redesigned successor to TV Board. It keeps the existing data/storage contracts while replacing the Kanban board with a scalable visual list library.
 

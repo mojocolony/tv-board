@@ -1,7 +1,7 @@
 (() => {
   'use strict';
 
-  const APP_VERSION = '2.4.0';
+  const APP_VERSION = '2.5.0';
   const STORAGE_KEY = 'tvBoard.state.v1';
   const DROPBOX_KEY = 'tvBoard.dropbox.v1';
   const PKCE_KEY = 'tvBoard.pkce.v1';
@@ -81,6 +81,7 @@
   let sortMode = ui.sort || 'recent';
   let draftMeta = {};
   let lookupController = null;
+  let autocompleteTimer = null;
   let syncTimer = null;
   let toastTimer = null;
   let providerRefreshRunning = false;
@@ -146,6 +147,10 @@
   function defaultColour(index) {
     const palette = ['#476b86', '#6f7651', '#8b684f', '#76617d', '#496f6b', '#77654f', '#6b6f78'];
     return palette[index % palette.length];
+  }
+  function statusNavColour(column, index = 0) {
+    const named = { watching: '#778DA9', next: '#a17e55', someday: '#7f9270', waiting: '#5f8883' };
+    return named[String(column?.id || '').toLowerCase()] || safeColour(column?.color, index);
   }
   function safeColour(value, index = 0) { return /^#[0-9a-f]{6}$/i.test(String(value || '')) ? String(value) : defaultColour(index); }
   function hexAlpha(hex, alpha = .12) {
@@ -546,14 +551,16 @@
     els.statusNav.replaceChildren();
     {
       const btn = document.createElement('button');
-      btn.className = 'nav-item'; btn.dataset.view = UNSORTED;
-      btn.innerHTML = `<span class="nav-icon">${iconSvg('bookmark')}</span><span>Unsorted</span><span class="nav-count">${activeShows.filter(s => !s.columnId).length}</span>`;
+      btn.className = 'nav-item status-nav unsorted-status'; btn.dataset.view = UNSORTED;
+      btn.style.setProperty('--status-nav-color', '#9a968d');
+      btn.innerHTML = `<span class="nav-icon">${iconSvg('bookmark')}</span><span class="nav-item-label">Unsorted</span><span class="nav-count">${activeShows.filter(s => !s.columnId).length}</span>`;
       els.statusNav.appendChild(btn);
     }
     state.columns.forEach(c => {
       const btn = document.createElement('button');
-      btn.className = 'nav-item'; btn.dataset.view = `status:${c.id}`;
-      btn.innerHTML = `<span class="nav-icon">${iconSvg('bookmark')}</span><span></span><span class="nav-count">${activeShows.filter(s => s.columnId === c.id).length}</span>`;
+      btn.className = `nav-item status-nav${c.name.length > 18 ? ' long-status' : ''}`; btn.dataset.view = `status:${c.id}`;
+      btn.style.setProperty('--status-nav-color', statusNavColour(c, c.order));
+      btn.innerHTML = `<span class="nav-icon">${iconSvg('bookmark')}</span><span class="nav-item-label"></span><span class="nav-count">${activeShows.filter(s => s.columnId === c.id).length}</span>`;
       btn.children[1].textContent = c.name;
       els.statusNav.appendChild(btn);
     });
@@ -964,14 +971,14 @@
     setFavourite(Boolean(show?.favourite));
     els.showYear.value=show?.firstAirYear||'';els.showSeasons.value=show?.seasons??'';els.showEpisodes.value=show?.episodes??'';els.showRuntime.value=show?.runtime??'';els.showTotalMinutes.value=show?.totalMinutes??'';
     const seriesStatus=show?.seriesStatus||''; if(seriesStatus && ![...els.showSeriesStatus.options].some(o=>o.value===seriesStatus)){const option=document.createElement('option');option.value=seriesStatus;option.textContent=seriesStatus;els.showSeriesStatus.appendChild(option);} els.showSeriesStatus.value=seriesStatus;els.showNetwork.value=show?.network||'';els.showCountry.value=show?.country||'';els.showWatchingWith.value=show?.watchingWith||'';els.showGenres.value=(show?.genres||[]).join(', ');els.showMetacritic.value=show?.metacritic||'';
-    els.showTags.value=(show?.tags||[]).join(', ');els.showNotes.value=show?.notes||'';refreshEditorChoices();els.lookupStatus.textContent='Find details uses TVmaze to fill landscape artwork, genres, year, network, seasons, episodes and runtime.';els.lookupResults.hidden=true;els.lookupResults.replaceChildren();
+    els.showTags.value=(show?.tags||[]).join(', ');els.showNotes.value=show?.notes||'';refreshEditorChoices();clearTimeout(autocompleteTimer);autocompleteTimer=null;els.lookupStatus.textContent=show?'Find details uses TVmaze to refresh landscape artwork and show metadata.':'Start typing a title for TVmaze suggestions, or use Find details.';els.lookupResults.hidden=true;els.lookupResults.replaceChildren();els.showTitle.setAttribute('aria-expanded','false');
     els.deleteShowButton.style.visibility=show?'visible':'hidden';updatePosterPreview();renderStreamingPreview();
     prepareEpisodeGuide(show);
     prepareCast(show);
     if(!els.showDialog.open)els.showDialog.showModal();
     setTimeout(()=>els.showTitle.focus(),30);
   }
-  function closeShowDialog(){if(els.showDialog.open)els.showDialog.close(); if(lookupController){lookupController.abort();lookupController=null;}}
+  function closeShowDialog(){clearTimeout(autocompleteTimer);autocompleteTimer=null;if(els.showDialog.open)els.showDialog.close(); if(lookupController){lookupController.abort();lookupController=null;}els.showTitle.setAttribute('aria-expanded','false');}
   function setFavourite(value){draftMeta.favourite=Boolean(value);els.showFavourite.classList.toggle('active',draftMeta.favourite);els.showFavourite.setAttribute('aria-pressed',String(draftMeta.favourite));els.showFavouriteText.textContent=draftMeta.favourite?'Favourite':'Not favourite';}
   function updatePosterPreview(){const url=safeUrl(els.showPoster.value);els.posterPreview.replaceChildren();if(url){const img=new Image();img.src=url;img.alt='';img.onerror=()=>{els.posterPreview.innerHTML=`<div class="poster-fallback">${iconSvg('tv')}</div>`;};els.posterPreview.appendChild(img);}else els.posterPreview.innerHTML=`<div class="poster-fallback">${iconSvg('tv')}</div>`;}
   function renderStreamingPreview(){els.streamingProvidersText.replaceChildren();const providers=cleanProviders(draftMeta.providers);if(providers.length){providers.forEach(p=>{const s=document.createElement('span');s.className='provider-pill';s.textContent=p;els.streamingProvidersText.appendChild(s);});els.streamingProvidersNote.textContent=draftMeta.providersUpdatedAt?`Updated ${new Date(draftMeta.providersUpdatedAt).toLocaleDateString()}`:'Subscription services in Canada';}else{els.streamingProvidersNote.textContent=prefs.tmdbCredential?'No subscription services found in Canada.':'Requires a TMDB credential in Settings.';}}
@@ -1123,25 +1130,55 @@
     showToast(`Progress saved through S${ep.season} E${ep.number}`);
   }
 
-  async function lookupShows() {
-    const q=els.showTitle.value.trim();if(!q){els.lookupStatus.textContent='Enter a title first.';return;}
+  function hideLookupSuggestions() {
+    els.lookupResults.hidden = true;
+    els.lookupResults.replaceChildren();
+    els.showTitle.setAttribute('aria-expanded', 'false');
+  }
+
+  function lookupResultButtons() { return [...els.lookupResults.querySelectorAll('.lookup-result')]; }
+  function moveLookupFocus(current, delta) {
+    const buttons = lookupResultButtons(); if (!buttons.length) return;
+    const index = buttons.indexOf(current); const next = Math.max(0, Math.min(buttons.length - 1, index + delta));
+    buttons[next].focus();
+  }
+
+  function scheduleTitleAutocomplete() {
+    clearTimeout(autocompleteTimer); autocompleteTimer = null;
+    if (lookupController) { lookupController.abort(); lookupController = null; }
+    if (els.showId.value) return;
+    const q = els.showTitle.value.trim();
+    if (q.length < 2) {
+      hideLookupSuggestions();
+      els.lookupStatus.textContent = 'Start typing a title for TVmaze suggestions, or use Find details.';
+      return;
+    }
+    autocompleteTimer = setTimeout(() => lookupShows({ auto: true }), 260);
+  }
+
+  async function lookupShows(options = {}) {
+    const auto = Boolean(options && options.auto);
+    const q=els.showTitle.value.trim();
+    if(!q || (auto && q.length < 2)){if(!auto)els.lookupStatus.textContent='Enter a title first.';return;}
     if(lookupController)lookupController.abort();lookupController=new AbortController();
-    els.lookupShowButton.disabled=true;els.lookupStatus.textContent='Searching TVmaze…';els.lookupResults.hidden=true;els.lookupResults.replaceChildren();
+    if(!auto){els.lookupShowButton.disabled=true;els.lookupStatus.textContent='Searching TVmaze…';}
+    hideLookupSuggestions();
     try{
       const res=await fetch(`https://api.tvmaze.com/search/shows?q=${encodeURIComponent(q)}`,{signal:lookupController.signal});if(!res.ok)throw new Error('TVmaze search failed');const results=await res.json();
-      if(!results.length){els.lookupStatus.textContent='No TVmaze matches found. You can enter the details manually.';return;}
-      els.lookupStatus.textContent='Choose the correct show:';els.lookupResults.hidden=false;
+      if(!results.length){if(!auto)els.lookupStatus.textContent='No TVmaze matches found. You can enter the details manually.';return;}
+      els.lookupStatus.textContent=auto?'Suggestions from TVmaze:':'Choose the correct show:';els.lookupResults.hidden=false;els.showTitle.setAttribute('aria-expanded','true');
       results.slice(0,8).forEach(result=>{
-        const show=result.show;const btn=document.createElement('button');btn.type='button';btn.className='lookup-result';
+        const show=result.show;const btn=document.createElement('button');btn.type='button';btn.className='lookup-result';btn.setAttribute('role','option');btn.setAttribute('aria-label',`Use ${show.name}`);
         const img=document.createElement('img');img.alt='';img.src=show.image?.medium||show.image?.original||'';
         const info=document.createElement('div');const strong=document.createElement('strong');strong.textContent=show.name;const meta=document.createElement('span');const yr=show.premiered?show.premiered.slice(0,4):'';const network=show.network?.name||show.webChannel?.name||'';meta.textContent=[yr,network,show.genres?.slice(0,2).join(', ')].filter(Boolean).join(' · ');info.append(strong,meta);
         const duplicate=findDuplicateCandidate(show);if(duplicate){const warning=document.createElement('span');warning.className='lookup-duplicate';warning.textContent=`Already in TV · ${statusFor(duplicate).name}`;info.appendChild(warning);}
         const arrow=document.createElement('span');arrow.className='lookup-chevron';arrow.textContent='›';
         btn.onclick=()=>{if(duplicate&&!els.showId.value){const ok=confirm(`“${show.name}” is already in TV (${statusFor(duplicate).name}).\n\nLoad these details anyway?`);if(!ok)return;draftMeta.allowDuplicate=true;}applyTvmazeShow(show);};
+        btn.onkeydown=e=>{if(e.key==='ArrowDown'){e.preventDefault();moveLookupFocus(btn,1);}else if(e.key==='ArrowUp'){e.preventDefault();if(lookupResultButtons()[0]===btn)els.showTitle.focus();else moveLookupFocus(btn,-1);}else if(e.key==='Escape'){e.preventDefault();hideLookupSuggestions();els.showTitle.focus();}};
         btn.append(img,info,arrow);els.lookupResults.appendChild(btn);
       });
-    }catch(err){if(err.name!=='AbortError'){console.error(err);els.lookupStatus.textContent='TVmaze search failed. You can still enter details manually.';}}
-    finally{els.lookupShowButton.disabled=false;}
+    }catch(err){if(err.name!=='AbortError'&&!auto){console.error(err);els.lookupStatus.textContent='TVmaze search failed. You can still enter details manually.';}}
+    finally{if(!auto)els.lookupShowButton.disabled=false;}
   }
 
   async function applyTvmazeShow(show) {
@@ -1209,7 +1246,7 @@
   }
   async function refreshDraftProviders(){if(!prefs.tmdbCredential){showToast('Add a TMDB credential in Settings first');return;}els.streamingProvidersNote.textContent='Checking subscription services…';els.refreshShowStreamingButton.disabled=true;try{const result=await fetchProvidersFor({...draftMeta,title:els.showTitle.value,firstAirYear:positiveIntegerOrNull(els.showYear.value)});Object.assign(draftMeta,result);renderStreamingPreview();}catch(err){console.error(err);els.streamingProvidersNote.textContent='Could not refresh streaming availability.';}finally{els.refreshShowStreamingButton.disabled=false;}}
   async function testTmdb(){const credential=els.tmdbCredential.value.trim();prefs.tmdbCredential=credential;if(!credential){savePrefs();els.tmdbTestMessage.textContent='TMDB credential removed.';return;}els.saveTmdbButton.disabled=true;els.tmdbTestMessage.textContent='Testing…';try{await tmdbRequest('/configuration');savePrefs();els.tmdbTestMessage.textContent='TMDB connected.';showToast('TMDB connected');}catch(err){console.error(err);els.tmdbTestMessage.textContent='That TMDB credential did not work.';}finally{els.saveTmdbButton.disabled=false;}}
-  async function refreshAllProviders(){if(providerRefreshRunning)return;if(!prefs.tmdbCredential){showToast('Add a TMDB credential first');return;}providerRefreshRunning=true;els.refreshProvidersButton.textContent='Refreshing…';let changed=0;try{for(let i=0;i<state.shows.length;i++){const show=state.shows[i];try{const result=await fetchProvidersFor(show);Object.assign(show,result,{updatedAt:nowIso()});changed++;els.refreshProvidersButton.textContent=`Refreshing ${i+1}/${state.shows.length}…`;}catch(err){console.warn('Provider refresh failed',show.title,err);}}saveState();showToast(`Streaming refreshed for ${changed} ${changed===1?'show':'shows'}`);}finally{providerRefreshRunning=false;els.refreshProvidersButton.textContent='Refresh all shows';}}
+  async function refreshAllProviders(){if(providerRefreshRunning)return;if(!prefs.tmdbCredential){showToast('Add a TMDB credential first');return;}providerRefreshRunning=true;els.refreshProvidersButton.textContent='Refreshing…';let changed=0;try{for(let i=0;i<state.shows.length;i++){const show=state.shows[i];try{const result=await fetchProvidersFor(show);Object.assign(show,result,{updatedAt:nowIso()});changed++;els.refreshProvidersButton.textContent=`Refreshing ${i+1}/${state.shows.length}…`;}catch(err){console.warn('Provider refresh failed',show.title,err);}}saveState();showToast(`Streaming refreshed for ${changed} ${changed===1?'show':'shows'}`);}finally{providerRefreshRunning=false;els.refreshProvidersButton.textContent='Refresh JustWatch data for all shows';}}
   function updateTmdbUI(){if(!els.tmdbCredential)return;els.tmdbCredential.value=prefs.tmdbCredential||'';els.tmdbStatus.textContent=prefs.tmdbCredential?'Configured':'Not configured';}
 
   function getRedirectUri(){return `${location.origin}${location.pathname}`;}
@@ -1257,7 +1294,7 @@
     els.searchInput.oninput=render;els.sortSelect.onchange=()=>{sortMode=els.sortSelect.value;render();};
     els.filterButton.onclick=openFilterDrawer;els.closeFilterButton.onclick=closeFilterDrawer;els.drawerScrim.onclick=closeFilterDrawer;els.applyFiltersButton.onclick=applyFilters;els.clearFiltersButton.onclick=clearFilterDraft;els.saveViewButton.onclick=saveCurrentView;
     [els.filterEpisodes,els.filterTime,els.filterYearFrom,els.filterYearTo,els.filterRating,els.filterFavourite].forEach(el=>{el.addEventListener('change',readDraftScalarFilters);});
-    els.showForm.onsubmit=saveShowFromForm;els.closeShowButton.onclick=closeShowDialog;els.cancelShowButton.onclick=closeShowDialog;els.deleteShowButton.onclick=deleteCurrentShow;els.lookupShowButton.onclick=lookupShows;els.showPoster.oninput=updatePosterPreview;els.showFavourite.onclick=()=>setFavourite(!draftMeta.favourite);els.refreshShowStreamingButton.onclick=refreshDraftProviders;els.refreshEpisodesButton.onclick=()=>loadEpisodeGuide(currentEpisodeShow()||draftMeta,true);
+    els.showForm.onsubmit=saveShowFromForm;els.closeShowButton.onclick=closeShowDialog;els.cancelShowButton.onclick=closeShowDialog;els.deleteShowButton.onclick=deleteCurrentShow;els.lookupShowButton.onclick=lookupShows;els.showTitle.addEventListener('input',scheduleTitleAutocomplete);els.showTitle.addEventListener('keydown',e=>{if(e.key==='ArrowDown'&&!els.lookupResults.hidden){const first=lookupResultButtons()[0];if(first){e.preventDefault();first.focus();}}});els.showPoster.oninput=updatePosterPreview;els.showFavourite.onclick=()=>setFavourite(!draftMeta.favourite);els.refreshShowStreamingButton.onclick=refreshDraftProviders;els.refreshEpisodesButton.onclick=()=>loadEpisodeGuide(currentEpisodeShow()||draftMeta,true);
     els.genreAddButton.onclick=()=>addPickerValue('genres');els.tagAddButton.onclick=()=>addPickerValue('tags');els.genreAddInput.onkeydown=e=>{if(e.key==='Enter'){e.preventDefault();addPickerValue('genres');}};els.tagAddInput.onkeydown=e=>{if(e.key==='Enter'){e.preventDefault();addPickerValue('tags');}};
     els.showDialog.addEventListener('close', () => {
       const trigger = lastShowTrigger;
