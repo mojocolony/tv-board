@@ -1,4 +1,4 @@
-# TV v2.5.1
+# TV v2.6.0
 
 TV is the redesigned successor to TV Board. It keeps the existing data/storage contracts while replacing the Kanban board with a scalable visual list library.
 
@@ -68,3 +68,20 @@ Export a backup from the current TV Board app. The redesign is migration-compati
 - Font sizes now extend through XXL and XXXL.
 - Main cast names and character names load from TVmaze.
 - Import and Export backup controls use one matched layout.
+
+## New in v2.6.0
+
+- Mobile navigation is independently scrollable so Settings and the version remain reachable on iPhone/Safari.
+- Filter status controls use compact fixed-size checkboxes and collapse to one column on narrow screens.
+- Theme setting: System, Light or Dark, with the theme applied before the main stylesheet paints.
+- New Watching Now view prioritizes next-episode progress for shows currently being watched.
+- Viewing history fields record Date started, Date finished and Date abandoned, plus per-episode watched dates going forward.
+- Viewing-date filters and sorting by started, finished, abandoned and most-recent episode watched have been added.
+- Unrated is shown only for Watched shows; active/unwatched shows leave that field blank.
+- Library rows grow naturally when genres wrap; status and rating metadata use a consistent top alignment.
+- Total runtime no longer shows a leading tilde.
+- Portrait-only artwork fallbacks are contained inside the 16:9 frame with a soft background treatment rather than cropped.
+- The built-in Unsorted status now matches the other status rows visually in Manage Statuses.
+- Multi-column editor labels reserve consistent height so inputs align when labels wrap.
+- Country is now a true select control, so it remains changeable after a value has been chosen.
+- In Add Show, Return/Enter saves and closes from single-line fields once TVmaze suggestions are no longer open; when suggestions are open, Enter chooses the first suggestion instead.

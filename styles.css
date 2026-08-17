@@ -452,3 +452,135 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
   .alphabet-jump { padding-left:0; padding-right:0; }
   .status-pill { max-width:108px; font-size:calc(8.5px * var(--tv-font-scale)); }
 }
+
+/* TV v2.6 — mobile QA, dark mode, viewing history, Watching Now */
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --paper:#171918;
+  --paper-deep:#202321;
+  --panel:#1d201f;
+  --card:#222522;
+  --ink:#f2eee5;
+  --muted:#aaa79f;
+  --line:#383c39;
+  --line-dark:#4a4f4b;
+  --accent-soft:#292d2b;
+  --danger:#d58b82;
+  --success:#80a18c;
+  --warning:#c7a467;
+  --app-blue-deep:#9eb1c9;
+  --app-blue-soft:rgba(119,141,169,.18);
+  --shadow:0 18px 52px rgba(0,0,0,.34);
+}
+:root[data-theme="dark"] body { background:var(--paper); }
+:root[data-theme="dark"] .sidebar { background:rgba(28,31,29,.97); }
+:root[data-theme="dark"] .search-wrap,
+:root[data-theme="dark"] .sort-wrap,
+:root[data-theme="dark"] .toolbar-button,
+:root[data-theme="dark"] .sync-chip,
+:root[data-theme="dark"] .secondary-button,
+:root[data-theme="dark"] .icon-button,
+:root[data-theme="dark"] .favourite-toggle,
+:root[data-theme="dark"] .filter-section select,
+:root[data-theme="dark"] .filter-section input,
+:root[data-theme="dark"] .show-fields input,
+:root[data-theme="dark"] .show-fields select,
+:root[data-theme="dark"] .show-fields textarea,
+:root[data-theme="dark"] .poster-editor input,
+:root[data-theme="dark"] .settings-card input,
+:root[data-theme="dark"] .inline-form input,
+:root[data-theme="dark"] .multi-picker > summary,
+:root[data-theme="dark"] .lookup-result,
+:root[data-theme="dark"] .season-block,
+:root[data-theme="dark"] .manager-row,
+:root[data-theme="dark"] .font-size-selector button,
+:root[data-theme="dark"] .theme-selector button { background:#232624; color:var(--ink); }
+:root[data-theme="dark"] .show-list,
+:root[data-theme="dark"] .settings-card,
+:root[data-theme="dark"] .stream-box,
+:root[data-theme="dark"] .episode-guide-card,
+:root[data-theme="dark"] .cast-card,
+:root[data-theme="dark"] .viewing-history-card { background:rgba(255,255,255,.025); }
+:root[data-theme="dark"] .show-row:hover { background:rgba(255,255,255,.045); }
+:root[data-theme="dark"] .modal-header,
+:root[data-theme="dark"] .modal-footer { background:rgba(29,32,31,.97); }
+:root[data-theme="dark"] .lookup-results,
+:root[data-theme="dark"] .multi-picker-panel { background:#202321; }
+:root[data-theme="dark"] .tag-mini,
+:root[data-theme="dark"] .provider-pill,
+:root[data-theme="dark"] .progress-callout.quiet { background:#292d2b; color:#bbb7ae; }
+:root[data-theme="dark"] .episode-body p { color:#c5c0b7; }
+:root[data-theme="dark"] .filter-section { border-bottom-color:var(--line); }
+:root[data-theme="dark"] .drawer-scrim,
+:root[data-theme="dark"] .sidebar-scrim { background:rgba(0,0,0,.48); }
+
+.theme-selector { display:grid; grid-template-columns:repeat(3,1fr); gap:6px; }
+.theme-selector button { min-height:40px; border:1px solid var(--line); border-radius:9px; background:#fffdf9; color:var(--muted); font-weight:750; }
+.theme-selector button.active { background:var(--app-blue); border-color:var(--app-blue); color:#fff; }
+
+/* Rows grow with wrapped genres; metadata and status share a stable top anchor. */
+.show-row { min-height:96px; align-items:start; padding-top:12px; padding-bottom:12px; }
+.row-poster { align-self:start; }
+.row-personal { align-self:start; padding-top:7px; }
+.tags-mini { max-height:none; overflow:visible; }
+.status-pill { align-self:start; margin-top:7px; font-size:calc(10px * var(--tv-font-scale)); font-weight:720; }
+.rating-text:empty { min-height:0; }
+
+/* 16:9 artwork stays intact; portrait-only fallbacks get a soft full-frame backdrop. */
+.row-poster, .poster-preview { position:relative; isolation:isolate; }
+.row-poster .artwork-main, .poster-preview .artwork-main { position:relative; z-index:1; width:100%; height:100%; object-fit:contain; object-position:center; }
+.row-poster.portrait-source::before, .poster-preview.portrait-source::before { content:""; position:absolute; z-index:0; inset:-12px; background-image:var(--artwork-url); background-size:cover; background-position:center; filter:blur(10px); opacity:.38; transform:scale(1.08); }
+:root[data-theme="dark"] .row-poster.portrait-source::before, :root[data-theme="dark"] .poster-preview.portrait-source::before { opacity:.28; }
+
+/* The built-in Unsorted row should visually match every other status. */
+.manager-fixed-status { min-height:34px; display:flex; align-items:center; }
+.manager-row input, .manager-fixed-status strong { font-size:calc(12px * var(--tv-font-scale)); font-weight:700; }
+.manager-row-built-in { background:inherit; }
+
+/* Keep form controls aligned even when one label wraps. */
+.field-grid.three > label { display:grid; grid-template-rows:minmax(2.6em,auto) auto; align-content:start; }
+.field-grid.three > label > span:first-child { min-height:2.6em; display:flex; align-items:flex-end; }
+.viewing-history-card { border:1px solid var(--line); border-radius:11px; padding:12px; background:rgba(255,255,255,.42); }
+.viewing-history-card strong { font-size:calc(14px * var(--tv-font-scale)); }
+.viewing-date-grid { margin-top:10px; }
+.episode-watched-date { margin:0 0 9px; color:var(--muted); font-size:calc(9.5px * var(--tv-font-scale)); }
+
+/* Filters use compact checkboxes that never scale into giant squares. */
+.check-grid { grid-template-columns:repeat(2,minmax(0,1fr)); gap:7px; }
+.check-option { min-height:42px; align-items:center; gap:9px; padding:8px 10px; line-height:1.2; font-weight:650; text-transform:none; letter-spacing:0; }
+.check-option input { appearance:auto; width:18px !important; height:18px !important; min-width:18px !important; min-height:18px !important; flex:0 0 18px; margin:0; padding:0; border-radius:3px; }
+.check-option span { min-width:0; }
+.date-filter-grid { display:grid; grid-template-columns:1.2fr 1fr 1fr; gap:8px; }
+:root[data-font-size="xx-large"] .check-grid,
+:root[data-font-size="xxx-large"] .check-grid { grid-template-columns:1fr; }
+
+/* Watching Now removes database-like columns and prioritizes progress. */
+.watching-now-row { grid-template-columns:120px minmax(0,1fr); }
+.watching-now-progress { margin-top:9px; display:flex; flex-direction:column; gap:3px; color:var(--app-blue-deep); }
+.watching-now-progress strong { font-size:calc(12px * var(--tv-font-scale)); }
+.watching-now-progress span { color:var(--muted); font-size:calc(10px * var(--tv-font-scale)); }
+
+/* Mobile navigation is a real independently scrollable drawer. */
+@media (max-width:720px) {
+  .sidebar { top:0; bottom:0; height:100dvh; max-height:100dvh; overflow:hidden; padding-bottom:calc(12px + env(safe-area-inset-bottom)); }
+  .nav-scroll { flex:1 1 auto; min-height:0; overflow-y:auto; -webkit-overflow-scrolling:touch; overscroll-behavior:contain; padding-bottom:18px; }
+  .sidebar-footer { flex:0 0 auto; background:inherit; }
+  .filter-drawer { height:100dvh; max-height:100dvh; }
+  .drawer-body { -webkit-overflow-scrolling:touch; overscroll-behavior:contain; }
+  .check-grid { grid-template-columns:1fr; }
+  .date-filter-grid { grid-template-columns:1fr; }
+  .show-row { align-items:start; }
+  .status-pill { font-size:calc(9.5px * var(--tv-font-scale)); margin-top:0; }
+  .watching-now-row { grid-template-columns:96px minmax(0,1fr); }
+  .field-grid.three > label { grid-template-rows:auto auto; }
+  .field-grid.three > label > span:first-child { min-height:0; }
+}
+@media (max-width:430px) {
+  .watching-now-row { grid-template-columns:88px minmax(0,1fr); }
+  .filter-drawer { width:100vw; }
+  .drawer-header { padding:18px 16px 13px; }
+  .drawer-body { padding:16px; }
+  .drawer-footer { padding-left:16px; padding-right:16px; }
+}
+/* Checkbox labels are content, not field headings. */
+.check-option > span { display:block; margin:0; color:inherit; font-size:inherit; font-weight:650; letter-spacing:0; text-transform:none; line-height:1.2; }
