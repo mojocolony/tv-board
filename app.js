@@ -1,8 +1,8 @@
 (() => {
   'use strict';
 
-  const APP_VERSION = '3.0.2';
-  const TMDB_ARTWORK_POLICY = 'neutral-en-v1';
+  const APP_VERSION = '3.1.0';
+  const TMDB_ARTWORK_POLICY = 'textfree-v2';
   const STORAGE_KEY = 'tvBoard.state.v1';
   const DROPBOX_KEY = 'tvBoard.dropbox.v1';
   const PKCE_KEY = 'tvBoard.pkce.v1';
@@ -31,8 +31,8 @@
     filterTime: $('filterTime'), filterWatchingWith: $('filterWatchingWith'), filterLetters: $('filterLetters'), filterYearFrom: $('filterYearFrom'), filterYearTo: $('filterYearTo'), filterRating: $('filterRating'), filterFavourite: $('filterFavourite'), filterDateType: $('filterDateType'), filterDateFrom: $('filterDateFrom'), filterDateTo: $('filterDateTo'), filterNetworks: $('filterNetworks'), filterTags: $('filterTags'),
     clearFiltersButton: $('clearFiltersButton'), saveViewButton: $('saveViewButton'), applyFiltersButton: $('applyFiltersButton'),
     showDialog: $('showDialog'), showForm: $('showForm'), showDialogTitle: $('showDialogTitle'), showId: $('showId'), showTitle: $('showTitle'), showLocation: $('showLocation'), showRating: $('showRating'), showFavourite: $('showFavourite'), showFavouriteText: $('showFavouriteText'),
-    showHero: $('showHero'), showHeroImage: $('showHeroImage'), showHeroTitle: $('showHeroTitle'), showHeroStatus: $('showHeroStatus'), refreshBackdropButton: $('refreshBackdropButton'),
-    showPoster: $('showPoster'), posterPreview: $('posterPreview'), libraryArtworkPreview: $('libraryArtworkPreview'), refreshLibraryArtworkButton: $('refreshLibraryArtworkButton'), libraryArtworkStatus: $('libraryArtworkStatus'), lookupShowButton: $('lookupShowButton'), lookupStatus: $('lookupStatus'), lookupResults: $('lookupResults'), showYear: $('showYear'), showSeasons: $('showSeasons'), showEpisodes: $('showEpisodes'),
+    showHero: $('showHero'), showHeroImage: $('showHeroImage'), showHeroTitle: $('showHeroTitle'), showHeroStatus: $('showHeroStatus'), pickHeroButton: $('pickHeroButton'), refreshBackdropButton: $('refreshBackdropButton'),
+    showPoster: $('showPoster'), posterPreview: $('posterPreview'), pickPosterButton: $('pickPosterButton'), libraryArtworkPreview: $('libraryArtworkPreview'), pickLibraryArtworkButton: $('pickLibraryArtworkButton'), refreshLibraryArtworkButton: $('refreshLibraryArtworkButton'), libraryArtworkStatus: $('libraryArtworkStatus'), artworkPickerOverlay: $('artworkPickerOverlay'), artworkPickerScrim: $('artworkPickerScrim'), artworkPickerTitle: $('artworkPickerTitle'), artworkPickerSubtitle: $('artworkPickerSubtitle'), artworkPickerGrid: $('artworkPickerGrid'), artworkPickerEmpty: $('artworkPickerEmpty'), closeArtworkPickerButton: $('closeArtworkPickerButton'), lookupShowButton: $('lookupShowButton'), lookupStatus: $('lookupStatus'), lookupResults: $('lookupResults'), showYear: $('showYear'), showSeasons: $('showSeasons'), showEpisodes: $('showEpisodes'),
     showRuntime: $('showRuntime'), showTotalMinutes: $('showTotalMinutes'), showSeriesStatus: $('showSeriesStatus'), showNetwork: $('showNetwork'), showCountry: $('showCountry'), showWatchingWith: $('showWatchingWith'), watchingWithSuggestions: $('watchingWithSuggestions'), showStartedDate: $('showStartedDate'), showFinishedDate: $('showFinishedDate'), showAbandonedDate: $('showAbandonedDate'), viewingRunsList: $('viewingRunsList'), startRewatchButton: $('startRewatchButton'), watchedEpisodeChoice: $('watchedEpisodeChoice'), markAllEpisodesWatched: $('markAllEpisodesWatched'), markAllEpisodesButton: $('markAllEpisodesButton'), chooseEpisodesButton: $('chooseEpisodesButton'), skipEpisodesButton: $('skipEpisodesButton'), watchedEpisodeChoiceNote: $('watchedEpisodeChoiceNote'), showGenres: $('showGenres'), showMetacritic: $('showMetacritic'),
     networkOptions: $('networkOptions'), watchingWithOptions: $('watchingWithOptions'), genresPicker: $('genresPicker'), genresPickerSummary: $('genresPickerSummary'), genreChoices: $('genreChoices'), genreAddInput: $('genreAddInput'), genreAddButton: $('genreAddButton'), tagsPicker: $('tagsPicker'), tagsPickerSummary: $('tagsPickerSummary'), tagChoices: $('tagChoices'), tagAddInput: $('tagAddInput'), tagAddButton: $('tagAddButton'),
     streamingProvidersText: $('streamingProvidersText'), streamingProvidersNote: $('streamingProvidersNote'), refreshShowStreamingButton: $('refreshShowStreamingButton'), showTags: $('showTags'), showNotes: $('showNotes'),
@@ -102,6 +102,8 @@
   const castCache = new Map();
   const backdropPoolCache = new Map();
   const tmdbImagesCache = new Map();
+  let artworkPickerMode = '';
+  let artworkPickerItems = [];
 
   function nowIso() { return new Date().toISOString(); }
   function uuid() { return crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}-${Math.random().toString(16).slice(2)}`; }
@@ -142,6 +144,10 @@
   }
   function tmdbBackdropUrl(path) { const clean=normalizeBackdropPath(path); return clean?`${TMDB_IMAGE_BASE}${clean}`:''; }
   function tmdbLibraryImageUrl(path) { const clean=normalizeBackdropPath(path); return clean?`${TMDB_LIBRARY_IMAGE_BASE}${clean}`:''; }
+  function preloadImage(url) {
+    const safe=safeUrl(url);if(!safe)return Promise.resolve(false);
+    return new Promise(resolve=>{const img=new Image();img.decoding='async';img.onload=()=>resolve(true);img.onerror=()=>resolve(false);img.src=safe;});
+  }
 
   function validIsoDate(value) { const text=String(value||'').trim(); return /^\d{4}-\d{2}-\d{2}$/.test(text) && !Number.isNaN(Date.parse(`${text}T12:00:00`)) ? text : ''; }
   function todayIsoDate() { return new Date().toLocaleDateString('en-CA'); }
@@ -1373,7 +1379,7 @@
     (async()=>{await prepareHeroBackdrop(show || draftMeta);await prepareLibraryArtwork(show || draftMeta);})();
     setTimeout(()=>els.showTitle.focus(),30);
   }
-  function closeShowDialog(skipHistory=false){clearTimeout(autocompleteTimer);autocompleteTimer=null;if(els.showDialog.open)els.showDialog.close(); if(lookupController){lookupController.abort();lookupController=null;}els.showTitle.setAttribute('aria-expanded','false');if(!skipHistory)removeOverlayState('show');flushPendingLibraryRender();}
+  function closeShowDialog(skipHistory=false){closeArtworkPicker();clearTimeout(autocompleteTimer);autocompleteTimer=null;if(els.showDialog.open)els.showDialog.close(); if(lookupController){lookupController.abort();lookupController=null;}els.showTitle.setAttribute('aria-expanded','false');if(!skipHistory)removeOverlayState('show');flushPendingLibraryRender();}
   function setFavourite(value){draftMeta.favourite=Boolean(value);els.showFavourite.classList.toggle('active',draftMeta.favourite);els.showFavourite.setAttribute('aria-pressed',String(draftMeta.favourite));els.showFavouriteText.textContent=draftMeta.favourite?'Favourite':'Not favourite';}
   function viewingStatusLabel(run){return run.status==='completed'?'Completed':run.status==='abandoned'?'Abandoned':'In progress';}
   function syncViewingDateField(kind) {
@@ -1451,28 +1457,38 @@
       requestAnimationFrame(()=>els.episodeGuideCard?.scrollIntoView({behavior:'smooth',block:'start'}));
     }
   }
-  function isPreferredBackdropLanguage(item) {
+  function isAutomaticBackdropCandidate(item) {
+    // TMDB's no-language backdrops are the safest automatic source for text-free art.
+    // English-language backdrops are available in the manual picker, but are never
+    // chosen automatically because they are much more likely to contain title text.
     const lang=item?.iso_639_1;
-    return lang===null||lang===undefined||lang===''||lang==='en';
-  }
-  function backdropLanguageScore(item) {
-    const lang=item?.iso_639_1;
-    return (lang===null||lang===undefined||lang==='')?2:(lang==='en'?1:0);
+    return (lang===null||lang===undefined||lang==='') && normalizeBackdropPath(item?.file_path) && Number(item?.aspect_ratio||0)>=1.45;
   }
   function rankBackdropPool(items) {
-    // Hero/library imagery should not unexpectedly contain localized title text.
-    // Prefer language-neutral backdrops, allow English, and exclude all others.
-    const valid=(Array.isArray(items)?items:[]).filter(item=>normalizeBackdropPath(item?.file_path) && Number(item?.aspect_ratio||0)>=1.45 && isPreferredBackdropLanguage(item));
-    valid.sort((a,b)=>backdropLanguageScore(b)-backdropLanguageScore(a) || Number(b?.vote_average||0)-Number(a?.vote_average||0) || Number(b?.vote_count||0)-Number(a?.vote_count||0) || Number(b?.width||0)-Number(a?.width||0));
+    const valid=(Array.isArray(items)?items:[]).filter(isAutomaticBackdropCandidate);
+    valid.sort((a,b)=>Number(b?.vote_average||0)-Number(a?.vote_average||0) || Number(b?.vote_count||0)-Number(a?.vote_count||0) || Number(b?.width||0)-Number(a?.width||0));
     const paths=[];const seen=new Set();
     valid.forEach(item=>{const path=normalizeBackdropPath(item.file_path);if(path&&!seen.has(path)&&paths.length<HERO_POOL_LIMIT){seen.add(path);paths.push(path);}});
     return paths;
   }
   function rankLogoPath(items) {
-    const valid=(Array.isArray(items)?items:[]).filter(item=>{const lang=item?.iso_639_1;return normalizeBackdropPath(item?.file_path)&&(lang==='en'||lang===null||lang===undefined||lang==='');});
-    const languageScore=item=>item?.iso_639_1==='en'?2:1;
-    valid.sort((a,b)=>languageScore(b)-languageScore(a) || Number(b?.vote_average||0)-Number(a?.vote_average||0) || Number(b?.vote_count||0)-Number(a?.vote_count||0) || Number(b?.width||0)-Number(a?.width||0));
+    // Only explicitly English logos are used automatically. If none exists, TV
+    // renders the English show title itself rather than risking a foreign logo.
+    const valid=(Array.isArray(items)?items:[]).filter(item=>normalizeBackdropPath(item?.file_path)&&item?.iso_639_1==='en');
+    valid.sort((a,b)=>Number(b?.vote_average||0)-Number(a?.vote_average||0) || Number(b?.vote_count||0)-Number(a?.vote_count||0) || Number(b?.width||0)-Number(a?.width||0));
     return normalizeBackdropPath(valid[0]?.file_path);
+  }
+  function pickerBackdropItems(items) {
+    const valid=(Array.isArray(items)?items:[]).filter(item=>normalizeBackdropPath(item?.file_path)&&Number(item?.aspect_ratio||0)>=1.45);
+    const langScore=item=>{const lang=item?.iso_639_1;return (lang===null||lang===undefined||lang==='')?3:(lang==='en'?2:1);};
+    valid.sort((a,b)=>langScore(b)-langScore(a)||Number(b?.vote_average||0)-Number(a?.vote_average||0)||Number(b?.vote_count||0)-Number(a?.vote_count||0)||Number(b?.width||0)-Number(a?.width||0));
+    const seen=new Set();return valid.filter(item=>{const path=normalizeBackdropPath(item.file_path);if(!path||seen.has(path))return false;seen.add(path);return true;}).slice(0,40);
+  }
+  function pickerPosterItems(items) {
+    const valid=(Array.isArray(items)?items:[]).filter(item=>normalizeBackdropPath(item?.file_path)&&Number(item?.aspect_ratio||0)>0&&Number(item?.aspect_ratio||0)<1);
+    const langScore=item=>item?.iso_639_1==='en'?3:((item?.iso_639_1===null||item?.iso_639_1===undefined||item?.iso_639_1==='')?2:1);
+    valid.sort((a,b)=>langScore(b)-langScore(a)||Number(b?.vote_average||0)-Number(a?.vote_average||0)||Number(b?.vote_count||0)-Number(a?.vote_count||0)||Number(b?.height||0)-Number(a?.height||0));
+    const seen=new Set();return valid.filter(item=>{const path=normalizeBackdropPath(item.file_path);if(!path||seen.has(path))return false;seen.add(path);return true;}).slice(0,40);
   }
   async function fetchTmdbImages(meta,{force=false}={}) {
     if(!prefs.tmdbCredential)throw new Error('TMDB is not configured');
@@ -1482,10 +1498,60 @@
     if(!force&&tmdbImagesCache.has(tmdbId))return {tmdbId,data:tmdbImagesCache.get(tmdbId)};
     const data=await tmdbRequest(`/tv/${tmdbId}/images`);tmdbImagesCache.set(tmdbId,data);return {tmdbId,data};
   }
+  function closeArtworkPicker() {
+    if(!els.artworkPickerOverlay)return;
+    els.artworkPickerOverlay.hidden=true;artworkPickerMode='';artworkPickerItems=[];
+  }
+  function artworkLanguageLabel(item) {
+    const lang=item?.iso_639_1;
+    if(lang===null||lang===undefined||lang==='')return 'No language';
+    return String(lang).toUpperCase();
+  }
+  async function openArtworkPicker(mode) {
+    if(!els.artworkPickerOverlay||!prefs.tmdbCredential){showToast('Add a TMDB credential in Settings first');return;}
+    artworkPickerMode=mode;artworkPickerItems=[];els.artworkPickerGrid.replaceChildren();els.artworkPickerEmpty.hidden=true;
+    const title=mode==='poster'?'Pick poster':mode==='library'?'Pick library backdrop':'Pick hero backdrop';
+    const subtitle=mode==='poster'?'Choose a TMDB poster. English and language-neutral options are shown first.':'Choose visually. Automatic choices use no-language backdrops only; the picker also shows other TMDB options for manual overrides.';
+    els.artworkPickerTitle.textContent=title;els.artworkPickerSubtitle.textContent=subtitle;els.artworkPickerOverlay.hidden=false;
+    const loading=document.createElement('div');loading.className='artwork-picker-loading';loading.textContent='Loading TMDB images…';els.artworkPickerGrid.appendChild(loading);
+    try{
+      const result=await fetchTmdbImages(draftMeta);
+      if(!result?.data){throw new Error('No TMDB images found');}
+      draftMeta.tmdbId=result.tmdbId;
+      artworkPickerItems=mode==='poster'?pickerPosterItems(result.data.posters):pickerBackdropItems(result.data.backdrops);
+      els.artworkPickerGrid.replaceChildren();
+      if(!artworkPickerItems.length){els.artworkPickerEmpty.hidden=false;return;}
+      artworkPickerItems.forEach((item,index)=>{
+        const path=normalizeBackdropPath(item.file_path);if(!path)return;
+        const button=document.createElement('button');button.type='button';button.className=`artwork-choice ${mode==='poster'?'poster-choice':'backdrop-choice'}`;button.dataset.index=String(index);
+        const img=new Image();img.src=tmdbLibraryImageUrl(path);img.alt='';img.loading='lazy';img.decoding='async';button.appendChild(img);
+        const badge=document.createElement('span');badge.className='artwork-language-badge';badge.textContent=artworkLanguageLabel(item);button.appendChild(badge);
+        button.addEventListener('click',()=>selectArtworkChoice(index));els.artworkPickerGrid.appendChild(button);
+      });
+      requestAnimationFrame(()=>els.artworkPickerGrid.querySelector('button')?.focus({preventScroll:true}));
+    }catch(err){console.warn('Artwork picker failed',err);els.artworkPickerGrid.replaceChildren();els.artworkPickerEmpty.hidden=false;els.artworkPickerEmpty.textContent='TMDB artwork could not be loaded on this device.';}
+  }
+  async function selectArtworkChoice(index) {
+    const item=artworkPickerItems[index];const path=normalizeBackdropPath(item?.file_path);if(!path)return;
+    if(artworkPickerMode==='poster'){
+      els.showPoster.value=tmdbLibraryImageUrl(path);updatePosterPreview();closeArtworkPicker();showToast('Poster selected');return;
+    }
+    const fullUrl=tmdbBackdropUrl(path);await preloadImage(fullUrl);
+    if(artworkPickerMode==='hero'){
+      draftMeta.heroBackdropPath=path;
+      const pool=normalizeBackdropPool([path,...draftMeta.heroBackdropPool]);draftMeta.heroBackdropPool=pool;draftMeta.heroBackdropUpdatedAt=nowIso();draftMeta.heroArtworkPolicy=TMDB_ARTWORK_POLICY;
+      persistHeroBackdrop();renderHeroBackdrop(draftMeta);closeArtworkPicker();showToast('Hero selected');return;
+    }
+    if(artworkPickerMode==='library'){
+      await preloadImage(tmdbLibraryImageUrl(path));
+      draftMeta.libraryBackdropPath=path;draftMeta.libraryArtworkMode='manual';draftMeta.libraryArtworkUpdatedAt=nowIso();draftMeta.libraryArtworkPolicy=TMDB_ARTWORK_POLICY;
+      persistLibraryArtwork();renderLibraryArtworkPreview(draftMeta);closeArtworkPicker();showToast('Library backdrop selected');
+    }
+  }
   function libraryArtworkLabel(meta=draftMeta) {
     const hasLogo=Boolean(normalizeBackdropPath(meta?.libraryLogoPath));
     if(!normalizeBackdropPath(meta?.libraryBackdropPath))return 'No TMDB library artwork yet';
-    return hasLogo?'TMDB backdrop + logo':'TMDB backdrop';
+    return hasLogo?'Text-free TMDB backdrop + English logo':'Text-free TMDB backdrop';
   }
   function renderLibraryArtworkPreview(meta=draftMeta,{loading=false}={}) {
     if(!els.libraryArtworkPreview)return;
@@ -1493,7 +1559,7 @@
     if(loading){els.libraryArtworkPreview.replaceChildren();els.libraryArtworkPreview.className='library-artwork-preview loading';const span=document.createElement('span');span.textContent='Building library artwork…';els.libraryArtworkPreview.appendChild(span);}
     else{els.libraryArtworkPreview.className='library-artwork-preview';setLibraryArtwork(els.libraryArtworkPreview,previewMeta);}
     if(els.libraryArtworkStatus)els.libraryArtworkStatus.textContent=loading?'Loading TMDB backdrop and logo…':libraryArtworkLabel(meta);
-    if(els.refreshLibraryArtworkButton){const pool=normalizeBackdropPool(meta?.libraryBackdropPool);els.refreshLibraryArtworkButton.disabled=loading||(!prefs.tmdbCredential&&!pool.length);}
+    if(els.refreshLibraryArtworkButton){const pool=normalizeBackdropPool(meta?.libraryBackdropPool);els.refreshLibraryArtworkButton.disabled=loading||(!prefs.tmdbCredential&&!pool.length);}if(els.pickLibraryArtworkButton)els.pickLibraryArtworkButton.disabled=loading||!prefs.tmdbCredential;
   }
   function updateVisibleLibraryArtwork(show) {
     if(!show?.id||!els.showList)return;
@@ -1512,7 +1578,11 @@
     show.libraryArtworkMode=draftMeta.libraryArtworkMode==='manual'?'manual':'hero';
     show.libraryArtworkUpdatedAt=validDateString(draftMeta.libraryArtworkUpdatedAt)?draftMeta.libraryArtworkUpdatedAt:nowIso();
     show.libraryArtworkPolicy=draftMeta.libraryArtworkPolicy===TMDB_ARTWORK_POLICY?TMDB_ARTWORK_POLICY:show.libraryArtworkPolicy||'';
-    show.updatedAt=nowIso();updateVisibleLibraryArtwork(show);saveState({rerender:true});
+    show.updatedAt=nowIso();
+    // Never mutate the library behind an open editor. Safari/iPad can visibly
+    // repaint that layer even under a modal; defer it until the editor closes.
+    if(els.showDialog?.open)libraryRenderPending=true;else updateVisibleLibraryArtwork(show);
+    saveState({rerender:false});
   }
   async function prepareLibraryArtwork(meta=draftMeta,{force=false,quiet=false}={}) {
     const mode=(draftMeta.libraryArtworkMode||meta?.libraryArtworkMode)==='manual'?'manual':'hero';
@@ -1528,13 +1598,14 @@
     // should also stay fixed once it has a distinct approved backdrop.
     const storedPool=normalizeBackdropPool(draftMeta.libraryBackdropPool||meta?.libraryBackdropPool);
     const storedUsable=policyCurrent&&currentBackdrop&&currentBackdrop!==heroBackdrop&&storedPool.includes(currentBackdrop);
-    if(!force&&storedUsable&&(mode==='manual'||attempted)){
+    const manualUsable=policyCurrent&&currentBackdrop&&mode==='manual';
+    if(!force&&(manualUsable||(storedUsable&&attempted))){
       draftMeta.libraryBackdropPath=currentBackdrop;draftMeta.libraryLogoPath=currentLogo;draftMeta.libraryBackdropPool=storedPool;renderLibraryArtworkPreview(draftMeta);return;
     }
 
     const hasIdentity=Boolean(positiveIntegerOrNull(draftMeta.tmdbId||meta?.tmdbId)||safeText(draftMeta.imdbId||meta?.imdbId,40)||safeText(els.showTitle?.value||meta?.title,120));
     if(!prefs.tmdbCredential||!hasIdentity){renderLibraryArtworkPreview(draftMeta);return;}
-    if(!quiet)renderLibraryArtworkPreview(draftMeta,{loading:true});
+    if(!quiet){if(currentBackdrop)renderLibraryArtworkPreview(draftMeta);else renderLibraryArtworkPreview(draftMeta,{loading:true});}
     try{
       const result=await fetchTmdbImages(meta,{force});
       if(!result.tmdbId||!result.data){renderLibraryArtworkPreview(draftMeta);return;}
@@ -1549,7 +1620,7 @@
         // The library image should be visually distinct from the large hero on
         // first generation. Reuse the hero only when there is no alternative.
         const next=randomBackdropPath(draftMeta.libraryBackdropPool,heroBackdrop);
-        draftMeta.libraryBackdropPath=next||heroBackdrop||currentBackdrop;
+        draftMeta.libraryBackdropPath=next||heroBackdrop||'';
         if(draftMeta.libraryBackdropPath===heroBackdrop&&draftMeta.libraryBackdropPool.length>1){
           const alt=draftMeta.libraryBackdropPool.find(path=>path!==heroBackdrop);if(alt)draftMeta.libraryBackdropPath=alt;
         }
@@ -1562,9 +1633,11 @@
     try{
       let pool=normalizeBackdropPool(draftMeta.libraryBackdropPool);let logo=normalizeBackdropPath(draftMeta.libraryLogoPath);
       if(pool.length<2||!logo||draftMeta.libraryArtworkPolicy!==TMDB_ARTWORK_POLICY){const result=await fetchTmdbImages(draftMeta,{force:true});draftMeta.tmdbId=result.tmdbId;pool=rankBackdropPool(result.data?.backdrops);logo=rankLogoPath(result.data?.logos);draftMeta.libraryBackdropPool=normalizeBackdropPool(pool);draftMeta.libraryLogoPath=logo;draftMeta.libraryArtworkPolicy=TMDB_ARTWORK_POLICY;}
-      if(!pool.length){showToast('No English or language-neutral TMDB backdrops are available for this show');renderLibraryArtworkPreview(draftMeta);return;}
+      if(!pool.length){showToast('No automatic text-free TMDB backdrops are available for this show');renderLibraryArtworkPreview(draftMeta);return;}
       const current=normalizeBackdropPath(draftMeta.libraryBackdropPath);const hero=normalizeBackdropPath(draftMeta.heroBackdropPath);const choices=pool.filter(path=>path!==current&&path!==hero);const next=choices.length?randomBackdropPath(choices):randomBackdropPath(pool,current);
       if(!next||next===current){showToast('No other library backdrop is available');renderLibraryArtworkPreview(draftMeta);return;}
+      await preloadImage(tmdbLibraryImageUrl(next));
+      if(logo)await preloadImage(tmdbLibraryImageUrl(logo));
       draftMeta.libraryArtworkMode='manual';draftMeta.libraryBackdropPath=next;draftMeta.libraryArtworkUpdatedAt=nowIso();persistLibraryArtwork();renderLibraryArtworkPreview(draftMeta);showToast('Library artwork changed');
     }catch(err){console.error(err);showToast('Library artwork could not be refreshed');renderLibraryArtworkPreview(draftMeta);}
   }
@@ -1596,6 +1669,7 @@
     const canRefresh=pool.length>1 || Boolean(prefs.tmdbCredential);
     els.refreshBackdropButton.disabled=!canRefresh || loading;
     els.refreshBackdropButton.title=canRefresh?'Choose another backdrop':'Add a TMDB credential in Settings to load backdrops';
+    if(els.pickHeroButton){els.pickHeroButton.disabled=!prefs.tmdbCredential||loading;els.pickHeroButton.title=prefs.tmdbCredential?'Choose a TMDB backdrop manually':'Add a TMDB credential in Settings to choose backdrops';}
   }
   async function fetchHeroBackdropPool(meta,{force=false}={}) {
     if(!prefs.tmdbCredential)throw new Error('TMDB is not configured');
@@ -1628,12 +1702,12 @@
     const hasIdentity=Boolean(positiveIntegerOrNull(draftMeta.tmdbId || meta?.tmdbId) || safeText(draftMeta.imdbId || meta?.imdbId,40) || safeText(els.showTitle?.value || meta?.title,120));
     if(current&&policyCurrent){draftMeta.heroBackdropPath=current;draftMeta.heroBackdropPool=normalizeBackdropPool(draftMeta.heroBackdropPool || meta?.heroBackdropPool);renderHeroBackdrop(draftMeta);return;}
     if(!prefs.tmdbCredential || !hasIdentity){renderHeroBackdrop(draftMeta);return;}
-    renderHeroBackdrop(draftMeta,{loading:true});
+    if(current){draftMeta.heroBackdropPath=current;renderHeroBackdrop(draftMeta);}else renderHeroBackdrop(draftMeta,{loading:true});
     try{
       const result=await fetchHeroBackdropPool(meta,{force:!policyCurrent});if(!els.showDialog.open)return;
       draftMeta.tmdbId=result.tmdbId;draftMeta.heroBackdropPool=normalizeBackdropPool(result.pool);draftMeta.heroArtworkPolicy=TMDB_ARTWORK_POLICY;
       // Keep an existing hero if it satisfies the new language policy; otherwise
-      // replace it with an English/language-neutral image.
+      // replace it with a no-language image, the safest automatic text-free source.
       draftMeta.heroBackdropPath=current&&draftMeta.heroBackdropPool.includes(current)?current:randomBackdropPath(draftMeta.heroBackdropPool);
       draftMeta.heroBackdropUpdatedAt=nowIso();
       if(!draftMeta.heroBackdropPath){renderHeroBackdrop(draftMeta);return;}
@@ -1646,9 +1720,10 @@
     try{
       let pool=normalizeBackdropPool(draftMeta.heroBackdropPool);
       if(pool.length<2 || draftMeta.heroArtworkPolicy!==TMDB_ARTWORK_POLICY){const result=await fetchHeroBackdropPool(draftMeta,{force:true});draftMeta.tmdbId=result.tmdbId;pool=normalizeBackdropPool(result.pool);draftMeta.heroBackdropPool=pool;draftMeta.heroArtworkPolicy=TMDB_ARTWORK_POLICY;}
-      if(!pool.length){showToast('No English or language-neutral TMDB backdrops are available for this show');renderHeroBackdrop(draftMeta);return;}
+      if(!pool.length){showToast('No automatic text-free TMDB backdrops are available for this show');renderHeroBackdrop(draftMeta);return;}
       const current=normalizeBackdropPath(draftMeta.heroBackdropPath);const next=randomBackdropPath(pool,current);
       if(!next || next===current){showToast('No other backdrop is available');renderHeroBackdrop(draftMeta);return;}
+      await preloadImage(tmdbBackdropUrl(next));
       draftMeta.heroBackdropPath=next;draftMeta.heroBackdropUpdatedAt=nowIso();persistHeroBackdrop();renderHeroBackdrop(draftMeta);showToast('Backdrop changed');
     }catch(err){console.error(err);showToast('Backdrop could not be refreshed');renderHeroBackdrop(draftMeta);}
   }
@@ -2064,10 +2139,11 @@
     els.searchInput.oninput=render;els.sortSelect.onchange=()=>{sortMode=els.sortSelect.value;render();};if(els.sortButton)els.sortButton.onclick=toggleSortMenu;if(els.sortScrim)els.sortScrim.onclick=()=>closeSortMenu();
     els.filterButton.onclick=openFilterDrawer;els.closeFilterButton.onclick=()=>closeFilterDrawer();els.backFilterButton.onclick=()=>closeFilterDrawer();els.drawerScrim.onclick=()=>closeFilterDrawer();els.applyFiltersButton.onclick=applyFilters;els.clearFiltersButton.onclick=clearFilterDraft;els.saveViewButton.onclick=saveCurrentView;
     [els.filterEpisodes,els.filterTime,els.filterYearFrom,els.filterYearTo,els.filterRating,els.filterFavourite,els.filterDateType,els.filterDateFrom,els.filterDateTo].forEach(el=>{el.addEventListener('change',readDraftScalarFilters);});
-    els.showForm.onsubmit=saveShowFromForm;els.closeShowButton.onclick=()=>closeShowDialog();els.backShowButton.onclick=()=>closeShowDialog();els.cancelShowButton.onclick=()=>closeShowDialog();els.deleteShowButton.onclick=deleteCurrentShow;els.lookupShowButton.onclick=lookupShows;['input','change'].forEach(type=>{els.showStartedDate.addEventListener(type,()=>syncViewingDateField('started'));els.showFinishedDate.addEventListener(type,()=>syncViewingDateField('finished'));els.showAbandonedDate.addEventListener(type,()=>syncViewingDateField('abandoned'));});els.showTitle.addEventListener('input',scheduleTitleAutocomplete);els.showTitle.addEventListener('keydown',e=>{if(e.key==='ArrowDown'&&!els.lookupResults.hidden){const first=lookupResultButtons()[0];if(first){e.preventDefault();first.focus();}}else if(e.key==='Enter'&&!els.lookupResults.hidden){const first=lookupResultButtons()[0];if(first){e.preventDefault();first.click();}}});els.showPoster.oninput=updatePosterPreview;els.showTitle.addEventListener('input',()=>{if(els.showHeroTitle)els.showHeroTitle.textContent=els.showTitle.value.trim();});els.refreshBackdropButton.addEventListener('click',refreshHeroBackdrop);if(els.refreshLibraryArtworkButton)els.refreshLibraryArtworkButton.addEventListener('click',refreshLibraryArtwork);els.showFavourite.onclick=()=>setFavourite(!draftMeta.favourite);els.showLocation.onchange=()=>{updateWatchedEpisodeChoice({reset:true});renderViewingHistory();};if(els.markAllEpisodesButton)els.markAllEpisodesButton.onclick=()=>chooseWatchedEpisodeHistory('all');if(els.chooseEpisodesButton)els.chooseEpisodesButton.onclick=()=>chooseWatchedEpisodeHistory('choose');if(els.skipEpisodesButton)els.skipEpisodesButton.onclick=()=>chooseWatchedEpisodeHistory('none');if(els.startRewatchButton)els.startRewatchButton.onclick=startRewatch;els.refreshShowStreamingButton.onclick=refreshDraftProviders;els.refreshEpisodesButton.onclick=()=>loadEpisodeGuide(currentEpisodeShow()||draftMeta,true);
+    els.showForm.onsubmit=saveShowFromForm;els.closeShowButton.onclick=()=>closeShowDialog();els.backShowButton.onclick=()=>closeShowDialog();els.cancelShowButton.onclick=()=>closeShowDialog();els.deleteShowButton.onclick=deleteCurrentShow;els.lookupShowButton.onclick=lookupShows;['input','change'].forEach(type=>{els.showStartedDate.addEventListener(type,()=>syncViewingDateField('started'));els.showFinishedDate.addEventListener(type,()=>syncViewingDateField('finished'));els.showAbandonedDate.addEventListener(type,()=>syncViewingDateField('abandoned'));});els.showTitle.addEventListener('input',scheduleTitleAutocomplete);els.showTitle.addEventListener('keydown',e=>{if(e.key==='ArrowDown'&&!els.lookupResults.hidden){const first=lookupResultButtons()[0];if(first){e.preventDefault();first.focus();}}else if(e.key==='Enter'&&!els.lookupResults.hidden){const first=lookupResultButtons()[0];if(first){e.preventDefault();first.click();}}});els.showPoster.oninput=updatePosterPreview;els.showTitle.addEventListener('input',()=>{if(els.showHeroTitle)els.showHeroTitle.textContent=els.showTitle.value.trim();});if(els.pickHeroButton)els.pickHeroButton.addEventListener('click',()=>openArtworkPicker('hero'));els.refreshBackdropButton.addEventListener('click',refreshHeroBackdrop);if(els.pickPosterButton)els.pickPosterButton.addEventListener('click',()=>openArtworkPicker('poster'));if(els.pickLibraryArtworkButton)els.pickLibraryArtworkButton.addEventListener('click',()=>openArtworkPicker('library'));if(els.refreshLibraryArtworkButton)els.refreshLibraryArtworkButton.addEventListener('click',refreshLibraryArtwork);if(els.closeArtworkPickerButton)els.closeArtworkPickerButton.addEventListener('click',closeArtworkPicker);if(els.artworkPickerScrim)els.artworkPickerScrim.addEventListener('click',closeArtworkPicker);els.showFavourite.onclick=()=>setFavourite(!draftMeta.favourite);els.showLocation.onchange=()=>{updateWatchedEpisodeChoice({reset:true});renderViewingHistory();};if(els.markAllEpisodesButton)els.markAllEpisodesButton.onclick=()=>chooseWatchedEpisodeHistory('all');if(els.chooseEpisodesButton)els.chooseEpisodesButton.onclick=()=>chooseWatchedEpisodeHistory('choose');if(els.skipEpisodesButton)els.skipEpisodesButton.onclick=()=>chooseWatchedEpisodeHistory('none');if(els.startRewatchButton)els.startRewatchButton.onclick=startRewatch;els.refreshShowStreamingButton.onclick=refreshDraftProviders;els.refreshEpisodesButton.onclick=()=>loadEpisodeGuide(currentEpisodeShow()||draftMeta,true);
     els.genreAddButton.onclick=()=>addPickerValue('genres');els.tagAddButton.onclick=()=>addPickerValue('tags');els.genreAddInput.onkeydown=e=>{if(e.key==='Enter'){e.preventDefault();addPickerValue('genres');}};els.tagAddInput.onkeydown=e=>{if(e.key==='Enter'){e.preventDefault();addPickerValue('tags');}};
     if(els.showWatchingWith){els.showWatchingWith.addEventListener('focus',renderWatchingWithSuggestions);els.showWatchingWith.addEventListener('input',renderWatchingWithSuggestions);els.showWatchingWith.addEventListener('keydown',e=>{if(e.key==='ArrowDown'&&!els.watchingWithSuggestions?.hidden){const first=els.watchingWithSuggestions.querySelector('button');if(first){e.preventDefault();first.focus();}}else if(e.key==='Escape')hideWatchingWithSuggestions();});}
     els.showDialog.addEventListener('keydown',e=>{
+      if(els.artworkPickerOverlay&&!els.artworkPickerOverlay.hidden)return;
       if(e.key!=='Enter'||e.defaultPrevented||e.metaKey||e.ctrlKey||e.altKey)return;
       const target=e.target;
       if(!(target instanceof HTMLElement))return;
@@ -2101,9 +2177,9 @@
     document.addEventListener('pointerdown',e=>{if(els.sortControl&&!els.sortControl.contains(e.target))closeSortMenu();if(els.watchingWithSuggestions&&!els.watchingWithSuggestions.hidden&&!e.target.closest('.watching-with-field'))hideWatchingWithSuggestions();});
     window.addEventListener('resize',()=>{if(els.sortMenu&&!els.sortMenu.hidden)closeSortMenu();},{passive:true});
     document.addEventListener('keydown',e=>{
-      if(e.key==='Escape'){if(els.sortMenu&&!els.sortMenu.hidden){closeSortMenu({restoreFocus:true});return;}if(els.watchingWithSuggestions&&!els.watchingWithSuggestions.hidden){hideWatchingWithSuggestions();return;}if(history.state?.tvOverlay){history.back();return;}if(closeTopOverlayDirect())return;}
+      if(e.key==='Escape'){if(els.artworkPickerOverlay&&!els.artworkPickerOverlay.hidden){closeArtworkPicker();return;}if(els.sortMenu&&!els.sortMenu.hidden){closeSortMenu({restoreFocus:true});return;}if(els.watchingWithSuggestions&&!els.watchingWithSuggestions.hidden){hideWatchingWithSuggestions();return;}if(history.state?.tvOverlay){history.back();return;}if(closeTopOverlayDirect())return;}
       const target=e.target;const element=target instanceof HTMLElement ? target : null;
-      if(e.key==='Enter'&&els.showDialog.open&&!e.defaultPrevented&&!e.metaKey&&!e.ctrlKey&&!e.altKey){
+      if(e.key==='Enter'&&els.showDialog.open&&!e.defaultPrevented&&!e.metaKey&&!e.ctrlKey&&!e.altKey){if(els.artworkPickerOverlay&&!els.artworkPickerOverlay.hidden)return;
         if(element?.closest('textarea,button,summary,details,[contenteditable="true"]'))return;
         if(element instanceof HTMLSelectElement)return;
         if(element===els.genreAddInput||element===els.tagAddInput)return;

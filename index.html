@@ -57,7 +57,7 @@
 
       <div class="sidebar-footer">
         <button class="nav-item" id="settingsButton"><span class="nav-icon" data-icon="settings"></span><span>Settings</span></button>
-        <div class="version">TV v3.0.2</div>
+        <div class="version">TV v3.1.0</div>
       </div>
     </aside>
 
@@ -202,16 +202,17 @@
           <div class="show-hero-title" id="showHeroTitle"></div>
           <div class="show-hero-meta">
             <span id="showHeroStatus">TMDB backdrop</span>
-            <button type="button" class="hero-refresh-button" id="refreshBackdropButton"><span class="button-icon" data-icon="refresh"></span><span>Refresh backdrop</span></button>
+            <div class="hero-artwork-actions"><button type="button" class="hero-refresh-button" id="pickHeroButton"><span>Pick</span></button><button type="button" class="hero-refresh-button" id="refreshBackdropButton"><span class="button-icon" data-icon="refresh"></span><span>Refresh</span></button></div>
           </div>
         </div>
       </section>
       <div class="show-edit-layout">
         <div class="poster-editor">
           <div class="poster-preview" id="posterPreview"><div class="poster-fallback"><span data-icon="tv"></span></div></div>
+          <div class="poster-picker-row"><button type="button" class="text-button" id="pickPosterButton">Pick poster</button></div>
           <label><span>Poster image URL</span><input id="showPoster" type="url" placeholder="https://…"></label>
           <div class="library-artwork-editor">
-            <div class="library-artwork-label"><span>Library artwork</span><button type="button" class="text-button" id="refreshLibraryArtworkButton">Refresh</button></div>
+            <div class="library-artwork-label"><span>Library artwork</span><div class="library-artwork-actions"><button type="button" class="text-button" id="pickLibraryArtworkButton">Pick</button><button type="button" class="text-button" id="refreshLibraryArtworkButton">Refresh</button></div></div>
             <div class="library-artwork-preview" id="libraryArtworkPreview"><div class="poster-fallback"><span data-icon="tv"></span></div></div>
             <div class="helper" id="libraryArtworkStatus">TMDB backdrop + logo appears here when available.</div>
           </div>
@@ -320,6 +321,18 @@
           <label><span>Notes</span><textarea id="showNotes" rows="5" maxlength="4000"></textarea></label>
         </div>
       </div>
+      <div class="artwork-picker-overlay" id="artworkPickerOverlay" hidden>
+        <button type="button" class="artwork-picker-scrim" id="artworkPickerScrim" aria-label="Close artwork picker"></button>
+        <section class="artwork-picker-panel" role="dialog" aria-modal="true" aria-labelledby="artworkPickerTitle">
+          <div class="artwork-picker-header">
+            <div><div class="eyebrow">ARTWORK</div><h3 id="artworkPickerTitle">Choose image</h3><p id="artworkPickerSubtitle">Choose an image from TMDB.</p></div>
+            <button type="button" class="icon-button" id="closeArtworkPickerButton" aria-label="Close">×</button>
+          </div>
+          <div class="artwork-picker-grid" id="artworkPickerGrid"></div>
+          <div class="artwork-picker-empty" id="artworkPickerEmpty" hidden>No suitable images are available.</div>
+        </section>
+      </div>
+
       <div class="modal-footer split">
         <button type="button" class="danger-button" id="deleteShowButton">Delete</button>
         <div><button type="button" class="secondary-button" id="cancelShowButton">Cancel</button><button type="submit" class="primary-button">Save</button></div>
@@ -391,7 +404,7 @@
         </div>
       </section>
     </div>
-    <div class="settings-footer">TV v3.0.2</div>
+    <div class="settings-footer">TV v3.1.0</div>
   </dialog>
 
   <div class="toast" id="toast" role="status" aria-live="polite"></div>

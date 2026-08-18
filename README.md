@@ -1,6 +1,15 @@
-# TV v3.0.2
+# TV v3.1.0
 
 TV is the redesigned successor to TV Board. It keeps the existing data/storage contracts while replacing the Kanban board with a scalable visual list library.
+
+## New in v3.1.0
+
+- Automatic hero and library backdrops now use TMDB **no-language** backdrops only, reducing embedded title/logo clashes.
+- Automatic library logos are **English only**; when no English logo is available, TV renders the show title itself.
+- Add/Edit Show now includes **Pick** controls for the hero, library backdrop, and poster so weak automatic choices can be overridden visually from TMDB.
+- Library title/logo treatment is capped so it cannot cover most of a 16:9 image; fallback titles wrap to at most two lines.
+- TMDB/TVmaze artwork requests use a dedicated **cache-first image cache** on each device after the first load. API and Dropbox data remain network-first.
+- iPad/iPhone editor rendering is steadier: large backdrop blurs/animations are disabled on coarse-pointer devices, images are preloaded before refresh swaps, and library rows are not repainted behind an open editor.
 
 ## New in v3.0.2
 
