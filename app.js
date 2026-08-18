@@ -1,7 +1,7 @@
 (() => {
   'use strict';
 
-  const APP_VERSION = '2.8.2';
+  const APP_VERSION = '2.9.0';
   const STORAGE_KEY = 'tvBoard.state.v1';
   const DROPBOX_KEY = 'tvBoard.dropbox.v1';
   const PKCE_KEY = 'tvBoard.pkce.v1';
@@ -13,6 +13,8 @@
   const UNSORTED = 'unsorted';
   const TOMBSTONE_DAYS = 180;
   const POSTER_REPAIR_KEY = 'tv.poster-repair.v2.8.0';
+  const HERO_POOL_LIMIT = 20;
+  const TMDB_IMAGE_BASE = 'https://image.tmdb.org/t/p/original';
 
   const $ = id => document.getElementById(id);
   const els = {
@@ -27,6 +29,7 @@
     filterTime: $('filterTime'), filterWatchingWith: $('filterWatchingWith'), filterLetters: $('filterLetters'), filterYearFrom: $('filterYearFrom'), filterYearTo: $('filterYearTo'), filterRating: $('filterRating'), filterFavourite: $('filterFavourite'), filterDateType: $('filterDateType'), filterDateFrom: $('filterDateFrom'), filterDateTo: $('filterDateTo'), filterNetworks: $('filterNetworks'), filterTags: $('filterTags'),
     clearFiltersButton: $('clearFiltersButton'), saveViewButton: $('saveViewButton'), applyFiltersButton: $('applyFiltersButton'),
     showDialog: $('showDialog'), showForm: $('showForm'), showDialogTitle: $('showDialogTitle'), showId: $('showId'), showTitle: $('showTitle'), showLocation: $('showLocation'), showRating: $('showRating'), showFavourite: $('showFavourite'), showFavouriteText: $('showFavouriteText'),
+    showHero: $('showHero'), showHeroImage: $('showHeroImage'), showHeroTitle: $('showHeroTitle'), showHeroStatus: $('showHeroStatus'), refreshBackdropButton: $('refreshBackdropButton'),
     showPoster: $('showPoster'), posterPreview: $('posterPreview'), lookupShowButton: $('lookupShowButton'), lookupStatus: $('lookupStatus'), lookupResults: $('lookupResults'), showYear: $('showYear'), showSeasons: $('showSeasons'), showEpisodes: $('showEpisodes'),
     showRuntime: $('showRuntime'), showTotalMinutes: $('showTotalMinutes'), showSeriesStatus: $('showSeriesStatus'), showNetwork: $('showNetwork'), showCountry: $('showCountry'), showWatchingWith: $('showWatchingWith'), watchingWithSuggestions: $('watchingWithSuggestions'), showStartedDate: $('showStartedDate'), showFinishedDate: $('showFinishedDate'), showAbandonedDate: $('showAbandonedDate'), viewingRunsList: $('viewingRunsList'), startRewatchButton: $('startRewatchButton'), watchedEpisodeChoice: $('watchedEpisodeChoice'), markAllEpisodesWatched: $('markAllEpisodesWatched'), markAllEpisodesButton: $('markAllEpisodesButton'), chooseEpisodesButton: $('chooseEpisodesButton'), skipEpisodesButton: $('skipEpisodesButton'), watchedEpisodeChoiceNote: $('watchedEpisodeChoiceNote'), showGenres: $('showGenres'), showMetacritic: $('showMetacritic'),
     networkOptions: $('networkOptions'), watchingWithOptions: $('watchingWithOptions'), genresPicker: $('genresPicker'), genresPickerSummary: $('genresPickerSummary'), genreChoices: $('genreChoices'), genreAddInput: $('genreAddInput'), genreAddButton: $('genreAddButton'), tagsPicker: $('tagsPicker'), tagsPickerSummary: $('tagsPickerSummary'), tagChoices: $('tagChoices'), tagAddInput: $('tagAddInput'), tagAddButton: $('tagAddButton'),
@@ -57,6 +60,7 @@
     menu: '<path d="M4 6h16M4 12h16M4 18h16"/>',
     bookmark: '<path d="M6 3h12v18l-6-4-6 4V3Z"/>',
     play: '<path d="m7 4 13 8-13 8V4Z"/>',
+    refresh: '<path d="M20 11a8 8 0 0 0-14.9-4M4 4v5h5"/><path d="M4 13a8 8 0 0 0 14.9 4M20 20v-5h-5"/>',
     chevron: '<path d="m9 18 6-6-6-6"/>'
   };
 
@@ -94,6 +98,7 @@
   const seasonProgressCache = new Map();
   const seasonProgressRequests = new Map();
   const castCache = new Map();
+  const backdropPoolCache = new Map();
 
   function nowIso() { return new Date().toISOString(); }
   function uuid() { return crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}-${Math.random().toString(16).slice(2)}`; }
@@ -121,6 +126,19 @@
       return ['http:', 'https:'].includes(url.protocol) ? url.href : '';
     } catch (_) { return ''; }
   }
+  function normalizeBackdropPath(value) {
+    const text=String(value||'').trim();
+    if(!/^\/[A-Za-z0-9._-]{3,180}$/.test(text))return '';
+    return text;
+  }
+  function normalizeBackdropPool(raw) {
+    if(!Array.isArray(raw))return [];
+    const out=[];const seen=new Set();
+    raw.forEach(value=>{const path=normalizeBackdropPath(value);if(path&&!seen.has(path)&&out.length<HERO_POOL_LIMIT){seen.add(path);out.push(path);}});
+    return out;
+  }
+  function tmdbBackdropUrl(path) { const clean=normalizeBackdropPath(path); return clean?`${TMDB_IMAGE_BASE}${clean}`:''; }
+
   function validIsoDate(value) { const text=String(value||'').trim(); return /^\d{4}-\d{2}-\d{2}$/.test(text) && !Number.isNaN(Date.parse(`${text}T12:00:00`)) ? text : ''; }
   function todayIsoDate() { return new Date().toLocaleDateString('en-CA'); }
   function normalizeEpisodeWatchDates(raw) {
@@ -355,6 +373,9 @@
         tvmazeId: positiveIntegerOrNull(s.tvmazeId),
         imdbId: safeText(s.imdbId || '', 40),
         tmdbId: positiveIntegerOrNull(s.tmdbId),
+        heroBackdropPath: normalizeBackdropPath(s.heroBackdropPath || s.backdropPath),
+        heroBackdropPool: normalizeBackdropPool(s.heroBackdropPool || s.backdropPool),
+        heroBackdropUpdatedAt: validDateString(s.heroBackdropUpdatedAt) ? s.heroBackdropUpdatedAt : null,
         firstAirYear: positiveIntegerOrNull(s.firstAirYear ?? s.year),
         providers: cleanProviders(s.providers),
         cast: normalizeCast(s.cast),
@@ -1297,7 +1318,7 @@
   }
 
   function openShowDialog(show=null) {
-    draftMeta = show ? clone(show) : { providers: [], providerLink:'', providersUpdatedAt:null, tvmazeId:null, imdbId:'', tmdbId:null, cast: [] };
+    draftMeta = show ? clone(show) : { providers: [], providerLink:'', providersUpdatedAt:null, tvmazeId:null, imdbId:'', tmdbId:null, cast: [], heroBackdropPath:'', heroBackdropPool:[], heroBackdropUpdatedAt:null };
     viewingDateCleared = { started:false, finished:false, abandoned:false };
     els.showDialogTitle.textContent = show ? 'Edit Show' : 'Add Show';
     els.showId.value=show?.id||'';els.showTitle.value=show?.title||'';els.showRating.value=String(show?.rating||0);els.showPoster.value=show?.poster||'';
@@ -1308,10 +1329,11 @@
     els.showTags.value=(show?.tags||[]).join(', ');els.showNotes.value=show?.notes||'';refreshEditorChoices();setSelectValue(els.showCountry,show?.country||'');clearTimeout(autocompleteTimer);autocompleteTimer=null;els.lookupStatus.textContent=show?'Find details uses TVmaze to refresh poster artwork and show metadata.':'Start typing a title for TVmaze suggestions, or use Find details.';els.lookupResults.hidden=true;els.lookupResults.replaceChildren();els.showTitle.setAttribute('aria-expanded','false');
     const editableRun=activeViewingRun(draftMeta)||normalizeViewingRuns(draftMeta.viewingRuns).at(-1);if(editableRun){els.showStartedDate.value=editableRun.startedDate||els.showStartedDate.value;els.showFinishedDate.value=editableRun.finishedDate||els.showFinishedDate.value;els.showAbandonedDate.value=editableRun.abandonedDate||els.showAbandonedDate.value;if(editableRun.watchingWith&&!els.showWatchingWith.value)els.showWatchingWith.value=editableRun.watchingWith;}
     if(els.markAllEpisodesWatched)els.markAllEpisodesWatched.checked=false;if(els.watchedEpisodeChoice)els.watchedEpisodeChoice.dataset.choice='';updateWatchedEpisodeChoice();renderViewingHistory();hideWatchingWithSuggestions();
-    els.deleteShowButton.style.visibility=show?'visible':'hidden';updatePosterPreview();renderStreamingPreview();
+    els.deleteShowButton.style.visibility=show?'visible':'hidden';updatePosterPreview();renderStreamingPreview();renderHeroBackdrop(draftMeta);
     prepareEpisodeGuide(show);
     prepareCast(show);
     if(!els.showDialog.open){pushOverlayState('show');els.showDialog.showModal();}
+    prepareHeroBackdrop(show || draftMeta);
     setTimeout(()=>els.showTitle.focus(),30);
   }
   function closeShowDialog(skipHistory=false){clearTimeout(autocompleteTimer);autocompleteTimer=null;if(els.showDialog.open)els.showDialog.close(); if(lookupController){lookupController.abort();lookupController=null;}els.showTitle.setAttribute('aria-expanded','false');if(!skipHistory)removeOverlayState('show');flushPendingLibraryRender();}
@@ -1391,6 +1413,97 @@
       if(show?.tvmazeId)await loadEpisodeGuide(show,false);
       requestAnimationFrame(()=>els.episodeGuideCard?.scrollIntoView({behavior:'smooth',block:'start'}));
     }
+  }
+  function rankBackdropPool(items) {
+    const valid=(Array.isArray(items)?items:[]).filter(item=>normalizeBackdropPath(item?.file_path) && Number(item?.aspect_ratio||0)>=1.45);
+    valid.sort((a,b)=>Number(b?.vote_average||0)-Number(a?.vote_average||0) || Number(b?.vote_count||0)-Number(a?.vote_count||0) || Number(b?.width||0)-Number(a?.width||0));
+    const paths=[];const seen=new Set();
+    valid.forEach(item=>{const path=normalizeBackdropPath(item.file_path);if(path&&!seen.has(path)&&paths.length<HERO_POOL_LIMIT){seen.add(path);paths.push(path);}});
+    return paths;
+  }
+  function randomBackdropPath(pool,current='') {
+    const clean=normalizeBackdropPool(pool);if(!clean.length)return '';
+    const options=clean.length>1?clean.filter(path=>path!==current):clean;
+    if(!options.length)return clean[0];
+    let index=0;
+    if(globalThis.crypto?.getRandomValues){const values=new Uint32Array(1);crypto.getRandomValues(values);index=values[0]%options.length;}else index=Math.floor(Math.random()*options.length);
+    return options[index];
+  }
+  function heroPoolLabel(meta=draftMeta) {
+    const count=normalizeBackdropPool(meta?.heroBackdropPool).length;
+    if(count>=HERO_POOL_LIMIT)return `TMDB · top ${HERO_POOL_LIMIT} backdrops`;
+    if(count>1)return `TMDB · ${count} backdrops`;
+    return 'TMDB backdrop';
+  }
+  function renderHeroBackdrop(meta=draftMeta,{loading=false}={}) {
+    if(!els.showHero)return;
+    const path=normalizeBackdropPath(meta?.heroBackdropPath);
+    const title=safeText(els.showTitle?.value || meta?.title || '',120);
+    if(els.showHeroTitle)els.showHeroTitle.textContent=title;
+    if(path){
+      els.showHero.hidden=false;els.showHero.classList.remove('loading');
+      const url=tmdbBackdropUrl(path);if(els.showHeroImage.getAttribute('src')!==url)els.showHeroImage.src=url;
+      els.showHeroImage.alt=title?`${title} backdrop`: 'TV show backdrop';
+      els.showHeroStatus.textContent=heroPoolLabel(meta);
+    }else if(loading){
+      els.showHero.hidden=false;els.showHero.classList.add('loading');els.showHeroImage.removeAttribute('src');els.showHeroImage.alt='';els.showHeroStatus.textContent='Loading TMDB backdrop…';
+    }else{
+      els.showHero.hidden=true;els.showHero.classList.remove('loading');els.showHeroImage.removeAttribute('src');els.showHeroImage.alt='';
+    }
+    const pool=normalizeBackdropPool(meta?.heroBackdropPool);
+    const canRefresh=pool.length>1 || Boolean(prefs.tmdbCredential);
+    els.refreshBackdropButton.disabled=!canRefresh || loading;
+    els.refreshBackdropButton.title=canRefresh?'Choose another backdrop from this show’s top-rated TMDB images':'Add a TMDB credential in Settings to load backdrops';
+  }
+  async function fetchHeroBackdropPool(meta,{force=false}={}) {
+    if(!prefs.tmdbCredential)throw new Error('TMDB is not configured');
+    let tmdbId=positiveIntegerOrNull(meta?.tmdbId || draftMeta.tmdbId);
+    if(!tmdbId)tmdbId=await resolveTmdbId(meta||draftMeta);
+    if(!tmdbId)return {tmdbId:null,pool:[]};
+    if(!force){
+      const stored=normalizeBackdropPool(meta?.heroBackdropPool || draftMeta.heroBackdropPool);if(stored.length)return {tmdbId,pool:stored};
+      const cached=backdropPoolCache.get(tmdbId);if(cached?.length)return {tmdbId,pool:cached};
+    }
+    const data=await tmdbRequest(`/tv/${tmdbId}/images`);
+    const pool=rankBackdropPool(data?.backdrops);backdropPoolCache.set(tmdbId,pool);
+    return {tmdbId,pool};
+  }
+  function persistHeroBackdrop() {
+    const id=els.showId?.value;if(!id)return;
+    const show=state.shows.find(item=>item.id===id);if(!show)return;
+    show.tmdbId=positiveIntegerOrNull(draftMeta.tmdbId || show.tmdbId);
+    show.heroBackdropPath=normalizeBackdropPath(draftMeta.heroBackdropPath);
+    show.heroBackdropPool=normalizeBackdropPool(draftMeta.heroBackdropPool);
+    show.heroBackdropUpdatedAt=validDateString(draftMeta.heroBackdropUpdatedAt)?draftMeta.heroBackdropUpdatedAt:nowIso();
+    show.updatedAt=nowIso();
+    saveState({rerender:false});
+  }
+  async function prepareHeroBackdrop(meta=draftMeta) {
+    const current=normalizeBackdropPath(draftMeta.heroBackdropPath || meta?.heroBackdropPath);
+    if(current){draftMeta.heroBackdropPath=current;draftMeta.heroBackdropPool=normalizeBackdropPool(draftMeta.heroBackdropPool || meta?.heroBackdropPool);renderHeroBackdrop(draftMeta);return;}
+    const hasIdentity=Boolean(positiveIntegerOrNull(draftMeta.tmdbId || meta?.tmdbId) || safeText(draftMeta.imdbId || meta?.imdbId,40) || safeText(els.showTitle?.value || meta?.title,120));
+    if(!prefs.tmdbCredential || !hasIdentity){renderHeroBackdrop(draftMeta);return;}
+    renderHeroBackdrop(draftMeta,{loading:true});
+    try{
+      const result=await fetchHeroBackdropPool(meta);if(!els.showDialog.open)return;
+      draftMeta.tmdbId=result.tmdbId;draftMeta.heroBackdropPool=normalizeBackdropPool(result.pool);
+      draftMeta.heroBackdropPath=randomBackdropPath(draftMeta.heroBackdropPool);
+      draftMeta.heroBackdropUpdatedAt=nowIso();
+      if(!draftMeta.heroBackdropPath){renderHeroBackdrop(draftMeta);return;}
+      persistHeroBackdrop();renderHeroBackdrop(draftMeta);
+    }catch(err){console.warn('TMDB backdrop lookup failed',err);if(els.showDialog.open)renderHeroBackdrop(draftMeta);}
+  }
+  async function refreshHeroBackdrop() {
+    if(!els.refreshBackdropButton)return;
+    els.refreshBackdropButton.disabled=true;els.showHeroStatus.textContent='Finding another backdrop…';
+    try{
+      let pool=normalizeBackdropPool(draftMeta.heroBackdropPool);
+      if(pool.length<2 && prefs.tmdbCredential){const result=await fetchHeroBackdropPool(draftMeta,{force:true});draftMeta.tmdbId=result.tmdbId;pool=normalizeBackdropPool(result.pool);draftMeta.heroBackdropPool=pool;}
+      if(!pool.length){showToast('No TMDB backdrops are available for this show');renderHeroBackdrop(draftMeta);return;}
+      const current=normalizeBackdropPath(draftMeta.heroBackdropPath);const next=randomBackdropPath(pool,current);
+      if(!next || next===current){showToast('No other backdrop is available');renderHeroBackdrop(draftMeta);return;}
+      draftMeta.heroBackdropPath=next;draftMeta.heroBackdropUpdatedAt=nowIso();persistHeroBackdrop();renderHeroBackdrop(draftMeta);showToast('Backdrop changed');
+    }catch(err){console.error(err);showToast('Backdrop could not be refreshed');renderHeroBackdrop(draftMeta);}
   }
   function updatePosterPreview(){setArtwork(els.posterPreview,els.showPoster.value);}
   function renderStreamingPreview(){els.streamingProvidersText.replaceChildren();const providers=cleanProviders(draftMeta.providers);if(providers.length){providers.forEach(p=>{const s=document.createElement('span');s.className='provider-pill';s.textContent=p;els.streamingProvidersText.appendChild(s);});els.streamingProvidersNote.textContent=draftMeta.providersUpdatedAt?`Updated ${new Date(draftMeta.providersUpdatedAt).toLocaleDateString()}`:'Subscription services in Canada';}else{els.streamingProvidersNote.textContent=prefs.tmdbCredential?'No subscription services found in Canada.':'Requires a TMDB credential in Settings.';}}
@@ -1655,9 +1768,9 @@
       els.showSeasons.value=seasons.length||'';els.showEpisodes.value=episodes.length||'';const runtime=show.averageRuntime||show.runtime||medianRuntime(episodes);els.showRuntime.value=runtime||'';
       const total=episodes.reduce((sum,e)=>sum+(Number(e.runtime)||0),0);els.showTotalMinutes.value=total||((runtime&&episodes.length)?runtime*episodes.length:'');
       if(!els.showMetacritic.value)els.showMetacritic.value=`https://www.metacritic.com/tv/${slugify(show.name)}/`;
-      if(draftMeta.tvmazeId && draftMeta.tvmazeId!==show.id){draftMeta.episodeProgress=null;draftMeta.episodeWatchDates={};draftMeta.watchedEpisodes=[];draftMeta.activeSeason=null;draftMeta.viewingRuns=[];draftMeta.currentViewingRunId='';}draftMeta.tvmazeId=show.id;draftMeta.imdbId=show.externals?.imdb||'';draftMeta.tmdbId=null;draftMeta.cast=cast;updatePosterPreview();renderEpisodeGuide(normalizedEpisodes,draftMeta.episodeProgress||null);els.episodeGuideStatus.textContent=normalizedEpisodes.length?`${normalizedEpisodes.length} episodes · click an episode for its description.`:'No numbered episodes are available from TVmaze.';els.refreshEpisodesButton.disabled=false;renderCast(cast);els.castStatus.textContent=cast.length?`${cast.length} principal cast member${cast.length===1?'':'s'} from TVmaze.`:'No main cast is listed by TVmaze.';
+      if(draftMeta.tvmazeId && draftMeta.tvmazeId!==show.id){draftMeta.episodeProgress=null;draftMeta.episodeWatchDates={};draftMeta.watchedEpisodes=[];draftMeta.activeSeason=null;draftMeta.viewingRuns=[];draftMeta.currentViewingRunId='';draftMeta.heroBackdropPath='';draftMeta.heroBackdropPool=[];draftMeta.heroBackdropUpdatedAt=null;}draftMeta.tvmazeId=show.id;draftMeta.imdbId=show.externals?.imdb||'';draftMeta.tmdbId=null;draftMeta.cast=cast;updatePosterPreview();renderEpisodeGuide(normalizedEpisodes,draftMeta.episodeProgress||null);els.episodeGuideStatus.textContent=normalizedEpisodes.length?`${normalizedEpisodes.length} episodes · click an episode for its description.`:'No numbered episodes are available from TVmaze.';els.refreshEpisodesButton.disabled=false;renderCast(cast);els.castStatus.textContent=cast.length?`${cast.length} principal cast member${cast.length===1?'':'s'} from TVmaze.`:'No main cast is listed by TVmaze.';
       els.lookupStatus.textContent='Details and poster artwork added from TVmaze. You can edit anything before saving.';
-      if(prefs.tmdbCredential)await refreshDraftProviders();
+      if(prefs.tmdbCredential){await refreshDraftProviders();await prepareHeroBackdrop(draftMeta);}
     }catch(err){console.error(err);els.lookupStatus.textContent='Basic TVmaze details were found, but episode details could not be loaded.';}
   }
   function medianRuntime(episodes){const vals=episodes.map(e=>Number(e.runtime)).filter(n=>Number.isFinite(n)&&n>0).sort((a,b)=>a-b);if(!vals.length)return null;return vals[Math.floor(vals.length/2)];}
@@ -1671,7 +1784,7 @@
       poster:safeUrl(els.showPoster.value),metacritic:safeUrl(els.showMetacritic.value),seasons:integerOrNull(els.showSeasons.value),episodes:integerOrNull(els.showEpisodes.value),runtime:integerOrNull(els.showRuntime.value),totalMinutes:integerOrNull(els.showTotalMinutes.value),
       genres:cleanGenres(splitComma(els.showGenres.value)),network:safeText(els.showNetwork.value,100),country:safeText(els.showCountry.value,80),seriesStatus:safeText(els.showSeriesStatus.value,50),watchingWith:safeText(els.showWatchingWith.value,60),favourite:Boolean(draftMeta.favourite),
       rating:clampRating(els.showRating.value),startedDate:validIsoDate(els.showStartedDate.value),finishedDate:validIsoDate(els.showFinishedDate.value),abandonedDate:validIsoDate(els.showAbandonedDate.value),episodeWatchDates:normalizeEpisodeWatchDates(draftMeta.episodeWatchDates || existing?.episodeWatchDates),watchedEpisodes:normalizeWatchedEpisodes(draftMeta.watchedEpisodes || existing?.watchedEpisodes,draftMeta.episodeWatchDates || existing?.episodeWatchDates),activeSeason:positiveIntegerOrNull(draftMeta.activeSeason || existing?.activeSeason),viewingRuns:normalizeViewingRuns(draftMeta.viewingRuns || existing?.viewingRuns),currentViewingRunId:safeText(draftMeta.currentViewingRunId || existing?.currentViewingRunId || '',100),tags:cleanTags(splitComma(els.showTags.value)),notes:String(els.showNotes.value||'').slice(0,4000),firstAirYear:positiveIntegerOrNull(els.showYear.value),providers:cleanProviders(draftMeta.providers),providerLink:safeUrl(draftMeta.providerLink||''),providersUpdatedAt:validDateString(draftMeta.providersUpdatedAt)?draftMeta.providersUpdatedAt:null,episodeProgress:normalizeEpisodeProgress(draftMeta.episodeProgress),
-      tvmazeId:positiveIntegerOrNull(draftMeta.tvmazeId),imdbId:safeText(draftMeta.imdbId,40),tmdbId:positiveIntegerOrNull(draftMeta.tmdbId),cast:normalizeCast(draftMeta.cast),order,createdAt:existing?.createdAt||t,updatedAt:t
+      tvmazeId:positiveIntegerOrNull(draftMeta.tvmazeId),imdbId:safeText(draftMeta.imdbId,40),tmdbId:positiveIntegerOrNull(draftMeta.tmdbId),heroBackdropPath:normalizeBackdropPath(draftMeta.heroBackdropPath),heroBackdropPool:normalizeBackdropPool(draftMeta.heroBackdropPool),heroBackdropUpdatedAt:validDateString(draftMeta.heroBackdropUpdatedAt)?draftMeta.heroBackdropUpdatedAt:null,cast:normalizeCast(draftMeta.cast),order,createdAt:existing?.createdAt||t,updatedAt:t
     };
   }
   function normalizedTitleForDuplicate(value){return titleSortKey(value).toLowerCase().replace(/[^a-z0-9]+/g,' ').trim();}
@@ -1803,7 +1916,7 @@
     els.searchInput.oninput=render;els.sortSelect.onchange=()=>{sortMode=els.sortSelect.value;render();};if(els.sortButton)els.sortButton.onclick=toggleSortMenu;if(els.sortScrim)els.sortScrim.onclick=()=>closeSortMenu();
     els.filterButton.onclick=openFilterDrawer;els.closeFilterButton.onclick=()=>closeFilterDrawer();els.backFilterButton.onclick=()=>closeFilterDrawer();els.drawerScrim.onclick=()=>closeFilterDrawer();els.applyFiltersButton.onclick=applyFilters;els.clearFiltersButton.onclick=clearFilterDraft;els.saveViewButton.onclick=saveCurrentView;
     [els.filterEpisodes,els.filterTime,els.filterYearFrom,els.filterYearTo,els.filterRating,els.filterFavourite,els.filterDateType,els.filterDateFrom,els.filterDateTo].forEach(el=>{el.addEventListener('change',readDraftScalarFilters);});
-    els.showForm.onsubmit=saveShowFromForm;els.closeShowButton.onclick=()=>closeShowDialog();els.backShowButton.onclick=()=>closeShowDialog();els.cancelShowButton.onclick=()=>closeShowDialog();els.deleteShowButton.onclick=deleteCurrentShow;els.lookupShowButton.onclick=lookupShows;['input','change'].forEach(type=>{els.showStartedDate.addEventListener(type,()=>syncViewingDateField('started'));els.showFinishedDate.addEventListener(type,()=>syncViewingDateField('finished'));els.showAbandonedDate.addEventListener(type,()=>syncViewingDateField('abandoned'));});els.showTitle.addEventListener('input',scheduleTitleAutocomplete);els.showTitle.addEventListener('keydown',e=>{if(e.key==='ArrowDown'&&!els.lookupResults.hidden){const first=lookupResultButtons()[0];if(first){e.preventDefault();first.focus();}}else if(e.key==='Enter'&&!els.lookupResults.hidden){const first=lookupResultButtons()[0];if(first){e.preventDefault();first.click();}}});els.showPoster.oninput=updatePosterPreview;els.showFavourite.onclick=()=>setFavourite(!draftMeta.favourite);els.showLocation.onchange=()=>{updateWatchedEpisodeChoice({reset:true});renderViewingHistory();};if(els.markAllEpisodesButton)els.markAllEpisodesButton.onclick=()=>chooseWatchedEpisodeHistory('all');if(els.chooseEpisodesButton)els.chooseEpisodesButton.onclick=()=>chooseWatchedEpisodeHistory('choose');if(els.skipEpisodesButton)els.skipEpisodesButton.onclick=()=>chooseWatchedEpisodeHistory('none');if(els.startRewatchButton)els.startRewatchButton.onclick=startRewatch;els.refreshShowStreamingButton.onclick=refreshDraftProviders;els.refreshEpisodesButton.onclick=()=>loadEpisodeGuide(currentEpisodeShow()||draftMeta,true);
+    els.showForm.onsubmit=saveShowFromForm;els.closeShowButton.onclick=()=>closeShowDialog();els.backShowButton.onclick=()=>closeShowDialog();els.cancelShowButton.onclick=()=>closeShowDialog();els.deleteShowButton.onclick=deleteCurrentShow;els.lookupShowButton.onclick=lookupShows;['input','change'].forEach(type=>{els.showStartedDate.addEventListener(type,()=>syncViewingDateField('started'));els.showFinishedDate.addEventListener(type,()=>syncViewingDateField('finished'));els.showAbandonedDate.addEventListener(type,()=>syncViewingDateField('abandoned'));});els.showTitle.addEventListener('input',scheduleTitleAutocomplete);els.showTitle.addEventListener('keydown',e=>{if(e.key==='ArrowDown'&&!els.lookupResults.hidden){const first=lookupResultButtons()[0];if(first){e.preventDefault();first.focus();}}else if(e.key==='Enter'&&!els.lookupResults.hidden){const first=lookupResultButtons()[0];if(first){e.preventDefault();first.click();}}});els.showPoster.oninput=updatePosterPreview;els.showTitle.addEventListener('input',()=>{if(els.showHeroTitle)els.showHeroTitle.textContent=els.showTitle.value.trim();});els.refreshBackdropButton.addEventListener('click',refreshHeroBackdrop);els.showFavourite.onclick=()=>setFavourite(!draftMeta.favourite);els.showLocation.onchange=()=>{updateWatchedEpisodeChoice({reset:true});renderViewingHistory();};if(els.markAllEpisodesButton)els.markAllEpisodesButton.onclick=()=>chooseWatchedEpisodeHistory('all');if(els.chooseEpisodesButton)els.chooseEpisodesButton.onclick=()=>chooseWatchedEpisodeHistory('choose');if(els.skipEpisodesButton)els.skipEpisodesButton.onclick=()=>chooseWatchedEpisodeHistory('none');if(els.startRewatchButton)els.startRewatchButton.onclick=startRewatch;els.refreshShowStreamingButton.onclick=refreshDraftProviders;els.refreshEpisodesButton.onclick=()=>loadEpisodeGuide(currentEpisodeShow()||draftMeta,true);
     els.genreAddButton.onclick=()=>addPickerValue('genres');els.tagAddButton.onclick=()=>addPickerValue('tags');els.genreAddInput.onkeydown=e=>{if(e.key==='Enter'){e.preventDefault();addPickerValue('genres');}};els.tagAddInput.onkeydown=e=>{if(e.key==='Enter'){e.preventDefault();addPickerValue('tags');}};
     if(els.showWatchingWith){els.showWatchingWith.addEventListener('focus',renderWatchingWithSuggestions);els.showWatchingWith.addEventListener('input',renderWatchingWithSuggestions);els.showWatchingWith.addEventListener('keydown',e=>{if(e.key==='ArrowDown'&&!els.watchingWithSuggestions?.hidden){const first=els.watchingWithSuggestions.querySelector('button');if(first){e.preventDefault();first.focus();}}else if(e.key==='Escape')hideWatchingWithSuggestions();});}
     els.showDialog.addEventListener('keydown',e=>{

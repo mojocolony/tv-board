@@ -57,7 +57,7 @@
 
       <div class="sidebar-footer">
         <button class="nav-item" id="settingsButton"><span class="nav-icon" data-icon="settings"></span><span>Settings</span></button>
-        <div class="version">TV v2.8.2</div>
+        <div class="version">TV v2.9.0</div>
       </div>
     </aside>
 
@@ -195,6 +195,17 @@
         <button type="button" class="icon-button secondary-close-button" id="closeShowButton" aria-label="Close">×</button>
       </div>
       <input type="hidden" id="showId">
+      <section class="show-hero" id="showHero" aria-label="Show backdrop" hidden>
+        <img id="showHeroImage" alt="" decoding="async">
+        <div class="show-hero-shade" aria-hidden="true"></div>
+        <div class="show-hero-copy">
+          <div class="show-hero-title" id="showHeroTitle"></div>
+          <div class="show-hero-meta">
+            <span id="showHeroStatus">TMDB backdrop</span>
+            <button type="button" class="hero-refresh-button" id="refreshBackdropButton"><span class="button-icon" data-icon="refresh"></span><span>Refresh backdrop</span></button>
+          </div>
+        </div>
+      </section>
       <div class="show-edit-layout">
         <div class="poster-editor">
           <div class="poster-preview" id="posterPreview"><div class="poster-fallback"><span data-icon="tv"></span></div></div>
@@ -375,7 +386,7 @@
         </div>
       </section>
     </div>
-    <div class="settings-footer">TV v2.8.2</div>
+    <div class="settings-footer">TV v2.9.0</div>
   </dialog>
 
   <div class="toast" id="toast" role="status" aria-live="polite"></div>
