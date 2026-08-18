@@ -1,7 +1,15 @@
-# TV v3.0.0
+# TV v3.0.1
 
 TV is the redesigned successor to TV Board. It keeps the existing data/storage contracts while replacing the Kanban board with a scalable visual list library.
 
+
+
+## Fixed in v3.0.1
+- Existing v3.0.0 library artwork now defaults to the show’s approved hero backdrop plus TMDB logo, avoiding title-card/black-background selections.
+- Generated library artwork is bound immediately to the visible library row and remains persisted after closing the editor.
+- Manual **Refresh** still chooses a different library backdrop and preserves that choice.
+- Removed visible “top 20 backdrops” copy and shortened the hero button to **Refresh**.
+- Library ratings render as five visual stars, including true half-star fills.
 
 ## New in v3.0.0
 

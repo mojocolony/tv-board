@@ -1080,3 +1080,51 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
   .row-poster.library-artwork .library-logo { width:82% !important; max-height:62%; }
   .row-poster.library-artwork .library-title-fallback { font-size:10px; }
 }
+
+/* TV v3.0.1 — artwork binding + compact hero controls + visual star ratings */
+.rating-stars {
+  display:inline-flex;
+  align-items:center;
+  gap:1px;
+  line-height:1;
+  vertical-align:middle;
+}
+.rating-star {
+  --star-fill:0%;
+  position:relative;
+  display:inline-block;
+  width:.92em;
+  height:1em;
+  flex:0 0 .92em;
+  font-size:1.18em;
+  line-height:1;
+}
+.rating-star::before,
+.rating-star::after {
+  content:"★";
+  position:absolute;
+  inset:0;
+  line-height:1;
+}
+.rating-star::before { color:rgba(104,87,47,.22); }
+.rating-star::after {
+  width:var(--star-fill);
+  overflow:hidden;
+  white-space:nowrap;
+  color:#806a2d;
+}
+:root[data-theme="dark"] .rating-star::before { color:rgba(219,184,91,.20); }
+:root[data-theme="dark"] .rating-star::after { color:#a98c3e; }
+
+.hero-refresh-button {
+  min-height:30px;
+  gap:5px;
+  padding:0 8px;
+  border-radius:9px;
+  font-size:10px;
+}
+.hero-refresh-button .button-icon,
+.hero-refresh-button .button-icon svg { width:13px; height:13px; }
+@media (max-width:720px) {
+  .hero-refresh-button { min-height:32px; padding:0 8px; font-size:10px; }
+}
