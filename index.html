@@ -57,7 +57,7 @@
 
       <div class="sidebar-footer">
         <button class="nav-item" id="settingsButton"><span class="nav-icon" data-icon="settings"></span><span>Settings</span></button>
-        <div class="version">TV v3.1.0</div>
+        <div class="version">TV v3.1.1</div>
       </div>
     </aside>
 
@@ -331,6 +331,24 @@
           <div class="artwork-picker-grid" id="artworkPickerGrid"></div>
           <div class="artwork-picker-empty" id="artworkPickerEmpty" hidden>No suitable images are available.</div>
         </section>
+        <div class="artwork-preview-overlay" id="artworkPreviewOverlay" hidden>
+          <button type="button" class="artwork-preview-scrim" id="artworkPreviewScrim" aria-label="Close image preview"></button>
+          <section class="artwork-preview-panel" role="dialog" aria-modal="true" aria-labelledby="artworkPreviewTitle">
+            <div class="artwork-preview-header">
+              <div><div class="eyebrow">PREVIEW</div><h3 id="artworkPreviewTitle">Artwork preview</h3></div>
+              <button type="button" class="icon-button" id="closeArtworkPreviewButton" aria-label="Close preview">×</button>
+            </div>
+            <div class="artwork-preview-stage" id="artworkPreviewStage">
+              <img id="artworkPreviewImage" alt="">
+              <span class="artwork-preview-language" id="artworkPreviewLanguage"></span>
+            </div>
+            <div class="artwork-preview-actions">
+              <button type="button" class="secondary-button" id="previousArtworkPreviewButton">← Previous</button>
+              <button type="button" class="primary-button" id="useArtworkPreviewButton">Use this image</button>
+              <button type="button" class="secondary-button" id="nextArtworkPreviewButton">Next →</button>
+            </div>
+          </section>
+        </div>
       </div>
 
       <div class="modal-footer split">
@@ -404,7 +422,7 @@
         </div>
       </section>
     </div>
-    <div class="settings-footer">TV v3.1.0</div>
+    <div class="settings-footer">TV v3.1.1</div>
   </dialog>
 
   <div class="toast" id="toast" role="status" aria-live="polite"></div>

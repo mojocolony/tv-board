@@ -1,15 +1,15 @@
-# TV v3.1.0
+# TV v3.1.1
 
 TV is the redesigned successor to TV Board. It keeps the existing data/storage contracts while replacing the Kanban board with a scalable visual list library.
 
-## New in v3.1.0
+## New in v3.1.1
 
-- Automatic hero and library backdrops now use TMDB **no-language** backdrops only, reducing embedded title/logo clashes.
-- Automatic library logos are **English only**; when no English logo is available, TV renders the show title itself.
-- Add/Edit Show now includes **Pick** controls for the hero, library backdrop, and poster so weak automatic choices can be overridden visually from TMDB.
-- Library title/logo treatment is capped so it cannot cover most of a 16:9 image; fallback titles wrap to at most two lines.
-- TMDB/TVmaze artwork requests use a dedicated **cache-first image cache** on each device after the first load. API and Dropbox data remain network-first.
-- iPad/iPhone editor rendering is steadier: large backdrop blurs/animations are disabled on coarse-pointer devices, images are preloaded before refresh swaps, and library rows are not repainted behind an open editor.
+- Artwork pickers now **preview before selecting**: click/tap a thumbnail to open a large lightbox, move through candidates with Previous/Next (or keyboard arrows / touch swipe), and commit only with **Use this image**.
+- Library logos and fallback titles are deliberately restrained so the backdrop remains dominant: roughly 40% maximum width and 20% maximum height, with two-line fallback titles.
+- Hero backdrops use a true **16:9 frame** at desktop, iPad and iPhone sizes so TMDB backdrops are not aggressively cropped.
+- Add Show title autocomplete is hardened against overlapping requests and again shows TVmaze suggestions after two characters.
+- Add/Edit Show always opens at the **top of the editor**. The Q shortcut no longer inherits the dialog's previous scroll position, and title focus does not scroll the modal downward.
+- Existing v3.1.0 artwork policies, per-device cache-first image loading, text-free automatic backdrops, and iPad rendering safeguards remain in place.
 
 ## New in v3.0.2
 
