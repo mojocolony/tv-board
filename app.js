@@ -1,7 +1,8 @@
 (() => {
   'use strict';
 
-  const APP_VERSION = '3.0.1';
+  const APP_VERSION = '3.0.2';
+  const TMDB_ARTWORK_POLICY = 'neutral-en-v1';
   const STORAGE_KEY = 'tvBoard.state.v1';
   const DROPBOX_KEY = 'tvBoard.dropbox.v1';
   const PKCE_KEY = 'tvBoard.pkce.v1';
@@ -384,6 +385,8 @@
         libraryLogoPath: normalizeBackdropPath(s.libraryLogoPath),
         libraryArtworkMode: s.libraryArtworkMode === 'manual' ? 'manual' : 'hero',
         libraryArtworkUpdatedAt: validDateString(s.libraryArtworkUpdatedAt) ? s.libraryArtworkUpdatedAt : null,
+        heroArtworkPolicy: s.heroArtworkPolicy === TMDB_ARTWORK_POLICY ? TMDB_ARTWORK_POLICY : '',
+        libraryArtworkPolicy: s.libraryArtworkPolicy === TMDB_ARTWORK_POLICY ? TMDB_ARTWORK_POLICY : '',
         firstAirYear: positiveIntegerOrNull(s.firstAirYear ?? s.year),
         providers: cleanProviders(s.providers),
         cast: normalizeCast(s.cast),
@@ -953,7 +956,7 @@
 
 
   function setLibraryArtwork(container, show) {
-    const backdropPath=normalizeBackdropPath(show?.libraryBackdropPath || show?.heroBackdropPath);
+    const backdropPath=normalizeBackdropPath(show?.libraryBackdropPath);
     const logoPath=normalizeBackdropPath(show?.libraryLogoPath);
     if(!backdropPath){setArtwork(container,show?.poster);return;}
     container.replaceChildren();container.classList.remove('portrait-source');container.classList.add('library-artwork');container.style.removeProperty('--artwork-url');container.style.removeProperty('background');
@@ -1352,7 +1355,7 @@
   }
 
   function openShowDialog(show=null) {
-    draftMeta = show ? clone(show) : { providers: [], providerLink:'', providersUpdatedAt:null, tvmazeId:null, imdbId:'', tmdbId:null, cast: [], heroBackdropPath:'', heroBackdropPool:[], heroBackdropUpdatedAt:null, libraryBackdropPath:'', libraryBackdropPool:[], libraryLogoPath:'', libraryArtworkMode:'hero', libraryArtworkUpdatedAt:null };
+    draftMeta = show ? clone(show) : { providers: [], providerLink:'', providersUpdatedAt:null, tvmazeId:null, imdbId:'', tmdbId:null, cast: [], heroBackdropPath:'', heroBackdropPool:[], heroBackdropUpdatedAt:null, libraryBackdropPath:'', libraryBackdropPool:[], libraryLogoPath:'', libraryArtworkMode:'hero', libraryArtworkUpdatedAt:null, heroArtworkPolicy:'', libraryArtworkPolicy:'' };
     viewingDateCleared = { started:false, finished:false, abandoned:false };
     els.showDialogTitle.textContent = show ? 'Edit Show' : 'Add Show';
     els.showId.value=show?.id||'';els.showTitle.value=show?.title||'';els.showRating.value=String(show?.rating||0);els.showPoster.value=show?.poster||'';
@@ -1448,16 +1451,26 @@
       requestAnimationFrame(()=>els.episodeGuideCard?.scrollIntoView({behavior:'smooth',block:'start'}));
     }
   }
+  function isPreferredBackdropLanguage(item) {
+    const lang=item?.iso_639_1;
+    return lang===null||lang===undefined||lang===''||lang==='en';
+  }
+  function backdropLanguageScore(item) {
+    const lang=item?.iso_639_1;
+    return (lang===null||lang===undefined||lang==='')?2:(lang==='en'?1:0);
+  }
   function rankBackdropPool(items) {
-    const valid=(Array.isArray(items)?items:[]).filter(item=>normalizeBackdropPath(item?.file_path) && Number(item?.aspect_ratio||0)>=1.45);
-    valid.sort((a,b)=>Number(b?.vote_average||0)-Number(a?.vote_average||0) || Number(b?.vote_count||0)-Number(a?.vote_count||0) || Number(b?.width||0)-Number(a?.width||0));
+    // Hero/library imagery should not unexpectedly contain localized title text.
+    // Prefer language-neutral backdrops, allow English, and exclude all others.
+    const valid=(Array.isArray(items)?items:[]).filter(item=>normalizeBackdropPath(item?.file_path) && Number(item?.aspect_ratio||0)>=1.45 && isPreferredBackdropLanguage(item));
+    valid.sort((a,b)=>backdropLanguageScore(b)-backdropLanguageScore(a) || Number(b?.vote_average||0)-Number(a?.vote_average||0) || Number(b?.vote_count||0)-Number(a?.vote_count||0) || Number(b?.width||0)-Number(a?.width||0));
     const paths=[];const seen=new Set();
     valid.forEach(item=>{const path=normalizeBackdropPath(item.file_path);if(path&&!seen.has(path)&&paths.length<HERO_POOL_LIMIT){seen.add(path);paths.push(path);}});
     return paths;
   }
   function rankLogoPath(items) {
-    const valid=(Array.isArray(items)?items:[]).filter(item=>normalizeBackdropPath(item?.file_path));
-    const languageScore=item=>item?.iso_639_1==='en'?3:(item?.iso_639_1===null||item?.iso_639_1===undefined||item?.iso_639_1==='')?2:1;
+    const valid=(Array.isArray(items)?items:[]).filter(item=>{const lang=item?.iso_639_1;return normalizeBackdropPath(item?.file_path)&&(lang==='en'||lang===null||lang===undefined||lang==='');});
+    const languageScore=item=>item?.iso_639_1==='en'?2:1;
     valid.sort((a,b)=>languageScore(b)-languageScore(a) || Number(b?.vote_average||0)-Number(a?.vote_average||0) || Number(b?.vote_count||0)-Number(a?.vote_count||0) || Number(b?.width||0)-Number(a?.width||0));
     return normalizeBackdropPath(valid[0]?.file_path);
   }
@@ -1498,6 +1511,7 @@
     show.libraryLogoPath=normalizeBackdropPath(draftMeta.libraryLogoPath);
     show.libraryArtworkMode=draftMeta.libraryArtworkMode==='manual'?'manual':'hero';
     show.libraryArtworkUpdatedAt=validDateString(draftMeta.libraryArtworkUpdatedAt)?draftMeta.libraryArtworkUpdatedAt:nowIso();
+    show.libraryArtworkPolicy=draftMeta.libraryArtworkPolicy===TMDB_ARTWORK_POLICY?TMDB_ARTWORK_POLICY:show.libraryArtworkPolicy||'';
     show.updatedAt=nowIso();updateVisibleLibraryArtwork(show);saveState({rerender:true});
   }
   async function prepareLibraryArtwork(meta=draftMeta,{force=false,quiet=false}={}) {
@@ -1506,23 +1520,20 @@
     let currentBackdrop=normalizeBackdropPath(draftMeta.libraryBackdropPath||meta?.libraryBackdropPath);
     const currentLogo=normalizeBackdropPath(draftMeta.libraryLogoPath||meta?.libraryLogoPath);
     const attempted=validDateString(draftMeta.libraryArtworkUpdatedAt||meta?.libraryArtworkUpdatedAt);
+    const policyCurrent=(draftMeta.libraryArtworkPolicy||meta?.libraryArtworkPolicy)===TMDB_ARTWORK_POLICY;
     draftMeta.libraryArtworkMode=mode;
 
-    // The first/default library composition always uses the already-approved hero
-    // backdrop. v3.0.0 records did not have libraryArtworkMode, so they migrate
-    // through this path and any arbitrary title-card backdrop is replaced.
-    if(mode==='hero'&&heroBackdrop){
-      if(currentBackdrop!==heroBackdrop){currentBackdrop=heroBackdrop;draftMeta.libraryBackdropPath=heroBackdrop;draftMeta.libraryArtworkUpdatedAt=nowIso();}
-      if(currentLogo&&attempted){draftMeta.libraryLogoPath=currentLogo;persistLibraryArtwork();renderLibraryArtworkPreview(draftMeta);return;}
-    }else if(!force&&mode==='manual'&&currentBackdrop&&(currentLogo||attempted)){
-      draftMeta.libraryBackdropPath=currentBackdrop;draftMeta.libraryLogoPath=currentLogo;draftMeta.libraryBackdropPool=normalizeBackdropPool(draftMeta.libraryBackdropPool||meta?.libraryBackdropPool);renderLibraryArtworkPreview(draftMeta);return;
+    // A manually chosen library image stays fixed when it is already from the
+    // current language-filtered pool and differs from the hero. Auto artwork
+    // should also stay fixed once it has a distinct approved backdrop.
+    const storedPool=normalizeBackdropPool(draftMeta.libraryBackdropPool||meta?.libraryBackdropPool);
+    const storedUsable=policyCurrent&&currentBackdrop&&currentBackdrop!==heroBackdrop&&storedPool.includes(currentBackdrop);
+    if(!force&&storedUsable&&(mode==='manual'||attempted)){
+      draftMeta.libraryBackdropPath=currentBackdrop;draftMeta.libraryLogoPath=currentLogo;draftMeta.libraryBackdropPool=storedPool;renderLibraryArtworkPreview(draftMeta);return;
     }
 
     const hasIdentity=Boolean(positiveIntegerOrNull(draftMeta.tmdbId||meta?.tmdbId)||safeText(draftMeta.imdbId||meta?.imdbId,40)||safeText(els.showTitle?.value||meta?.title,120));
-    if(!prefs.tmdbCredential||!hasIdentity){
-      if(mode==='hero'&&heroBackdrop){draftMeta.libraryBackdropPath=heroBackdrop;persistLibraryArtwork();}
-      renderLibraryArtworkPreview(draftMeta);return;
-    }
+    if(!prefs.tmdbCredential||!hasIdentity){renderLibraryArtworkPreview(draftMeta);return;}
     if(!quiet)renderLibraryArtworkPreview(draftMeta,{loading:true});
     try{
       const result=await fetchTmdbImages(meta,{force});
@@ -1530,9 +1541,19 @@
       draftMeta.tmdbId=result.tmdbId;
       const pool=rankBackdropPool(result.data.backdrops);draftMeta.libraryBackdropPool=normalizeBackdropPool(pool);
       draftMeta.libraryLogoPath=rankLogoPath(result.data.logos);
-      if(mode==='hero'&&heroBackdrop)draftMeta.libraryBackdropPath=heroBackdrop;
-      else if(force||!currentBackdrop)draftMeta.libraryBackdropPath=randomBackdropPath(draftMeta.libraryBackdropPool,currentBackdrop);
-      else draftMeta.libraryBackdropPath=currentBackdrop;
+      draftMeta.libraryArtworkPolicy=TMDB_ARTWORK_POLICY;
+
+      const eligibleCurrent=currentBackdrop&&draftMeta.libraryBackdropPool.includes(currentBackdrop)&&currentBackdrop!==heroBackdrop;
+      if(mode==='manual'&&eligibleCurrent&&!force)draftMeta.libraryBackdropPath=currentBackdrop;
+      else{
+        // The library image should be visually distinct from the large hero on
+        // first generation. Reuse the hero only when there is no alternative.
+        const next=randomBackdropPath(draftMeta.libraryBackdropPool,heroBackdrop);
+        draftMeta.libraryBackdropPath=next||heroBackdrop||currentBackdrop;
+        if(draftMeta.libraryBackdropPath===heroBackdrop&&draftMeta.libraryBackdropPool.length>1){
+          const alt=draftMeta.libraryBackdropPool.find(path=>path!==heroBackdrop);if(alt)draftMeta.libraryBackdropPath=alt;
+        }
+      }
       draftMeta.libraryArtworkUpdatedAt=nowIso();persistLibraryArtwork();renderLibraryArtworkPreview(draftMeta);
     }catch(err){console.warn('TMDB library artwork lookup failed',err);renderLibraryArtworkPreview(draftMeta);if(!quiet)showToast('Library artwork could not be loaded');}
   }
@@ -1540,9 +1561,9 @@
     if(!els.refreshLibraryArtworkButton)return;els.refreshLibraryArtworkButton.disabled=true;if(els.libraryArtworkStatus)els.libraryArtworkStatus.textContent='Finding another library backdrop…';
     try{
       let pool=normalizeBackdropPool(draftMeta.libraryBackdropPool);let logo=normalizeBackdropPath(draftMeta.libraryLogoPath);
-      if(pool.length<2||!logo){const result=await fetchTmdbImages(draftMeta,{force:true});draftMeta.tmdbId=result.tmdbId;pool=rankBackdropPool(result.data?.backdrops);logo=rankLogoPath(result.data?.logos);draftMeta.libraryBackdropPool=normalizeBackdropPool(pool);draftMeta.libraryLogoPath=logo;}
-      if(!pool.length){showToast('No TMDB backdrops are available for this show');renderLibraryArtworkPreview(draftMeta);return;}
-      const current=normalizeBackdropPath(draftMeta.libraryBackdropPath);const next=randomBackdropPath(pool,current);
+      if(pool.length<2||!logo||draftMeta.libraryArtworkPolicy!==TMDB_ARTWORK_POLICY){const result=await fetchTmdbImages(draftMeta,{force:true});draftMeta.tmdbId=result.tmdbId;pool=rankBackdropPool(result.data?.backdrops);logo=rankLogoPath(result.data?.logos);draftMeta.libraryBackdropPool=normalizeBackdropPool(pool);draftMeta.libraryLogoPath=logo;draftMeta.libraryArtworkPolicy=TMDB_ARTWORK_POLICY;}
+      if(!pool.length){showToast('No English or language-neutral TMDB backdrops are available for this show');renderLibraryArtworkPreview(draftMeta);return;}
+      const current=normalizeBackdropPath(draftMeta.libraryBackdropPath);const hero=normalizeBackdropPath(draftMeta.heroBackdropPath);const choices=pool.filter(path=>path!==current&&path!==hero);const next=choices.length?randomBackdropPath(choices):randomBackdropPath(pool,current);
       if(!next||next===current){showToast('No other library backdrop is available');renderLibraryArtworkPreview(draftMeta);return;}
       draftMeta.libraryArtworkMode='manual';draftMeta.libraryBackdropPath=next;draftMeta.libraryArtworkUpdatedAt=nowIso();persistLibraryArtwork();renderLibraryArtworkPreview(draftMeta);showToast('Library artwork changed');
     }catch(err){console.error(err);showToast('Library artwork could not be refreshed');renderLibraryArtworkPreview(draftMeta);}
@@ -1574,14 +1595,15 @@
     const pool=normalizeBackdropPool(meta?.heroBackdropPool);
     const canRefresh=pool.length>1 || Boolean(prefs.tmdbCredential);
     els.refreshBackdropButton.disabled=!canRefresh || loading;
-    els.refreshBackdropButton.title=canRefresh?'Choose another backdrop from this show’s top-rated TMDB images':'Add a TMDB credential in Settings to load backdrops';
+    els.refreshBackdropButton.title=canRefresh?'Choose another backdrop':'Add a TMDB credential in Settings to load backdrops';
   }
   async function fetchHeroBackdropPool(meta,{force=false}={}) {
     if(!prefs.tmdbCredential)throw new Error('TMDB is not configured');
     let tmdbId=positiveIntegerOrNull(meta?.tmdbId || draftMeta.tmdbId);
     if(!tmdbId)tmdbId=await resolveTmdbId(meta||draftMeta);
     if(!tmdbId)return {tmdbId:null,pool:[]};
-    if(!force){
+    const policyCurrent=(meta?.heroArtworkPolicy||draftMeta.heroArtworkPolicy)===TMDB_ARTWORK_POLICY;
+    if(!force&&policyCurrent){
       const stored=normalizeBackdropPool(meta?.heroBackdropPool || draftMeta.heroBackdropPool);if(stored.length)return {tmdbId,pool:stored};
       const cached=backdropPoolCache.get(tmdbId);if(cached?.length)return {tmdbId,pool:cached};
     }
@@ -1596,19 +1618,23 @@
     show.heroBackdropPath=normalizeBackdropPath(draftMeta.heroBackdropPath);
     show.heroBackdropPool=normalizeBackdropPool(draftMeta.heroBackdropPool);
     show.heroBackdropUpdatedAt=validDateString(draftMeta.heroBackdropUpdatedAt)?draftMeta.heroBackdropUpdatedAt:nowIso();
+    show.heroArtworkPolicy=draftMeta.heroArtworkPolicy===TMDB_ARTWORK_POLICY?TMDB_ARTWORK_POLICY:show.heroArtworkPolicy||'';
     show.updatedAt=nowIso();
     saveState({rerender:false});
   }
   async function prepareHeroBackdrop(meta=draftMeta) {
     const current=normalizeBackdropPath(draftMeta.heroBackdropPath || meta?.heroBackdropPath);
-    if(current){draftMeta.heroBackdropPath=current;draftMeta.heroBackdropPool=normalizeBackdropPool(draftMeta.heroBackdropPool || meta?.heroBackdropPool);renderHeroBackdrop(draftMeta);return;}
+    const policyCurrent=(draftMeta.heroArtworkPolicy||meta?.heroArtworkPolicy)===TMDB_ARTWORK_POLICY;
     const hasIdentity=Boolean(positiveIntegerOrNull(draftMeta.tmdbId || meta?.tmdbId) || safeText(draftMeta.imdbId || meta?.imdbId,40) || safeText(els.showTitle?.value || meta?.title,120));
+    if(current&&policyCurrent){draftMeta.heroBackdropPath=current;draftMeta.heroBackdropPool=normalizeBackdropPool(draftMeta.heroBackdropPool || meta?.heroBackdropPool);renderHeroBackdrop(draftMeta);return;}
     if(!prefs.tmdbCredential || !hasIdentity){renderHeroBackdrop(draftMeta);return;}
     renderHeroBackdrop(draftMeta,{loading:true});
     try{
-      const result=await fetchHeroBackdropPool(meta);if(!els.showDialog.open)return;
-      draftMeta.tmdbId=result.tmdbId;draftMeta.heroBackdropPool=normalizeBackdropPool(result.pool);
-      draftMeta.heroBackdropPath=randomBackdropPath(draftMeta.heroBackdropPool);
+      const result=await fetchHeroBackdropPool(meta,{force:!policyCurrent});if(!els.showDialog.open)return;
+      draftMeta.tmdbId=result.tmdbId;draftMeta.heroBackdropPool=normalizeBackdropPool(result.pool);draftMeta.heroArtworkPolicy=TMDB_ARTWORK_POLICY;
+      // Keep an existing hero if it satisfies the new language policy; otherwise
+      // replace it with an English/language-neutral image.
+      draftMeta.heroBackdropPath=current&&draftMeta.heroBackdropPool.includes(current)?current:randomBackdropPath(draftMeta.heroBackdropPool);
       draftMeta.heroBackdropUpdatedAt=nowIso();
       if(!draftMeta.heroBackdropPath){renderHeroBackdrop(draftMeta);return;}
       persistHeroBackdrop();renderHeroBackdrop(draftMeta);
@@ -1619,8 +1645,8 @@
     els.refreshBackdropButton.disabled=true;els.showHeroStatus.hidden=false;els.showHeroStatus.textContent='Finding another backdrop…';
     try{
       let pool=normalizeBackdropPool(draftMeta.heroBackdropPool);
-      if(pool.length<2 && prefs.tmdbCredential){const result=await fetchHeroBackdropPool(draftMeta,{force:true});draftMeta.tmdbId=result.tmdbId;pool=normalizeBackdropPool(result.pool);draftMeta.heroBackdropPool=pool;}
-      if(!pool.length){showToast('No TMDB backdrops are available for this show');renderHeroBackdrop(draftMeta);return;}
+      if(pool.length<2 || draftMeta.heroArtworkPolicy!==TMDB_ARTWORK_POLICY){const result=await fetchHeroBackdropPool(draftMeta,{force:true});draftMeta.tmdbId=result.tmdbId;pool=normalizeBackdropPool(result.pool);draftMeta.heroBackdropPool=pool;draftMeta.heroArtworkPolicy=TMDB_ARTWORK_POLICY;}
+      if(!pool.length){showToast('No English or language-neutral TMDB backdrops are available for this show');renderHeroBackdrop(draftMeta);return;}
       const current=normalizeBackdropPath(draftMeta.heroBackdropPath);const next=randomBackdropPath(pool,current);
       if(!next || next===current){showToast('No other backdrop is available');renderHeroBackdrop(draftMeta);return;}
       draftMeta.heroBackdropPath=next;draftMeta.heroBackdropUpdatedAt=nowIso();persistHeroBackdrop();renderHeroBackdrop(draftMeta);showToast('Backdrop changed');
@@ -1889,7 +1915,7 @@
       els.showSeasons.value=seasons.length||'';els.showEpisodes.value=episodes.length||'';const runtime=show.averageRuntime||show.runtime||medianRuntime(episodes);els.showRuntime.value=runtime||'';
       const total=episodes.reduce((sum,e)=>sum+(Number(e.runtime)||0),0);els.showTotalMinutes.value=total||((runtime&&episodes.length)?runtime*episodes.length:'');
       if(!els.showMetacritic.value)els.showMetacritic.value=`https://www.metacritic.com/tv/${slugify(show.name)}/`;
-      if(draftMeta.tvmazeId && draftMeta.tvmazeId!==show.id){draftMeta.episodeProgress=null;draftMeta.episodeWatchDates={};draftMeta.watchedEpisodes=[];draftMeta.activeSeason=null;draftMeta.viewingRuns=[];draftMeta.currentViewingRunId='';draftMeta.heroBackdropPath='';draftMeta.heroBackdropPool=[];draftMeta.heroBackdropUpdatedAt=null;draftMeta.libraryBackdropPath='';draftMeta.libraryBackdropPool=[];draftMeta.libraryLogoPath='';draftMeta.libraryArtworkMode='hero';draftMeta.libraryArtworkUpdatedAt=null;}draftMeta.tvmazeId=show.id;draftMeta.imdbId=show.externals?.imdb||'';draftMeta.tmdbId=null;draftMeta.cast=cast;updatePosterPreview();renderEpisodeGuide(normalizedEpisodes,draftMeta.episodeProgress||null);els.episodeGuideStatus.textContent=normalizedEpisodes.length?`${normalizedEpisodes.length} episodes · click an episode for its description.`:'No numbered episodes are available from TVmaze.';els.refreshEpisodesButton.disabled=false;renderCast(cast);els.castStatus.textContent=cast.length?`${cast.length} principal cast member${cast.length===1?'':'s'} from TVmaze.`:'No main cast is listed by TVmaze.';
+      if(draftMeta.tvmazeId && draftMeta.tvmazeId!==show.id){draftMeta.episodeProgress=null;draftMeta.episodeWatchDates={};draftMeta.watchedEpisodes=[];draftMeta.activeSeason=null;draftMeta.viewingRuns=[];draftMeta.currentViewingRunId='';draftMeta.heroBackdropPath='';draftMeta.heroBackdropPool=[];draftMeta.heroBackdropUpdatedAt=null;draftMeta.libraryBackdropPath='';draftMeta.libraryBackdropPool=[];draftMeta.libraryLogoPath='';draftMeta.libraryArtworkMode='hero';draftMeta.libraryArtworkUpdatedAt=null;draftMeta.heroArtworkPolicy='';draftMeta.libraryArtworkPolicy='';}draftMeta.tvmazeId=show.id;draftMeta.imdbId=show.externals?.imdb||'';draftMeta.tmdbId=null;draftMeta.cast=cast;updatePosterPreview();renderEpisodeGuide(normalizedEpisodes,draftMeta.episodeProgress||null);els.episodeGuideStatus.textContent=normalizedEpisodes.length?`${normalizedEpisodes.length} episodes · click an episode for its description.`:'No numbered episodes are available from TVmaze.';els.refreshEpisodesButton.disabled=false;renderCast(cast);els.castStatus.textContent=cast.length?`${cast.length} principal cast member${cast.length===1?'':'s'} from TVmaze.`:'No main cast is listed by TVmaze.';
       els.lookupStatus.textContent='Details and poster artwork added from TVmaze. You can edit anything before saving.';
       if(prefs.tmdbCredential){await refreshDraftProviders();await prepareHeroBackdrop(draftMeta);await prepareLibraryArtwork(draftMeta);}
     }catch(err){console.error(err);els.lookupStatus.textContent='Basic TVmaze details were found, but episode details could not be loaded.';}
@@ -1905,7 +1931,7 @@
       poster:safeUrl(els.showPoster.value),metacritic:safeUrl(els.showMetacritic.value),seasons:integerOrNull(els.showSeasons.value),episodes:integerOrNull(els.showEpisodes.value),runtime:integerOrNull(els.showRuntime.value),totalMinutes:integerOrNull(els.showTotalMinutes.value),
       genres:cleanGenres(splitComma(els.showGenres.value)),network:safeText(els.showNetwork.value,100),country:safeText(els.showCountry.value,80),seriesStatus:safeText(els.showSeriesStatus.value,50),watchingWith:safeText(els.showWatchingWith.value,60),favourite:Boolean(draftMeta.favourite),
       rating:clampRating(els.showRating.value),startedDate:validIsoDate(els.showStartedDate.value),finishedDate:validIsoDate(els.showFinishedDate.value),abandonedDate:validIsoDate(els.showAbandonedDate.value),episodeWatchDates:normalizeEpisodeWatchDates(draftMeta.episodeWatchDates || existing?.episodeWatchDates),watchedEpisodes:normalizeWatchedEpisodes(draftMeta.watchedEpisodes || existing?.watchedEpisodes,draftMeta.episodeWatchDates || existing?.episodeWatchDates),activeSeason:positiveIntegerOrNull(draftMeta.activeSeason || existing?.activeSeason),viewingRuns:normalizeViewingRuns(draftMeta.viewingRuns || existing?.viewingRuns),currentViewingRunId:safeText(draftMeta.currentViewingRunId || existing?.currentViewingRunId || '',100),tags:cleanTags(splitComma(els.showTags.value)),notes:String(els.showNotes.value||'').slice(0,4000),firstAirYear:positiveIntegerOrNull(els.showYear.value),providers:cleanProviders(draftMeta.providers),providerLink:safeUrl(draftMeta.providerLink||''),providersUpdatedAt:validDateString(draftMeta.providersUpdatedAt)?draftMeta.providersUpdatedAt:null,episodeProgress:normalizeEpisodeProgress(draftMeta.episodeProgress),
-      tvmazeId:positiveIntegerOrNull(draftMeta.tvmazeId),imdbId:safeText(draftMeta.imdbId,40),tmdbId:positiveIntegerOrNull(draftMeta.tmdbId),heroBackdropPath:normalizeBackdropPath(draftMeta.heroBackdropPath),heroBackdropPool:normalizeBackdropPool(draftMeta.heroBackdropPool),heroBackdropUpdatedAt:validDateString(draftMeta.heroBackdropUpdatedAt)?draftMeta.heroBackdropUpdatedAt:null,libraryBackdropPath:normalizeBackdropPath(draftMeta.libraryBackdropPath),libraryBackdropPool:normalizeBackdropPool(draftMeta.libraryBackdropPool),libraryLogoPath:normalizeBackdropPath(draftMeta.libraryLogoPath),libraryArtworkMode:draftMeta.libraryArtworkMode==='manual'?'manual':'hero',libraryArtworkUpdatedAt:validDateString(draftMeta.libraryArtworkUpdatedAt)?draftMeta.libraryArtworkUpdatedAt:null,cast:normalizeCast(draftMeta.cast),order,createdAt:existing?.createdAt||t,updatedAt:t
+      tvmazeId:positiveIntegerOrNull(draftMeta.tvmazeId),imdbId:safeText(draftMeta.imdbId,40),tmdbId:positiveIntegerOrNull(draftMeta.tmdbId),heroBackdropPath:normalizeBackdropPath(draftMeta.heroBackdropPath),heroBackdropPool:normalizeBackdropPool(draftMeta.heroBackdropPool),heroBackdropUpdatedAt:validDateString(draftMeta.heroBackdropUpdatedAt)?draftMeta.heroBackdropUpdatedAt:null,libraryBackdropPath:normalizeBackdropPath(draftMeta.libraryBackdropPath),libraryBackdropPool:normalizeBackdropPool(draftMeta.libraryBackdropPool),libraryLogoPath:normalizeBackdropPath(draftMeta.libraryLogoPath),libraryArtworkMode:draftMeta.libraryArtworkMode==='manual'?'manual':'hero',libraryArtworkUpdatedAt:validDateString(draftMeta.libraryArtworkUpdatedAt)?draftMeta.libraryArtworkUpdatedAt:null,heroArtworkPolicy:draftMeta.heroArtworkPolicy===TMDB_ARTWORK_POLICY?TMDB_ARTWORK_POLICY:'',libraryArtworkPolicy:draftMeta.libraryArtworkPolicy===TMDB_ARTWORK_POLICY?TMDB_ARTWORK_POLICY:'',cast:normalizeCast(draftMeta.cast),order,createdAt:existing?.createdAt||t,updatedAt:t
     };
   }
   function normalizedTitleForDuplicate(value){return titleSortKey(value).toLowerCase().replace(/[^a-z0-9]+/g,' ').trim();}

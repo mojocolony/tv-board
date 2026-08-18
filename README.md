@@ -1,15 +1,24 @@
-# TV v3.0.1
+# TV v3.0.2
 
 TV is the redesigned successor to TV Board. It keeps the existing data/storage contracts while replacing the Kanban board with a scalable visual list library.
 
+## New in v3.0.2
 
+- TMDB hero backdrops now prefer language-neutral images, fall back to English, and exclude backdrops tagged with other languages.
+- Existing v3.0.x hero choices are revalidated the next time a show is opened; a non-English hero is replaced from the filtered pool.
+- Hero Refresh uses the same language-filtered pool.
+- The first library artwork now deliberately chooses a different approved backdrop from the hero whenever another suitable image exists.
+- Existing v3.0.1 shows whose hero and library artwork are identical are migrated to a distinct library backdrop on open.
+- Library artwork Refresh also avoids the current hero when alternatives are available.
+- TMDB logos are limited to English or language-neutral assets.
 
-## Fixed in v3.0.1
-- Existing v3.0.0 library artwork now defaults to the show’s approved hero backdrop plus TMDB logo, avoiding title-card/black-background selections.
-- Generated library artwork is bound immediately to the visible library row and remains persisted after closing the editor.
-- Manual **Refresh** still chooses a different library backdrop and preserves that choice.
-- Removed visible “top 20 backdrops” copy and shortened the hero button to **Refresh**.
-- Library ratings render as five visual stars, including true half-star fills.
+## New in v3.0.1
+
+- Library artwork is immediately bound back into the visible library row after generation.
+- Library artwork generation avoids unusable title-card selections by using the approved TMDB pool and saved choices.
+- Hero controls were simplified to a smaller **Refresh** button.
+- Ratings render as visual stars, including half-star fills.
+
 
 ## New in v3.0.0
 
