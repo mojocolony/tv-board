@@ -1,6 +1,16 @@
-# TV v2.9.0
+# TV v3.0.0
 
 TV is the redesigned successor to TV Board. It keeps the existing data/storage contracts while replacing the Kanban board with a scalable visual list library.
+
+
+## New in v3.0.0
+
+- Library rows can now use a **TMDB 16:9 backdrop + transparent show logo** instead of relying on a tiny portrait poster.
+- The library artwork is chosen when a show is added or when an existing show is opened and TMDB artwork is available.
+- Backdrops come from the same top-rated pool used by the hero system; the library choice is saved separately so refreshing the large detail hero does not unexpectedly change the library.
+- A **Refresh** control in Add/Edit Show deliberately selects another library backdrop while keeping the show logo treatment.
+- If TMDB has no usable logo, TV overlays the show title as a readable fallback. If there is no TMDB backdrop, the existing poster remains the fallback.
+- Only TMDB image paths are stored in TV/Dropbox; the actual image files remain remotely hosted and are rendered together in the browser.
 
 ## Existing data is preserved
 
@@ -137,11 +147,3 @@ Export a backup from the current TV Board app. The redesign is migration-compati
 - Added explicit Back controls to shows, Settings, Filters, Manage Statuses and Saved Views.
 - Browser Back now closes the current secondary screen before leaving TV.
 - Added extra mobile safe-area space above Safari’s floating toolbar.
-
-
-## v2.9.0
-- Adds a cinematic TMDB backdrop hero to show details while keeping library posters stable.
-- Builds a cached pool of up to the 20 highest-rated suitable TMDB backdrops for each show.
-- Chooses one hero once and saves it with the show; it does not rotate on launch or reopen.
-- Adds **Refresh backdrop** to manually choose another image from the saved pool.
-- Backdrop choice and pool sync with the existing TV data through Dropbox.

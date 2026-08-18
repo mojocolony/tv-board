@@ -57,7 +57,7 @@
 
       <div class="sidebar-footer">
         <button class="nav-item" id="settingsButton"><span class="nav-icon" data-icon="settings"></span><span>Settings</span></button>
-        <div class="version">TV v2.9.0</div>
+        <div class="version">TV v3.0.0</div>
       </div>
     </aside>
 
@@ -210,6 +210,11 @@
         <div class="poster-editor">
           <div class="poster-preview" id="posterPreview"><div class="poster-fallback"><span data-icon="tv"></span></div></div>
           <label><span>Poster image URL</span><input id="showPoster" type="url" placeholder="https://…"></label>
+          <div class="library-artwork-editor">
+            <div class="library-artwork-label"><span>Library artwork</span><button type="button" class="text-button" id="refreshLibraryArtworkButton">Refresh</button></div>
+            <div class="library-artwork-preview" id="libraryArtworkPreview"><div class="poster-fallback"><span data-icon="tv"></span></div></div>
+            <div class="helper" id="libraryArtworkStatus">TMDB backdrop + logo appears here when available.</div>
+          </div>
         </div>
         <div class="show-fields">
           <div class="lookup-row">
@@ -386,7 +391,7 @@
         </div>
       </section>
     </div>
-    <div class="settings-footer">TV v2.9.0</div>
+    <div class="settings-footer">TV v3.0.0</div>
   </dialog>
 
   <div class="toast" id="toast" role="status" aria-live="polite"></div>
