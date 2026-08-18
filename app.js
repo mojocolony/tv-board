@@ -1,7 +1,7 @@
 (() => {
   'use strict';
 
-  const APP_VERSION = '2.8.1';
+  const APP_VERSION = '2.8.2';
   const STORAGE_KEY = 'tvBoard.state.v1';
   const DROPBOX_KEY = 'tvBoard.dropbox.v1';
   const PKCE_KEY = 'tvBoard.pkce.v1';
@@ -81,6 +81,7 @@
   let filterDraft = clone(filters);
   let sortMode = ui.sort || 'recent';
   let draftMeta = {};
+  let viewingDateCleared = { started:false, finished:false, abandoned:false };
   let lookupController = null;
   let autocompleteTimer = null;
   let syncTimer = null;
@@ -899,11 +900,19 @@
   }
 
   function setArtwork(container, url) {
-    container.replaceChildren(); container.classList.remove('portrait-source'); container.style.removeProperty('--artwork-url');
+    container.replaceChildren(); container.classList.remove('portrait-source'); container.style.removeProperty('--artwork-url'); container.style.removeProperty('background');
     const safe=safeUrl(url); if(!safe){container.innerHTML=`<div class="poster-fallback">${iconSvg('tv')}</div>`;return;}
     const img=new Image();img.src=safe;img.alt='';img.loading='lazy';img.className='artwork-main';
-    img.onload=()=>{if(img.naturalHeight>img.naturalWidth*1.12){container.classList.add('portrait-source');container.style.setProperty('--artwork-url',`url("${safe.replace(/"/g,'%22')}")`);}};
-    img.onerror=()=>{container.classList.remove('portrait-source');container.style.removeProperty('--artwork-url');container.innerHTML=`<div class="poster-fallback">${iconSvg('tv')}</div>`;};container.appendChild(img);
+    img.onload=()=>{
+      if(img.naturalHeight>img.naturalWidth*1.12){
+        container.classList.add('portrait-source');
+        container.style.setProperty('--artwork-url',`url("${safe.replace(/"/g,'%22')}")`);
+        // Let the surrounding card show through beside a portrait poster. This is
+        // more reliable than a fixed fill in Safari dark mode and avoids grey bars.
+        container.style.setProperty('background','transparent','important');
+      }
+    };
+    img.onerror=()=>{container.classList.remove('portrait-source');container.style.removeProperty('--artwork-url');container.style.removeProperty('background');container.innerHTML=`<div class="poster-fallback">${iconSvg('tv')}</div>`;};container.appendChild(img);
   }
 
   function buildShowRow(show) {
@@ -1289,6 +1298,7 @@
 
   function openShowDialog(show=null) {
     draftMeta = show ? clone(show) : { providers: [], providerLink:'', providersUpdatedAt:null, tvmazeId:null, imdbId:'', tmdbId:null, cast: [] };
+    viewingDateCleared = { started:false, finished:false, abandoned:false };
     els.showDialogTitle.textContent = show ? 'Edit Show' : 'Add Show';
     els.showId.value=show?.id||'';els.showTitle.value=show?.title||'';els.showRating.value=String(show?.rating||0);els.showPoster.value=show?.poster||'';
     const location=show ? (show.archive || (show.columnId ? `status:${show.columnId}` : UNSORTED)) : UNSORTED; fillLocationOptions(location);
@@ -1307,6 +1317,17 @@
   function closeShowDialog(skipHistory=false){clearTimeout(autocompleteTimer);autocompleteTimer=null;if(els.showDialog.open)els.showDialog.close(); if(lookupController){lookupController.abort();lookupController=null;}els.showTitle.setAttribute('aria-expanded','false');if(!skipHistory)removeOverlayState('show');flushPendingLibraryRender();}
   function setFavourite(value){draftMeta.favourite=Boolean(value);els.showFavourite.classList.toggle('active',draftMeta.favourite);els.showFavourite.setAttribute('aria-pressed',String(draftMeta.favourite));els.showFavouriteText.textContent=draftMeta.favourite?'Favourite':'Not favourite';}
   function viewingStatusLabel(run){return run.status==='completed'?'Completed':run.status==='abandoned'?'Abandoned':'In progress';}
+  function syncViewingDateField(kind) {
+    const map={started:{el:els.showStartedDate,field:'startedDate'},finished:{el:els.showFinishedDate,field:'finishedDate'},abandoned:{el:els.showAbandonedDate,field:'abandonedDate'}};
+    const cfg=map[kind];if(!cfg)return;
+    const value=validIsoDate(cfg.el.value);
+    viewingDateCleared[kind]=!value;
+    draftMeta[cfg.field]=value;
+    draftMeta.viewingRuns=normalizeViewingRuns(draftMeta.viewingRuns);
+    const run=activeViewingRun(draftMeta)||draftMeta.viewingRuns.at(-1)||null;
+    if(run){run[cfg.field]=value;run.updatedAt=nowIso();}
+    renderViewingHistory();
+  }
   function renderViewingHistory() {
     if(!els.viewingRunsList)return;
     draftMeta.viewingRuns=normalizeViewingRuns(draftMeta.viewingRuns);
@@ -1514,11 +1535,11 @@
     const currentViewing=draftIsCurrentlyWatching();
     if(run){
       run.watchedEpisodes=cleanWatched;run.episodeWatchDates=cleanDates;run.activeSeason=season;run.updatedAt=nowIso();
-      if(currentViewing&&!run.startedDate)run.startedDate=validIsoDate(els.showStartedDate.value)||todayIsoDate();
+      if(currentViewing&&!run.startedDate&&!viewingDateCleared.started)run.startedDate=validIsoDate(els.showStartedDate.value)||todayIsoDate();
       run.watchingWith=safeText(els.showWatchingWith.value||run.watchingWith,60);draftMeta.currentViewingRunId=run.status==='in-progress'?run.id:draftMeta.currentViewingRunId;
     }
-    if(currentViewing&&!draftMeta.startedDate&&cleanWatched.length)draftMeta.startedDate=validIsoDate(els.showStartedDate.value)||run?.startedDate||todayIsoDate();
-    els.showStartedDate.value=draftMeta.startedDate||run?.startedDate||els.showStartedDate.value;
+    if(currentViewing&&!draftMeta.startedDate&&cleanWatched.length&&!viewingDateCleared.started)draftMeta.startedDate=validIsoDate(els.showStartedDate.value)||run?.startedDate||todayIsoDate();
+    if(!viewingDateCleared.started)els.showStartedDate.value=draftMeta.startedDate||run?.startedDate||els.showStartedDate.value;
   }
   function persistDraftTrackingIfNeeded() {
     const id=els.showId.value;if(!id)return;const show=state.shows.find(s=>s.id===id);if(!show)return;seasonProgressCache.delete(id);
@@ -1671,8 +1692,8 @@
 
     if(afterStatus==='watching'){
       run=activeViewingRun(obj);
-      if(!run){run={id:uuid(),status:'in-progress',startedDate:validIsoDate(els.showStartedDate.value)||(beforeStatus==='watching'?validIsoDate(existing?.startedDate):today),finishedDate:'',abandonedDate:'',watchingWith:safeText(els.showWatchingWith.value,60),watchedEpisodes:normalizeWatchedEpisodes(obj.watchedEpisodes,obj.episodeWatchDates),episodeWatchDates:normalizeEpisodeWatchDates(obj.episodeWatchDates),activeSeason:positiveIntegerOrNull(obj.activeSeason),createdAt:nowIso(),updatedAt:nowIso()};obj.viewingRuns.push(run);obj.currentViewingRunId=run.id;}
-      run.status='in-progress';run.finishedDate='';run.abandonedDate='';if(!run.startedDate)run.startedDate=today;run.watchingWith=safeText(els.showWatchingWith.value||run.watchingWith,60);syncLegacyTrackingFromRun(obj,run);
+      if(!run){run={id:uuid(),status:'in-progress',startedDate:validIsoDate(els.showStartedDate.value)||(viewingDateCleared.started?'':(beforeStatus==='watching'?validIsoDate(existing?.startedDate):today)),finishedDate:'',abandonedDate:'',watchingWith:safeText(els.showWatchingWith.value,60),watchedEpisodes:normalizeWatchedEpisodes(obj.watchedEpisodes,obj.episodeWatchDates),episodeWatchDates:normalizeEpisodeWatchDates(obj.episodeWatchDates),activeSeason:positiveIntegerOrNull(obj.activeSeason),createdAt:nowIso(),updatedAt:nowIso()};obj.viewingRuns.push(run);obj.currentViewingRunId=run.id;}
+      run.status='in-progress';run.finishedDate='';run.abandonedDate='';if(!run.startedDate&&!viewingDateCleared.started)run.startedDate=today;run.watchingWith=safeText(els.showWatchingWith.value||run.watchingWith,60);syncLegacyTrackingFromRun(obj,run);
     } else if(afterStatus===ARCHIVE_WATCHED){
       run=activeViewingRun(obj)||run;
       if(!run){run={id:uuid(),status:'completed',startedDate:validIsoDate(els.showStartedDate.value),finishedDate:validIsoDate(els.showFinishedDate.value),abandonedDate:'',watchingWith:safeText(els.showWatchingWith.value,60),watchedEpisodes:normalizeWatchedEpisodes(obj.watchedEpisodes,obj.episodeWatchDates),episodeWatchDates:normalizeEpisodeWatchDates(obj.episodeWatchDates),activeSeason:positiveIntegerOrNull(obj.activeSeason),createdAt:nowIso(),updatedAt:nowIso()};obj.viewingRuns.push(run);}
@@ -1687,10 +1708,10 @@
       if(!run){run={id:uuid(),status:'abandoned',startedDate:validIsoDate(els.showStartedDate.value),finishedDate:'',abandonedDate:validIsoDate(els.showAbandonedDate.value),watchingWith:safeText(els.showWatchingWith.value,60),watchedEpisodes:normalizeWatchedEpisodes(obj.watchedEpisodes,obj.episodeWatchDates),episodeWatchDates:normalizeEpisodeWatchDates(obj.episodeWatchDates),activeSeason:positiveIntegerOrNull(obj.activeSeason),createdAt:nowIso(),updatedAt:nowIso()};obj.viewingRuns.push(run);}
       run.status='abandoned';run.finishedDate='';if(existing && beforeStatus==='watching' && !run.abandonedDate)run.abandonedDate=today;run.watchingWith=safeText(els.showWatchingWith.value||run.watchingWith,60);syncLegacyTrackingFromRun(obj,run);obj.currentViewingRunId='';
     } else if(activeViewingRun(obj)){
-      run=activeViewingRun(obj);run.watchingWith=safeText(els.showWatchingWith.value||run.watchingWith,60);run.startedDate=validIsoDate(els.showStartedDate.value)||run.startedDate;syncLegacyTrackingFromRun(obj,run);
+      run=activeViewingRun(obj);run.watchingWith=safeText(els.showWatchingWith.value||run.watchingWith,60);run.startedDate=validIsoDate(els.showStartedDate.value);syncLegacyTrackingFromRun(obj,run);
     }
 
-    obj.startedDate=validIsoDate(els.showStartedDate.value)||obj.startedDate;obj.finishedDate=validIsoDate(els.showFinishedDate.value)||obj.finishedDate;obj.abandonedDate=validIsoDate(els.showAbandonedDate.value)||obj.abandonedDate;
+    obj.startedDate=validIsoDate(els.showStartedDate.value);obj.finishedDate=validIsoDate(els.showFinishedDate.value);obj.abandonedDate=validIsoDate(els.showAbandonedDate.value);
     if(!existing&&!draftMeta.allowDuplicate){const duplicate=findDuplicateCandidate(obj);if(duplicate){const ok=confirm(`“${obj.title}” is already in TV (${statusFor(duplicate).name}).\n\nAdd another copy anyway?`);if(!ok){showToast('Duplicate not added');return;}}}
     if(index>=0)state.shows[index]=obj;else state.shows.push(obj);saveState();closeShowDialog();showToast(existing?'Show updated':'Show added');
   }
@@ -1782,7 +1803,7 @@
     els.searchInput.oninput=render;els.sortSelect.onchange=()=>{sortMode=els.sortSelect.value;render();};if(els.sortButton)els.sortButton.onclick=toggleSortMenu;if(els.sortScrim)els.sortScrim.onclick=()=>closeSortMenu();
     els.filterButton.onclick=openFilterDrawer;els.closeFilterButton.onclick=()=>closeFilterDrawer();els.backFilterButton.onclick=()=>closeFilterDrawer();els.drawerScrim.onclick=()=>closeFilterDrawer();els.applyFiltersButton.onclick=applyFilters;els.clearFiltersButton.onclick=clearFilterDraft;els.saveViewButton.onclick=saveCurrentView;
     [els.filterEpisodes,els.filterTime,els.filterYearFrom,els.filterYearTo,els.filterRating,els.filterFavourite,els.filterDateType,els.filterDateFrom,els.filterDateTo].forEach(el=>{el.addEventListener('change',readDraftScalarFilters);});
-    els.showForm.onsubmit=saveShowFromForm;els.closeShowButton.onclick=()=>closeShowDialog();els.backShowButton.onclick=()=>closeShowDialog();els.cancelShowButton.onclick=()=>closeShowDialog();els.deleteShowButton.onclick=deleteCurrentShow;els.lookupShowButton.onclick=lookupShows;els.showTitle.addEventListener('input',scheduleTitleAutocomplete);els.showTitle.addEventListener('keydown',e=>{if(e.key==='ArrowDown'&&!els.lookupResults.hidden){const first=lookupResultButtons()[0];if(first){e.preventDefault();first.focus();}}else if(e.key==='Enter'&&!els.lookupResults.hidden){const first=lookupResultButtons()[0];if(first){e.preventDefault();first.click();}}});els.showPoster.oninput=updatePosterPreview;els.showFavourite.onclick=()=>setFavourite(!draftMeta.favourite);els.showLocation.onchange=()=>{updateWatchedEpisodeChoice({reset:true});renderViewingHistory();};if(els.markAllEpisodesButton)els.markAllEpisodesButton.onclick=()=>chooseWatchedEpisodeHistory('all');if(els.chooseEpisodesButton)els.chooseEpisodesButton.onclick=()=>chooseWatchedEpisodeHistory('choose');if(els.skipEpisodesButton)els.skipEpisodesButton.onclick=()=>chooseWatchedEpisodeHistory('none');if(els.startRewatchButton)els.startRewatchButton.onclick=startRewatch;els.refreshShowStreamingButton.onclick=refreshDraftProviders;els.refreshEpisodesButton.onclick=()=>loadEpisodeGuide(currentEpisodeShow()||draftMeta,true);
+    els.showForm.onsubmit=saveShowFromForm;els.closeShowButton.onclick=()=>closeShowDialog();els.backShowButton.onclick=()=>closeShowDialog();els.cancelShowButton.onclick=()=>closeShowDialog();els.deleteShowButton.onclick=deleteCurrentShow;els.lookupShowButton.onclick=lookupShows;['input','change'].forEach(type=>{els.showStartedDate.addEventListener(type,()=>syncViewingDateField('started'));els.showFinishedDate.addEventListener(type,()=>syncViewingDateField('finished'));els.showAbandonedDate.addEventListener(type,()=>syncViewingDateField('abandoned'));});els.showTitle.addEventListener('input',scheduleTitleAutocomplete);els.showTitle.addEventListener('keydown',e=>{if(e.key==='ArrowDown'&&!els.lookupResults.hidden){const first=lookupResultButtons()[0];if(first){e.preventDefault();first.focus();}}else if(e.key==='Enter'&&!els.lookupResults.hidden){const first=lookupResultButtons()[0];if(first){e.preventDefault();first.click();}}});els.showPoster.oninput=updatePosterPreview;els.showFavourite.onclick=()=>setFavourite(!draftMeta.favourite);els.showLocation.onchange=()=>{updateWatchedEpisodeChoice({reset:true});renderViewingHistory();};if(els.markAllEpisodesButton)els.markAllEpisodesButton.onclick=()=>chooseWatchedEpisodeHistory('all');if(els.chooseEpisodesButton)els.chooseEpisodesButton.onclick=()=>chooseWatchedEpisodeHistory('choose');if(els.skipEpisodesButton)els.skipEpisodesButton.onclick=()=>chooseWatchedEpisodeHistory('none');if(els.startRewatchButton)els.startRewatchButton.onclick=startRewatch;els.refreshShowStreamingButton.onclick=refreshDraftProviders;els.refreshEpisodesButton.onclick=()=>loadEpisodeGuide(currentEpisodeShow()||draftMeta,true);
     els.genreAddButton.onclick=()=>addPickerValue('genres');els.tagAddButton.onclick=()=>addPickerValue('tags');els.genreAddInput.onkeydown=e=>{if(e.key==='Enter'){e.preventDefault();addPickerValue('genres');}};els.tagAddInput.onkeydown=e=>{if(e.key==='Enter'){e.preventDefault();addPickerValue('tags');}};
     if(els.showWatchingWith){els.showWatchingWith.addEventListener('focus',renderWatchingWithSuggestions);els.showWatchingWith.addEventListener('input',renderWatchingWithSuggestions);els.showWatchingWith.addEventListener('keydown',e=>{if(e.key==='ArrowDown'&&!els.watchingWithSuggestions?.hidden){const first=els.watchingWithSuggestions.querySelector('button');if(first){e.preventDefault();first.focus();}}else if(e.key==='Escape')hideWatchingWithSuggestions();});}
     els.showDialog.addEventListener('keydown',e=>{

@@ -863,3 +863,12 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
   .show-row:not(.watching-now-row), .watching-now-row { grid-template-columns:104px minmax(0,1fr) !important; column-gap:12px !important; }
   .show-row:not(.watching-now-row) .row-poster, .watching-now-row .row-poster { width:104px !important; }
 }
+
+
+/* TV v2.8.2 — portrait side-fill + reliable date clearing */
+.row-poster.portrait-source,
+:root[data-theme="dark"] .row-poster.portrait-source { background:transparent !important; }
+.row-poster.portrait-source::before,
+:root[data-theme="dark"] .row-poster.portrait-source::before { display:none !important; content:none !important; }
+:root[data-theme="dark"] .poster-preview.portrait-source { background:var(--panel) !important; }
+:root[data-theme="dark"] .poster-preview.portrait-source::before { display:none !important; content:none !important; }

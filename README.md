@@ -1,4 +1,4 @@
-# TV v2.8.1
+# TV v2.8.2
 
 TV is the redesigned successor to TV Board. It keeps the existing data/storage contracts while replacing the Kanban board with a scalable visual list library.
 
@@ -34,6 +34,12 @@ Opening TV on a browser that already used TV Board will migrate the existing rec
 
 
 
+
+## New in v2.8.2
+
+- Portrait posters now inherit the show-card surface beside the image, eliminating pale/grey side bars in dark mode.
+- Clearing a viewing-history date now clears the underlying viewing run as well, including iOS Safari's native date-picker Reset action.
+- Explicitly cleared start dates are not immediately recreated by automatic Watching-date logic.
 
 ## New in v2.8.1
 - Phone-only artwork thumbnails are slightly larger; desktop and iPad sizing are unchanged.
