@@ -24,7 +24,7 @@
     statusNav: $('statusNav'), watchingWithSection: $('watchingWithSection'), watchingWithNav: $('watchingWithNav'), savedViewsNav: $('savedViewsNav'), allCount: $('allCount'), watchingNowCount: $('watchingNowCount'), favouritesCount: $('favouritesCount'), watchedCount: $('watchedCount'), abandonedCount: $('abandonedCount'),
     alphabetJump: $('alphabetJump'),
     manageSavedViewsButton: $('manageSavedViewsButton'), settingsButton: $('settingsButton'), backFilterButton: $('backFilterButton'), backShowButton: $('backShowButton'), backStatusesButton: $('backStatusesButton'),
-    viewTitle: $('viewTitle'), viewSubtitle: $('viewSubtitle'), syncChip: $('syncChip'), statusDot: $('statusDot'), syncLabel: $('syncLabel'),
+    viewTitle: $('viewTitle'), viewSubtitle: $('viewSubtitle'), syncChip: $('syncChip'), syncRefreshButton: $('syncRefreshButton'), statusDot: $('statusDot'), syncLabel: $('syncLabel'),
     addShowButton: $('addShowButton'), emptyAddButton: $('emptyAddButton'), searchInput: $('searchInput'), filterButton: $('filterButton'), filterBadge: $('filterBadge'), sortSelect: $('sortSelect'), sortControl: $('sortControl'), sortButton: $('sortButton'), sortButtonLabel: $('sortButtonLabel'), sortMenu: $('sortMenu'), sortScrim: $('sortScrim'),
     activeFilters: $('activeFilters'), showList: $('showList'), emptyState: $('emptyState'), emptyTitle: $('emptyTitle'), emptyText: $('emptyText'), footerMessage: $('footerMessage'),
     filterDrawer: $('filterDrawer'), drawerScrim: $('drawerScrim'), closeFilterButton: $('closeFilterButton'), filterStatuses: $('filterStatuses'), filterGenres: $('filterGenres'), filterEpisodes: $('filterEpisodes'),
@@ -32,7 +32,7 @@
     clearFiltersButton: $('clearFiltersButton'), saveViewButton: $('saveViewButton'), applyFiltersButton: $('applyFiltersButton'),
     showDialog: $('showDialog'), showForm: $('showForm'), showDialogTitle: $('showDialogTitle'), showId: $('showId'), showTitle: $('showTitle'), showLocation: $('showLocation'), showRating: $('showRating'), showFavourite: $('showFavourite'), showFavouriteText: $('showFavouriteText'),
     showHero: $('showHero'), showHeroImage: $('showHeroImage'), showHeroTitle: $('showHeroTitle'), showHeroStatus: $('showHeroStatus'), pickHeroButton: $('pickHeroButton'), refreshBackdropButton: $('refreshBackdropButton'),
-    showPoster: $('showPoster'), posterPreview: $('posterPreview'), pickPosterButton: $('pickPosterButton'), libraryArtworkPreview: $('libraryArtworkPreview'), pickLibraryArtworkButton: $('pickLibraryArtworkButton'), refreshLibraryArtworkButton: $('refreshLibraryArtworkButton'), libraryArtworkStatus: $('libraryArtworkStatus'), artworkPickerOverlay: $('artworkPickerOverlay'), artworkPickerScrim: $('artworkPickerScrim'), artworkPickerTitle: $('artworkPickerTitle'), artworkPickerSubtitle: $('artworkPickerSubtitle'), artworkPickerGrid: $('artworkPickerGrid'), artworkPickerEmpty: $('artworkPickerEmpty'), closeArtworkPickerButton: $('closeArtworkPickerButton'), artworkPreviewOverlay: $('artworkPreviewOverlay'), artworkPreviewScrim: $('artworkPreviewScrim'), artworkPreviewTitle: $('artworkPreviewTitle'), artworkPreviewStage: $('artworkPreviewStage'), artworkPreviewImage: $('artworkPreviewImage'), artworkPreviewLanguage: $('artworkPreviewLanguage'), closeArtworkPreviewButton: $('closeArtworkPreviewButton'), previousArtworkPreviewButton: $('previousArtworkPreviewButton'), useArtworkPreviewButton: $('useArtworkPreviewButton'), nextArtworkPreviewButton: $('nextArtworkPreviewButton'), lookupShowButton: $('lookupShowButton'), lookupStatus: $('lookupStatus'), lookupResults: $('lookupResults'), showYear: $('showYear'), showSeasons: $('showSeasons'), showEpisodes: $('showEpisodes'),
+    showPoster: $('showPoster'), posterPreview: $('posterPreview'), pickPosterButton: $('pickPosterButton'), libraryArtworkPreview: $('libraryArtworkPreview'), pickLibraryArtworkButton: $('pickLibraryArtworkButton'), refreshLibraryArtworkButton: $('refreshLibraryArtworkButton'), libraryArtworkStatus: $('libraryArtworkStatus'), artworkPickerOverlay: $('artworkPickerOverlay'), artworkPickerScrim: $('artworkPickerScrim'), artworkPickerTitle: $('artworkPickerTitle'), artworkPickerSubtitle: $('artworkPickerSubtitle'), artworkPickerGrid: $('artworkPickerGrid'), artworkPickerEmpty: $('artworkPickerEmpty'), closeArtworkPickerButton: $('closeArtworkPickerButton'), lookupShowButton: $('lookupShowButton'), lookupStatus: $('lookupStatus'), lookupResults: $('lookupResults'), showYear: $('showYear'), showSeasons: $('showSeasons'), showEpisodes: $('showEpisodes'),
     showRuntime: $('showRuntime'), showTotalMinutes: $('showTotalMinutes'), showSeriesStatus: $('showSeriesStatus'), showNetwork: $('showNetwork'), showCountry: $('showCountry'), showWatchingWith: $('showWatchingWith'), watchingWithSuggestions: $('watchingWithSuggestions'), showStartedDate: $('showStartedDate'), showFinishedDate: $('showFinishedDate'), showAbandonedDate: $('showAbandonedDate'), viewingRunsList: $('viewingRunsList'), startRewatchButton: $('startRewatchButton'), watchedEpisodeChoice: $('watchedEpisodeChoice'), markAllEpisodesWatched: $('markAllEpisodesWatched'), markAllEpisodesButton: $('markAllEpisodesButton'), chooseEpisodesButton: $('chooseEpisodesButton'), skipEpisodesButton: $('skipEpisodesButton'), watchedEpisodeChoiceNote: $('watchedEpisodeChoiceNote'), showGenres: $('showGenres'), showMetacritic: $('showMetacritic'),
     networkOptions: $('networkOptions'), watchingWithOptions: $('watchingWithOptions'), genresPicker: $('genresPicker'), genresPickerSummary: $('genresPickerSummary'), genreChoices: $('genreChoices'), genreAddInput: $('genreAddInput'), genreAddButton: $('genreAddButton'), tagsPicker: $('tagsPicker'), tagsPickerSummary: $('tagsPickerSummary'), tagChoices: $('tagChoices'), tagAddInput: $('tagAddInput'), tagAddButton: $('tagAddButton'),
     streamingProvidersText: $('streamingProvidersText'), streamingProvidersNote: $('streamingProvidersNote'), refreshShowStreamingButton: $('refreshShowStreamingButton'), showTags: $('showTags'), showNotes: $('showNotes'),
@@ -91,6 +91,10 @@
   let lookupController = null;
   let autocompleteTimer = null;
   let syncTimer = null;
+  let syncInFlight = null;
+  let lastAutoSyncAt = 0;
+  const AUTO_SYNC_MIN_MS = 45 * 1000;
+  const AUTO_SYNC_INTERVAL_MS = 5 * 60 * 1000;
   let toastTimer = null;
   let providerRefreshRunning = false;
   let lastShowTrigger = null;
@@ -104,9 +108,6 @@
   const tmdbImagesCache = new Map();
   let artworkPickerMode = '';
   let artworkPickerItems = [];
-  let artworkPreviewIndex = -1;
-  let artworkPreviewTouchStartX = null;
-  let autocompleteSeq = 0;
 
   function nowIso() { return new Date().toISOString(); }
   function uuid() { return crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}-${Math.random().toString(16).slice(2)}`; }
@@ -1364,9 +1365,6 @@
   }
 
   function openShowDialog(show=null) {
-    // Safari can retain a dialog's previous internal scroll position after close.
-    // Clear it before repopulating and again after showModal below.
-    els.showDialog.scrollTop=0;
     draftMeta = show ? clone(show) : { providers: [], providerLink:'', providersUpdatedAt:null, tvmazeId:null, imdbId:'', tmdbId:null, cast: [], heroBackdropPath:'', heroBackdropPool:[], heroBackdropUpdatedAt:null, libraryBackdropPath:'', libraryBackdropPool:[], libraryLogoPath:'', libraryArtworkMode:'hero', libraryArtworkUpdatedAt:null, heroArtworkPolicy:'', libraryArtworkPolicy:'' };
     viewingDateCleared = { started:false, finished:false, abandoned:false };
     els.showDialogTitle.textContent = show ? 'Edit Show' : 'Add Show';
@@ -1382,17 +1380,8 @@
     prepareEpisodeGuide(show);
     prepareCast(show);
     if(!els.showDialog.open){pushOverlayState('show');els.showDialog.showModal();}
-    // Keep every Add/Edit open anchored at the top. Multiple passes cover WebKit's
-    // delayed restoration of a reused <dialog>'s old scroll position.
-    const resetShowDialogScroll=()=>{els.showDialog.scrollTop=0;try{els.showDialog.scrollTo({top:0,left:0,behavior:'instant'});}catch(_){els.showDialog.scrollTo(0,0);}};
-    resetShowDialogScroll();
-    requestAnimationFrame(()=>{
-      resetShowDialogScroll();
-      els.showTitle.focus({preventScroll:true});
-      requestAnimationFrame(resetShowDialogScroll);
-    });
-    setTimeout(resetShowDialogScroll,80);
-    (async()=>{await prepareHeroBackdrop(show || draftMeta);await prepareLibraryArtwork(show || draftMeta);})();
+    (async()=>{if(show&&!show.country)await prepareDraftCountry(show,{preserveExisting:false});await prepareHeroBackdrop(show || draftMeta);await prepareLibraryArtwork(show || draftMeta);})();
+    setTimeout(()=>els.showTitle.focus(),30);
   }
   function closeShowDialog(skipHistory=false){closeArtworkPicker();clearTimeout(autocompleteTimer);autocompleteTimer=null;if(els.showDialog.open)els.showDialog.close(); if(lookupController){lookupController.abort();lookupController=null;}els.showTitle.setAttribute('aria-expanded','false');if(!skipHistory)removeOverlayState('show');flushPendingLibraryRender();}
   function setFavourite(value){draftMeta.favourite=Boolean(value);els.showFavourite.classList.toggle('active',draftMeta.favourite);els.showFavourite.setAttribute('aria-pressed',String(draftMeta.favourite));els.showFavouriteText.textContent=draftMeta.favourite?'Favourite':'Not favourite';}
@@ -1513,16 +1502,8 @@
     if(!force&&tmdbImagesCache.has(tmdbId))return {tmdbId,data:tmdbImagesCache.get(tmdbId)};
     const data=await tmdbRequest(`/tv/${tmdbId}/images`);tmdbImagesCache.set(tmdbId,data);return {tmdbId,data};
   }
-  function closeArtworkPreview() {
-    if(!els.artworkPreviewOverlay)return;
-    els.artworkPreviewOverlay.hidden=true;
-    artworkPreviewIndex=-1;
-    artworkPreviewTouchStartX=null;
-    if(els.artworkPreviewImage)els.artworkPreviewImage.removeAttribute('src');
-  }
   function closeArtworkPicker() {
     if(!els.artworkPickerOverlay)return;
-    closeArtworkPreview();
     els.artworkPickerOverlay.hidden=true;artworkPickerMode='';artworkPickerItems=[];
   }
   function artworkLanguageLabel(item) {
@@ -1549,47 +1530,11 @@
         const button=document.createElement('button');button.type='button';button.className=`artwork-choice ${mode==='poster'?'poster-choice':'backdrop-choice'}`;button.dataset.index=String(index);
         const img=new Image();img.src=tmdbLibraryImageUrl(path);img.alt='';img.loading='lazy';img.decoding='async';button.appendChild(img);
         const badge=document.createElement('span');badge.className='artwork-language-badge';badge.textContent=artworkLanguageLabel(item);button.appendChild(badge);
-        button.title='Preview image';
-        const zoom=document.createElement('span');zoom.className='artwork-preview-hint';zoom.textContent='⌕';zoom.setAttribute('aria-hidden','true');button.appendChild(zoom);
-        button.addEventListener('click',()=>openArtworkPreview(index));els.artworkPickerGrid.appendChild(button);
+        button.addEventListener('click',()=>selectArtworkChoice(index));els.artworkPickerGrid.appendChild(button);
       });
       requestAnimationFrame(()=>els.artworkPickerGrid.querySelector('button')?.focus({preventScroll:true}));
     }catch(err){console.warn('Artwork picker failed',err);els.artworkPickerGrid.replaceChildren();els.artworkPickerEmpty.hidden=false;els.artworkPickerEmpty.textContent='TMDB artwork could not be loaded on this device.';}
   }
-  function artworkPreviewUrl(item) {
-    const path=normalizeBackdropPath(item?.file_path);if(!path)return '';
-    return artworkPickerMode==='poster'?tmdbBackdropUrl(path):tmdbBackdropUrl(path);
-  }
-  function renderArtworkPreview() {
-    if(!els.artworkPreviewOverlay||artworkPreviewIndex<0||artworkPreviewIndex>=artworkPickerItems.length)return;
-    const item=artworkPickerItems[artworkPreviewIndex];
-    const url=artworkPreviewUrl(item);if(!url)return;
-    els.artworkPreviewTitle.textContent=artworkPickerMode==='poster'?'Poster preview':artworkPickerMode==='library'?'Library backdrop preview':'Hero backdrop preview';
-    els.artworkPreviewStage.classList.toggle('poster-preview-mode',artworkPickerMode==='poster');
-    els.artworkPreviewImage.alt=artworkPickerMode==='poster'?'Poster preview':'Backdrop preview';
-    els.artworkPreviewImage.src=url;
-    els.artworkPreviewLanguage.textContent=artworkLanguageLabel(item);
-    els.previousArtworkPreviewButton.disabled=artworkPickerItems.length<2;
-    els.nextArtworkPreviewButton.disabled=artworkPickerItems.length<2;
-  }
-  function openArtworkPreview(index) {
-    if(!els.artworkPreviewOverlay||!artworkPickerItems[index])return;
-    artworkPreviewIndex=index;
-    renderArtworkPreview();
-    els.artworkPreviewOverlay.hidden=false;
-    requestAnimationFrame(()=>els.useArtworkPreviewButton?.focus({preventScroll:true}));
-  }
-  function moveArtworkPreview(delta) {
-    if(!artworkPickerItems.length||artworkPreviewIndex<0)return;
-    artworkPreviewIndex=(artworkPreviewIndex+delta+artworkPickerItems.length)%artworkPickerItems.length;
-    renderArtworkPreview();
-  }
-  async function useArtworkPreview() {
-    if(artworkPreviewIndex<0)return;
-    const index=artworkPreviewIndex;
-    await selectArtworkChoice(index);
-  }
-
   async function selectArtworkChoice(index) {
     const item=artworkPickerItems[index];const path=normalizeBackdropPath(item?.file_path);if(!path)return;
     if(artworkPickerMode==='poster'){
@@ -1996,8 +1941,7 @@
 
   function scheduleTitleAutocomplete() {
     clearTimeout(autocompleteTimer); autocompleteTimer = null;
-    autocompleteSeq += 1;
-    const seq = autocompleteSeq;
+    if (lookupController) { lookupController.abort(); lookupController = null; }
     if (els.showId.value) return;
     const q = els.showTitle.value.trim();
     if (q.length < 2) {
@@ -2005,24 +1949,19 @@
       els.lookupStatus.textContent = 'Start typing a title for TVmaze suggestions, or use Find details.';
       return;
     }
-    els.lookupStatus.textContent = 'Finding TVmaze suggestions…';
-    autocompleteTimer = setTimeout(() => lookupShows({ auto: true, seq, q }), 220);
+    autocompleteTimer = setTimeout(() => lookupShows({ auto: true }), 260);
   }
 
   async function lookupShows(options = {}) {
     const auto = Boolean(options && options.auto);
-    if(!auto) autocompleteSeq += 1; // invalidate any older delayed autocomplete request
-    const seq = Number(options?.seq || 0);
-    const q = String(auto ? (options?.q || '') : els.showTitle.value).trim();
+    const q=els.showTitle.value.trim();
     if(!q || (auto && q.length < 2)){if(!auto)els.lookupStatus.textContent='Enter a title first.';return;}
-    let controller=null;
-    if(!auto){if(lookupController)lookupController.abort();lookupController=new AbortController();controller=lookupController;els.lookupShowButton.disabled=true;els.lookupStatus.textContent='Searching TVmaze…';}
+    if(lookupController)lookupController.abort();lookupController=new AbortController();
+    if(!auto){els.lookupShowButton.disabled=true;els.lookupStatus.textContent='Searching TVmaze…';}
     hideLookupSuggestions();
     try{
-      const fetchOptions=controller?{signal:controller.signal}:undefined;
-      const res=await fetch(`https://api.tvmaze.com/search/shows?q=${encodeURIComponent(q)}`,fetchOptions);if(!res.ok)throw new Error('TVmaze search failed');const results=await res.json();
-      if(auto && (seq!==autocompleteSeq || els.showId.value || els.showTitle.value.trim()!==q))return;
-      if(!results.length){els.lookupStatus.textContent=auto?'No TVmaze suggestions found. Use Find details or enter the show manually.':'No TVmaze matches found. You can enter the details manually.';return;}
+      const res=await fetch(`https://api.tvmaze.com/search/shows?q=${encodeURIComponent(q)}`,{signal:lookupController.signal});if(!res.ok)throw new Error('TVmaze search failed');const results=await res.json();
+      if(!results.length){if(!auto)els.lookupStatus.textContent='No TVmaze matches found. You can enter the details manually.';return;}
       els.lookupStatus.textContent=auto?'Suggestions from TVmaze:':'Choose the correct show:';els.lookupResults.hidden=false;els.showTitle.setAttribute('aria-expanded','true');
       results.slice(0,8).forEach(result=>{
         const show=result.show;const btn=document.createElement('button');btn.type='button';btn.className='lookup-result';btn.setAttribute('role','option');btn.setAttribute('aria-label',`Use ${show.name}`);
@@ -2038,8 +1977,44 @@
     finally{if(!auto)els.lookupShowButton.disabled=false;}
   }
 
+  function countryNameFromCode(code) {
+    const value=String(code||'').trim().toUpperCase();
+    if(!value)return '';
+    try{
+      if(typeof Intl.DisplayNames==='function'){
+        const names=new Intl.DisplayNames(['en'],{type:'region'});
+        const label=names.of(value);
+        if(label&&label!==value)return label;
+      }
+    }catch(_){}
+    const fallback={CA:'Canada',US:'United States',GB:'United Kingdom',AU:'Australia',NZ:'New Zealand',IE:'Ireland',FR:'France',DE:'Germany',ES:'Spain',IT:'Italy',JP:'Japan',KR:'South Korea',IN:'India',MX:'Mexico',BR:'Brazil'};
+    return fallback[value]||value;
+  }
+
+  async function fetchTmdbCountry(meta) {
+    if(!prefs.tmdbCredential)return '';
+    let tmdbId=positiveIntegerOrNull(meta?.tmdbId);
+    if(!tmdbId)tmdbId=await resolveTmdbId(meta||{});
+    if(!tmdbId)return '';
+    const data=await tmdbRequest(`/tv/${tmdbId}`,{language:'en-US'});
+    const countries=(Array.isArray(data?.origin_country)?data.origin_country:[]).map(countryNameFromCode).filter(Boolean);
+    return uniqueSorted(countries).join(', ');
+  }
+
+  async function prepareDraftCountry(meta,{preserveExisting=true}={}) {
+    if(!els.showCountry)return '';
+    const current=safeText(els.showCountry.value,80);
+    if(preserveExisting&&current)return current;
+    try{
+      const tmdbCountry=await fetchTmdbCountry({...meta,title:els.showTitle?.value||meta?.title,firstAirYear:positiveIntegerOrNull(els.showYear?.value)||meta?.firstAirYear});
+      if(tmdbCountry&&!els.showCountry.value){setSelectValue(els.showCountry,tmdbCountry);return tmdbCountry;}
+    }catch(err){console.warn('TMDB country lookup failed',err);}
+    return safeText(els.showCountry.value,80);
+  }
+
   async function applyTvmazeShow(show) {
     els.lookupStatus.textContent='Loading episodes and seasons…';els.lookupResults.hidden=true;
+    const preservedCountry=els.showId.value?safeText(els.showCountry.value,80):'';
     try{
       const [seasonsRes,episodesRes,imagesRes,castRes]=await Promise.all([fetch(`https://api.tvmaze.com/shows/${show.id}/seasons`),fetch(`https://api.tvmaze.com/shows/${show.id}/episodes`),fetch(`https://api.tvmaze.com/shows/${show.id}/images`),fetch(`https://api.tvmaze.com/shows/${show.id}/cast`)]);
       const seasons=seasonsRes.ok?await seasonsRes.json():[];const episodes=episodesRes.ok?await episodesRes.json():[];const images=imagesRes.ok?await imagesRes.json():[];const cast=castRes.ok?normalizeCast(await castRes.json()):[];castCache.set(show.id,cast);
@@ -2051,13 +2026,13 @@
       const artwork=show.image?.original || show.image?.medium || posterImage?.resolutions?.original?.url || posterImage?.resolutions?.medium?.url || (backgrounds.find(img=>img.main)||backgrounds[0]||banners.find(img=>img.main)||banners[0])?.resolutions?.original?.url || episodes.find(e=>e?.image?.original)?.image?.original || episodes.find(e=>e?.image?.medium)?.image?.medium || els.showPoster.value;
       els.showTitle.value=show.name||els.showTitle.value;els.showPoster.value=artwork;
       els.showYear.value=show.premiered?show.premiered.slice(0,4):'';els.showGenres.value=(show.genres||[]).join(', ');
-      els.showNetwork.value=show.network?.name||show.webChannel?.name||'';setSelectValue(els.showCountry,show.network?.country?.name||show.webChannel?.country?.name||'');const tvStatus=show.status||'';if(tvStatus && ![...els.showSeriesStatus.options].some(o=>o.value===tvStatus)){const option=document.createElement('option');option.value=tvStatus;option.textContent=tvStatus;els.showSeriesStatus.appendChild(option);}els.showSeriesStatus.value=tvStatus;renderEditorPicker('genres');
+      els.showNetwork.value=show.network?.name||show.webChannel?.name||'';const tvmazeCountry=show.network?.country?.name||show.webChannel?.country?.name||'';setSelectValue(els.showCountry,preservedCountry||tvmazeCountry);const tvStatus=show.status||'';if(tvStatus && ![...els.showSeriesStatus.options].some(o=>o.value===tvStatus)){const option=document.createElement('option');option.value=tvStatus;option.textContent=tvStatus;els.showSeriesStatus.appendChild(option);}els.showSeriesStatus.value=tvStatus;renderEditorPicker('genres');
       els.showSeasons.value=seasons.length||'';els.showEpisodes.value=episodes.length||'';const runtime=show.averageRuntime||show.runtime||medianRuntime(episodes);els.showRuntime.value=runtime||'';
       const total=episodes.reduce((sum,e)=>sum+(Number(e.runtime)||0),0);els.showTotalMinutes.value=total||((runtime&&episodes.length)?runtime*episodes.length:'');
       if(!els.showMetacritic.value)els.showMetacritic.value=`https://www.metacritic.com/tv/${slugify(show.name)}/`;
       if(draftMeta.tvmazeId && draftMeta.tvmazeId!==show.id){draftMeta.episodeProgress=null;draftMeta.episodeWatchDates={};draftMeta.watchedEpisodes=[];draftMeta.activeSeason=null;draftMeta.viewingRuns=[];draftMeta.currentViewingRunId='';draftMeta.heroBackdropPath='';draftMeta.heroBackdropPool=[];draftMeta.heroBackdropUpdatedAt=null;draftMeta.libraryBackdropPath='';draftMeta.libraryBackdropPool=[];draftMeta.libraryLogoPath='';draftMeta.libraryArtworkMode='hero';draftMeta.libraryArtworkUpdatedAt=null;draftMeta.heroArtworkPolicy='';draftMeta.libraryArtworkPolicy='';}draftMeta.tvmazeId=show.id;draftMeta.imdbId=show.externals?.imdb||'';draftMeta.tmdbId=null;draftMeta.cast=cast;updatePosterPreview();renderEpisodeGuide(normalizedEpisodes,draftMeta.episodeProgress||null);els.episodeGuideStatus.textContent=normalizedEpisodes.length?`${normalizedEpisodes.length} episodes · click an episode for its description.`:'No numbered episodes are available from TVmaze.';els.refreshEpisodesButton.disabled=false;renderCast(cast);els.castStatus.textContent=cast.length?`${cast.length} principal cast member${cast.length===1?'':'s'} from TVmaze.`:'No main cast is listed by TVmaze.';
       els.lookupStatus.textContent='Details and poster artwork added from TVmaze. You can edit anything before saving.';
-      if(prefs.tmdbCredential){await refreshDraftProviders();await prepareHeroBackdrop(draftMeta);await prepareLibraryArtwork(draftMeta);}
+      if(prefs.tmdbCredential){await refreshDraftProviders();if(!preservedCountry){const tmdbCountry=await fetchTmdbCountry({...draftMeta,title:show.name,firstAirYear:positiveIntegerOrNull(els.showYear.value)}).catch(()=> '');if(tmdbCountry)setSelectValue(els.showCountry,tmdbCountry);}await prepareHeroBackdrop(draftMeta);await prepareLibraryArtwork(draftMeta);}
     }catch(err){console.error(err);els.lookupStatus.textContent='Basic TVmaze details were found, but episode details could not be loaded.';}
   }
   function medianRuntime(episodes){const vals=episodes.map(e=>Number(e.runtime)).filter(n=>Number.isFinite(n)&&n>0).sort((a,b)=>a-b);if(!vals.length)return null;return vals[Math.floor(vals.length/2)];}
@@ -2185,9 +2160,24 @@
   }
 
   function scheduleSync(){clearTimeout(syncTimer);syncTimer=setTimeout(()=>syncWithDropbox(),900);}
-  async function syncWithDropbox({announce=false}={}){if(!dbx.connected)return;setSyncStatus('syncing','Dropbox · syncing…');try{const remote=await dropboxDownload();state=mergeStates(state,remote);localStorage.setItem(STORAGE_KEY,JSON.stringify(state));await dropboxUpload(state);dbx.lastSync=nowIso();saveDropbox();requestLibraryRender();setSyncStatus('connected','Dropbox · synced');if(announce)showToast('Dropbox connected and synced');}catch(err){console.error(err);setSyncStatus('error','Dropbox · sync problem');showToast('Dropbox sync failed. Your TV library is still saved on this device.');}}
+  async function syncWithDropbox({announce=false,quiet=false}={}){
+    if(!dbx.connected)return false;
+    if(syncInFlight)return syncInFlight;
+    syncInFlight=(async()=>{
+      setSyncStatus('syncing','Dropbox · syncing…');
+      try{
+        const remote=await dropboxDownload();state=mergeStates(state,remote);localStorage.setItem(STORAGE_KEY,JSON.stringify(state));await dropboxUpload(state);dbx.lastSync=nowIso();saveDropbox();requestLibraryRender();setSyncStatus('connected','Dropbox · synced');if(announce)showToast('Dropbox synced');return true;
+      }catch(err){console.error(err);setSyncStatus('error','Dropbox · sync problem');if(!quiet)showToast('Dropbox sync failed. Your TV library is still saved on this device.');return false;}
+      finally{syncInFlight=null;}
+    })();
+    return syncInFlight;
+  }
+  function autoSyncFromDropbox({force=false}={}){
+    if(!dbx.connected||document.hidden)return;
+    const now=Date.now();if(!force&&now-lastAutoSyncAt<AUTO_SYNC_MIN_MS)return;lastAutoSyncAt=now;syncWithDropbox({quiet:true}).catch(()=>{});
+  }
   function disconnectDropbox(){if(!confirm('Disconnect Dropbox on this device? Your local TV library will remain here.'))return;dbx={connected:false,appKey:dbx.appKey||''};saveDropbox();setSyncStatus('local','Saved on this device');showToast('Dropbox disconnected');}
-  function setSyncStatus(kind,label){els.statusDot.className='status-dot';if(kind==='connected')els.statusDot.classList.add('connected');if(kind==='syncing')els.statusDot.classList.add('syncing');if(kind==='error')els.statusDot.classList.add('error');els.syncLabel.textContent=label;}
+  function setSyncStatus(kind,label){els.statusDot.className='status-dot';if(kind==='connected')els.statusDot.classList.add('connected');if(kind==='syncing')els.statusDot.classList.add('syncing');if(kind==='error')els.statusDot.classList.add('error');els.syncLabel.textContent=label;if(els.syncRefreshButton){els.syncRefreshButton.classList.toggle('syncing',kind==='syncing');els.syncRefreshButton.disabled=kind==='syncing'||!dbx.connected;els.syncRefreshButton.setAttribute('aria-busy',kind==='syncing'?'true':'false');}}
   function updateDropboxUI(){if(!els.dropboxAppKey)return;els.redirectUriText.value=getRedirectUri();els.dropboxAppKey.value=dbx.appKey||'';els.dropboxSetup.hidden=!!dbx.connected;els.dropboxConnected.hidden=!dbx.connected;els.dropboxStatus.textContent=dbx.connected?'Connected':'Not connected';if(dbx.connected)setSyncStatus('connected',dbx.lastSync?'Dropbox · synced':'Dropbox · connected');else setSyncStatus('local','Saved on this device');}
 
   function exportBackup(){const blob=new Blob([JSON.stringify({...state,version:2,exportedAt:nowIso()},null,2)],{type:'application/json'});const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download=`tv-backup-${new Date().toISOString().slice(0,10)}.json`;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),500);showToast('Backup exported');}
@@ -2204,7 +2194,7 @@
     els.searchInput.oninput=render;els.sortSelect.onchange=()=>{sortMode=els.sortSelect.value;render();};if(els.sortButton)els.sortButton.onclick=toggleSortMenu;if(els.sortScrim)els.sortScrim.onclick=()=>closeSortMenu();
     els.filterButton.onclick=openFilterDrawer;els.closeFilterButton.onclick=()=>closeFilterDrawer();els.backFilterButton.onclick=()=>closeFilterDrawer();els.drawerScrim.onclick=()=>closeFilterDrawer();els.applyFiltersButton.onclick=applyFilters;els.clearFiltersButton.onclick=clearFilterDraft;els.saveViewButton.onclick=saveCurrentView;
     [els.filterEpisodes,els.filterTime,els.filterYearFrom,els.filterYearTo,els.filterRating,els.filterFavourite,els.filterDateType,els.filterDateFrom,els.filterDateTo].forEach(el=>{el.addEventListener('change',readDraftScalarFilters);});
-    els.showForm.onsubmit=saveShowFromForm;els.closeShowButton.onclick=()=>closeShowDialog();els.backShowButton.onclick=()=>closeShowDialog();els.cancelShowButton.onclick=()=>closeShowDialog();els.deleteShowButton.onclick=deleteCurrentShow;els.lookupShowButton.onclick=lookupShows;['input','change'].forEach(type=>{els.showStartedDate.addEventListener(type,()=>syncViewingDateField('started'));els.showFinishedDate.addEventListener(type,()=>syncViewingDateField('finished'));els.showAbandonedDate.addEventListener(type,()=>syncViewingDateField('abandoned'));});els.showTitle.addEventListener('input',scheduleTitleAutocomplete);els.showTitle.addEventListener('keydown',e=>{if(e.key==='ArrowDown'&&!els.lookupResults.hidden){const first=lookupResultButtons()[0];if(first){e.preventDefault();first.focus();}}else if(e.key==='Enter'&&!els.lookupResults.hidden){const first=lookupResultButtons()[0];if(first){e.preventDefault();first.click();}}});els.showPoster.oninput=updatePosterPreview;els.showTitle.addEventListener('input',()=>{if(els.showHeroTitle)els.showHeroTitle.textContent=els.showTitle.value.trim();});if(els.pickHeroButton)els.pickHeroButton.addEventListener('click',()=>openArtworkPicker('hero'));els.refreshBackdropButton.addEventListener('click',refreshHeroBackdrop);if(els.pickPosterButton)els.pickPosterButton.addEventListener('click',()=>openArtworkPicker('poster'));if(els.pickLibraryArtworkButton)els.pickLibraryArtworkButton.addEventListener('click',()=>openArtworkPicker('library'));if(els.refreshLibraryArtworkButton)els.refreshLibraryArtworkButton.addEventListener('click',refreshLibraryArtwork);if(els.closeArtworkPickerButton)els.closeArtworkPickerButton.addEventListener('click',closeArtworkPicker);if(els.artworkPickerScrim)els.artworkPickerScrim.addEventListener('click',closeArtworkPicker);if(els.closeArtworkPreviewButton)els.closeArtworkPreviewButton.addEventListener('click',closeArtworkPreview);if(els.artworkPreviewScrim)els.artworkPreviewScrim.addEventListener('click',closeArtworkPreview);if(els.previousArtworkPreviewButton)els.previousArtworkPreviewButton.addEventListener('click',()=>moveArtworkPreview(-1));if(els.nextArtworkPreviewButton)els.nextArtworkPreviewButton.addEventListener('click',()=>moveArtworkPreview(1));if(els.useArtworkPreviewButton)els.useArtworkPreviewButton.addEventListener('click',useArtworkPreview);if(els.artworkPreviewStage){els.artworkPreviewStage.addEventListener('touchstart',e=>{artworkPreviewTouchStartX=e.changedTouches?.[0]?.clientX??null;},{passive:true});els.artworkPreviewStage.addEventListener('touchend',e=>{if(artworkPreviewTouchStartX===null)return;const end=e.changedTouches?.[0]?.clientX??artworkPreviewTouchStartX;const delta=end-artworkPreviewTouchStartX;artworkPreviewTouchStartX=null;if(Math.abs(delta)>45)moveArtworkPreview(delta<0?1:-1);},{passive:true});}els.showFavourite.onclick=()=>setFavourite(!draftMeta.favourite);els.showLocation.onchange=()=>{updateWatchedEpisodeChoice({reset:true});renderViewingHistory();};if(els.markAllEpisodesButton)els.markAllEpisodesButton.onclick=()=>chooseWatchedEpisodeHistory('all');if(els.chooseEpisodesButton)els.chooseEpisodesButton.onclick=()=>chooseWatchedEpisodeHistory('choose');if(els.skipEpisodesButton)els.skipEpisodesButton.onclick=()=>chooseWatchedEpisodeHistory('none');if(els.startRewatchButton)els.startRewatchButton.onclick=startRewatch;els.refreshShowStreamingButton.onclick=refreshDraftProviders;els.refreshEpisodesButton.onclick=()=>loadEpisodeGuide(currentEpisodeShow()||draftMeta,true);
+    els.showForm.onsubmit=saveShowFromForm;els.closeShowButton.onclick=()=>closeShowDialog();els.backShowButton.onclick=()=>closeShowDialog();els.cancelShowButton.onclick=()=>closeShowDialog();els.deleteShowButton.onclick=deleteCurrentShow;els.lookupShowButton.onclick=lookupShows;['input','change'].forEach(type=>{els.showStartedDate.addEventListener(type,()=>syncViewingDateField('started'));els.showFinishedDate.addEventListener(type,()=>syncViewingDateField('finished'));els.showAbandonedDate.addEventListener(type,()=>syncViewingDateField('abandoned'));});els.showTitle.addEventListener('input',scheduleTitleAutocomplete);els.showTitle.addEventListener('keydown',e=>{if(e.key==='ArrowDown'&&!els.lookupResults.hidden){const first=lookupResultButtons()[0];if(first){e.preventDefault();first.focus();}}else if(e.key==='Enter'&&!els.lookupResults.hidden){const first=lookupResultButtons()[0];if(first){e.preventDefault();first.click();}}});els.showPoster.oninput=updatePosterPreview;els.showTitle.addEventListener('input',()=>{if(els.showHeroTitle)els.showHeroTitle.textContent=els.showTitle.value.trim();});if(els.pickHeroButton)els.pickHeroButton.addEventListener('click',()=>openArtworkPicker('hero'));els.refreshBackdropButton.addEventListener('click',refreshHeroBackdrop);if(els.pickPosterButton)els.pickPosterButton.addEventListener('click',()=>openArtworkPicker('poster'));if(els.pickLibraryArtworkButton)els.pickLibraryArtworkButton.addEventListener('click',()=>openArtworkPicker('library'));if(els.refreshLibraryArtworkButton)els.refreshLibraryArtworkButton.addEventListener('click',refreshLibraryArtwork);if(els.closeArtworkPickerButton)els.closeArtworkPickerButton.addEventListener('click',closeArtworkPicker);if(els.artworkPickerScrim)els.artworkPickerScrim.addEventListener('click',closeArtworkPicker);els.showFavourite.onclick=()=>setFavourite(!draftMeta.favourite);els.showLocation.onchange=()=>{updateWatchedEpisodeChoice({reset:true});renderViewingHistory();};if(els.markAllEpisodesButton)els.markAllEpisodesButton.onclick=()=>chooseWatchedEpisodeHistory('all');if(els.chooseEpisodesButton)els.chooseEpisodesButton.onclick=()=>chooseWatchedEpisodeHistory('choose');if(els.skipEpisodesButton)els.skipEpisodesButton.onclick=()=>chooseWatchedEpisodeHistory('none');if(els.startRewatchButton)els.startRewatchButton.onclick=startRewatch;els.refreshShowStreamingButton.onclick=refreshDraftProviders;els.refreshEpisodesButton.onclick=()=>loadEpisodeGuide(currentEpisodeShow()||draftMeta,true);
     els.genreAddButton.onclick=()=>addPickerValue('genres');els.tagAddButton.onclick=()=>addPickerValue('tags');els.genreAddInput.onkeydown=e=>{if(e.key==='Enter'){e.preventDefault();addPickerValue('genres');}};els.tagAddInput.onkeydown=e=>{if(e.key==='Enter'){e.preventDefault();addPickerValue('tags');}};
     if(els.showWatchingWith){els.showWatchingWith.addEventListener('focus',renderWatchingWithSuggestions);els.showWatchingWith.addEventListener('input',renderWatchingWithSuggestions);els.showWatchingWith.addEventListener('keydown',e=>{if(e.key==='ArrowDown'&&!els.watchingWithSuggestions?.hidden){const first=els.watchingWithSuggestions.querySelector('button');if(first){e.preventDefault();first.focus();}}else if(e.key==='Escape')hideWatchingWithSuggestions();});}
     els.showDialog.addEventListener('keydown',e=>{
@@ -2231,7 +2221,7 @@
     els.manageSavedViewsButton.onclick=()=>{renderSavedViewManager();if(!els.savedViewsDialog.open){pushOverlayState('saved-views');els.savedViewsDialog.showModal();}};els.closeSavedViewsButton.onclick=()=>closeDialogWithHistory(els.savedViewsDialog,'saved-views');els.backSavedViewsButton.onclick=()=>closeDialogWithHistory(els.savedViewsDialog,'saved-views');
     els.exportButton.onclick=exportBackup;els.importInput.onchange=()=>{const file=els.importInput.files?.[0];if(file)importBackup(file);};
     els.saveTmdbButton.onclick=testTmdb;els.refreshProvidersButton.onclick=refreshAllProviders;
-    els.connectDropboxButton.onclick=connectDropbox;els.syncNowButton.onclick=()=>syncWithDropbox({announce:true});els.disconnectDropboxButton.onclick=disconnectDropbox;els.copyRedirectButton.onclick=async()=>{try{await navigator.clipboard.writeText(getRedirectUri());showToast('Redirect URI copied');}catch(_){els.redirectUriText.select();document.execCommand('copy');showToast('Redirect URI copied');}};
+    els.connectDropboxButton.onclick=connectDropbox;els.syncNowButton.onclick=()=>syncWithDropbox({announce:true});if(els.syncRefreshButton)els.syncRefreshButton.onclick=()=>syncWithDropbox({announce:true});els.disconnectDropboxButton.onclick=disconnectDropbox;els.copyRedirectButton.onclick=async()=>{try{await navigator.clipboard.writeText(getRedirectUri());showToast('Redirect URI copied');}catch(_){els.redirectUriText.select();document.execCommand('copy');showToast('Redirect URI copied');}};
     [
       [els.showDialog,'show'],[els.settingsDialog,'settings'],[els.statusesDialog,'statuses'],[els.savedViewsDialog,'saved-views']
     ].forEach(([dialog,name])=>dialog.addEventListener('cancel',event=>{event.preventDefault();closeDialogWithHistory(dialog,name);}));
@@ -2241,10 +2231,13 @@
     });
     document.addEventListener('pointerdown',e=>{if(els.sortControl&&!els.sortControl.contains(e.target))closeSortMenu();if(els.watchingWithSuggestions&&!els.watchingWithSuggestions.hidden&&!e.target.closest('.watching-with-field'))hideWatchingWithSuggestions();});
     window.addEventListener('resize',()=>{if(els.sortMenu&&!els.sortMenu.hidden)closeSortMenu();},{passive:true});
+    window.addEventListener('focus',()=>autoSyncFromDropbox());
+    window.addEventListener('pageshow',()=>autoSyncFromDropbox());
+    window.addEventListener('online',()=>autoSyncFromDropbox({force:true}));
+    document.addEventListener('visibilitychange',()=>{if(!document.hidden)autoSyncFromDropbox();});
     document.addEventListener('keydown',e=>{
-      if(e.key==='Escape'){if(els.artworkPreviewOverlay&&!els.artworkPreviewOverlay.hidden){closeArtworkPreview();return;}if(els.artworkPickerOverlay&&!els.artworkPickerOverlay.hidden){closeArtworkPicker();return;}if(els.sortMenu&&!els.sortMenu.hidden){closeSortMenu({restoreFocus:true});return;}if(els.watchingWithSuggestions&&!els.watchingWithSuggestions.hidden){hideWatchingWithSuggestions();return;}if(history.state?.tvOverlay){history.back();return;}if(closeTopOverlayDirect())return;}
+      if(e.key==='Escape'){if(els.artworkPickerOverlay&&!els.artworkPickerOverlay.hidden){closeArtworkPicker();return;}if(els.sortMenu&&!els.sortMenu.hidden){closeSortMenu({restoreFocus:true});return;}if(els.watchingWithSuggestions&&!els.watchingWithSuggestions.hidden){hideWatchingWithSuggestions();return;}if(history.state?.tvOverlay){history.back();return;}if(closeTopOverlayDirect())return;}
       const target=e.target;const element=target instanceof HTMLElement ? target : null;
-      if(els.artworkPreviewOverlay&&!els.artworkPreviewOverlay.hidden){if(e.key==='ArrowLeft'){e.preventDefault();moveArtworkPreview(-1);return;}if(e.key==='ArrowRight'){e.preventDefault();moveArtworkPreview(1);return;}}
       if(e.key==='Enter'&&els.showDialog.open&&!e.defaultPrevented&&!e.metaKey&&!e.ctrlKey&&!e.altKey){if(els.artworkPickerOverlay&&!els.artworkPickerOverlay.hidden)return;
         if(element?.closest('textarea,button,summary,details,[contenteditable="true"]'))return;
         if(element instanceof HTMLSelectElement)return;
@@ -2269,7 +2262,7 @@
   render();
     repairTvmazePostersOnce().catch(()=>{});
     if('serviceWorker' in navigator && location.protocol.startsWith('http'))navigator.serviceWorker.register('./service-worker.js').catch(()=>{});
-    if(dbx.connected)syncWithDropbox().catch(()=>{});
+    if(dbx.connected){lastAutoSyncAt=Date.now();syncWithDropbox({quiet:true}).catch(()=>{});setInterval(()=>autoSyncFromDropbox(),AUTO_SYNC_INTERVAL_MS);}
   }
 
   init();
