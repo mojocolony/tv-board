@@ -1272,7 +1272,74 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
   .show-hero img { transition:none !important; }
   .show-hero.loading::before { animation:none !important; display:none !important; }
 }
-\n\n/* TV v3.1.1 — sync affordance, phone layout lock, and narrow-form cleanup */\n.sync-refresh-button {\n  width:24px;\n  height:24px;\n  min-width:24px;\n  display:inline-grid;\n  place-items:center;\n  padding:0;\n  margin-left:-4px;\n  border:0;\n  border-radius:999px;\n  background:transparent;\n  color:var(--muted);\n}\n.sync-refresh-button:hover { background:rgba(119,141,169,.11); color:var(--ink); }\n.sync-refresh-button:focus-visible { outline:2px solid rgba(119,141,169,.55); outline-offset:1px; }\n.sync-refresh-button:disabled { opacity:.55; cursor:default; }\n.sync-refresh-button [data-icon], .sync-refresh-button svg { width:14px; height:14px; }\n.sync-refresh-button.syncing svg { animation:tv-sync-spin .8s linear infinite; }\n@keyframes tv-sync-spin { to { transform:rotate(360deg); } }\n\n/* Library logos are identifiers, never the main image. */\n.row-poster.library-artwork .library-logo,\n.library-artwork-preview.library-artwork .library-logo {\n  width:auto !important;\n  max-width:40% !important;\n  max-height:20% !important;\n}\n.row-poster.library-artwork .library-title-fallback,\n.library-artwork-preview.library-artwork .library-title-fallback {\n  width:40% !important;\n  max-width:40% !important;\n  max-height:20% !important;\n}\n.row-poster.library-artwork .library-title-fallback { font-size:clamp(7px,4.2cqi,10px) !important; }\n.library-artwork-preview.library-artwork .library-title-fallback { font-size:clamp(11px,3.8cqi,18px) !important; }\n\n@media (max-width:720px) {\n  html, body { width:100%; max-width:100%; overflow-x:hidden; overscroll-behavior-x:none; }\n  .app-shell, .main, .main-header, .toolbar, .show-list, .show-modal, .show-modal form, .show-edit-layout, .poster-editor, .show-fields, .field-grid, .viewing-history-card { min-width:0; max-width:100%; box-sizing:border-box; }\n  .show-modal input, .show-modal select, .show-modal textarea, .show-modal button { max-width:100%; box-sizing:border-box; }\n\n  /* The phone editor is a deliberate vertical stack. */\n  .show-edit-layout { overflow-x:hidden; }\n  .poster-editor { display:flex !important; flex-direction:column; align-items:stretch; gap:8px; margin-bottom:16px; }\n  .poster-preview { width:120px; max-width:42vw; align-self:flex-start; margin:0; }\n  .poster-picker-row { width:120px; max-width:42vw; justify-content:flex-start; margin:-2px 0 6px; }\n  .poster-picker-row .text-button { padding-left:0; }\n  .poster-editor > label { width:100%; min-width:0; }\n  .library-artwork-editor { width:100%; min-width:0; margin-top:4px; }\n  .library-artwork-label { display:flex; align-items:center; justify-content:space-between; gap:10px; width:100%; }\n  .library-artwork-actions { flex:0 0 auto; }\n  .library-artwork-preview { width:100%; max-width:100%; }\n\n  /* Dates do not squeeze into three columns on a phone. */\n  .viewing-date-grid { grid-template-columns:minmax(0,1fr) !important; gap:10px; }\n  .viewing-date-grid > label { grid-column:auto !important; min-width:0; }\n}\n\n@media (max-width:430px) {\n  .row-poster.library-artwork .library-logo { max-width:38% !important; max-height:19% !important; }\n  .row-poster.library-artwork .library-title-fallback { width:38% !important; max-width:38% !important; max-height:19% !important; }\n}\n\n@media (prefers-reduced-motion: reduce) { .sync-refresh-button.syncing svg { animation:none; } }\n
+
+
+/* TV v3.1.1 — sync affordance, phone layout lock, and narrow-form cleanup */
+.sync-refresh-button {
+  width:24px;
+  height:24px;
+  min-width:24px;
+  display:inline-grid;
+  place-items:center;
+  padding:0;
+  margin-left:-4px;
+  border:0;
+  border-radius:999px;
+  background:transparent;
+  color:var(--muted);
+}
+.sync-refresh-button:hover { background:rgba(119,141,169,.11); color:var(--ink); }
+.sync-refresh-button:focus-visible { outline:2px solid rgba(119,141,169,.55); outline-offset:1px; }
+.sync-refresh-button:disabled { opacity:.55; cursor:default; }
+.sync-refresh-button [data-icon], .sync-refresh-button svg { width:14px; height:14px; }
+.sync-refresh-button.syncing svg { animation:tv-sync-spin .8s linear infinite; }
+@keyframes tv-sync-spin { to { transform:rotate(360deg); } }
+
+/* Library logos are identifiers, never the main image. */
+.row-poster.library-artwork .library-logo,
+.library-artwork-preview.library-artwork .library-logo {
+  width:auto !important;
+  max-width:40% !important;
+  max-height:20% !important;
+}
+.row-poster.library-artwork .library-title-fallback,
+.library-artwork-preview.library-artwork .library-title-fallback {
+  width:40% !important;
+  max-width:40% !important;
+  max-height:20% !important;
+}
+.row-poster.library-artwork .library-title-fallback { font-size:clamp(7px,4.2cqi,10px) !important; }
+.library-artwork-preview.library-artwork .library-title-fallback { font-size:clamp(11px,3.8cqi,18px) !important; }
+
+@media (max-width:720px) {
+  html, body { width:100%; max-width:100%; overflow-x:hidden; overscroll-behavior-x:none; }
+  .app-shell, .main, .main-header, .toolbar, .show-list, .show-modal, .show-modal form, .show-edit-layout, .poster-editor, .show-fields, .field-grid, .viewing-history-card { min-width:0; max-width:100%; box-sizing:border-box; }
+  .show-modal input, .show-modal select, .show-modal textarea, .show-modal button { max-width:100%; box-sizing:border-box; }
+
+  /* The phone editor is a deliberate vertical stack. */
+  .show-edit-layout { overflow-x:hidden; }
+  .poster-editor { display:flex !important; flex-direction:column; align-items:stretch; gap:8px; margin-bottom:16px; }
+  .poster-preview { width:120px; max-width:42vw; align-self:flex-start; margin:0; }
+  .poster-picker-row { width:120px; max-width:42vw; justify-content:flex-start; margin:-2px 0 6px; }
+  .poster-picker-row .text-button { padding-left:0; }
+  .poster-editor > label { width:100%; min-width:0; }
+  .library-artwork-editor { width:100%; min-width:0; margin-top:4px; }
+  .library-artwork-label { display:flex; align-items:center; justify-content:space-between; gap:10px; width:100%; }
+  .library-artwork-actions { flex:0 0 auto; }
+  .library-artwork-preview { width:100%; max-width:100%; }
+
+  /* Dates do not squeeze into three columns on a phone. */
+  .viewing-date-grid { grid-template-columns:minmax(0,1fr) !important; gap:10px; }
+  .viewing-date-grid > label { grid-column:auto !important; min-width:0; }
+}
+
+@media (max-width:430px) {
+  .row-poster.library-artwork .library-logo { max-width:38% !important; max-height:19% !important; }
+  .row-poster.library-artwork .library-title-fallback { width:38% !important; max-width:38% !important; max-height:19% !important; }
+}
+
+@media (prefers-reduced-motion: reduce) { .sync-refresh-button.syncing svg { animation:none; } }
+
 /* TV v3.1.2 — artwork hover preview, borderless sync affordance, back to top */
 .sync-refresh-button {
   border:0 !important;
@@ -1372,3 +1439,37 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
 @media (prefers-reduced-motion:reduce) {
   .back-to-top:hover { transform:none; }
 }
+
+
+/* TV v3.1.3 — source-faithful 16:9 heroes + repaired sync affordance */
+.show-hero {
+  aspect-ratio:16 / 9 !important;
+  max-height:none !important;
+  min-height:0 !important;
+}
+@media (max-width:1100px) {
+  .show-hero { aspect-ratio:16 / 9 !important; max-height:none !important; min-height:0 !important; }
+}
+@media (max-width:720px) {
+  .show-hero { aspect-ratio:16 / 9 !important; max-height:none !important; min-height:0 !important; }
+}
+.sync-refresh-button {
+  width:24px !important;
+  height:24px !important;
+  min-width:24px !important;
+  min-height:24px !important;
+  display:inline-grid !important;
+  place-items:center;
+  padding:0 !important;
+  margin:0 0 0 -4px;
+  border:0 !important;
+  border-radius:999px;
+  box-shadow:none !important;
+  background:transparent !important;
+  color:var(--muted);
+  -webkit-appearance:none !important;
+  appearance:none !important;
+}
+.sync-refresh-button:hover { background:rgba(119,141,169,.11) !important; color:var(--ink); }
+.sync-refresh-button:focus-visible { outline:2px solid rgba(119,141,169,.55); outline-offset:1px; }
+.sync-refresh-button [data-icon], .sync-refresh-button svg { width:14px; height:14px; }
