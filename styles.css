@@ -1273,3 +1273,102 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
   .show-hero.loading::before { animation:none !important; display:none !important; }
 }
 \n\n/* TV v3.1.1 — sync affordance, phone layout lock, and narrow-form cleanup */\n.sync-refresh-button {\n  width:24px;\n  height:24px;\n  min-width:24px;\n  display:inline-grid;\n  place-items:center;\n  padding:0;\n  margin-left:-4px;\n  border:0;\n  border-radius:999px;\n  background:transparent;\n  color:var(--muted);\n}\n.sync-refresh-button:hover { background:rgba(119,141,169,.11); color:var(--ink); }\n.sync-refresh-button:focus-visible { outline:2px solid rgba(119,141,169,.55); outline-offset:1px; }\n.sync-refresh-button:disabled { opacity:.55; cursor:default; }\n.sync-refresh-button [data-icon], .sync-refresh-button svg { width:14px; height:14px; }\n.sync-refresh-button.syncing svg { animation:tv-sync-spin .8s linear infinite; }\n@keyframes tv-sync-spin { to { transform:rotate(360deg); } }\n\n/* Library logos are identifiers, never the main image. */\n.row-poster.library-artwork .library-logo,\n.library-artwork-preview.library-artwork .library-logo {\n  width:auto !important;\n  max-width:40% !important;\n  max-height:20% !important;\n}\n.row-poster.library-artwork .library-title-fallback,\n.library-artwork-preview.library-artwork .library-title-fallback {\n  width:40% !important;\n  max-width:40% !important;\n  max-height:20% !important;\n}\n.row-poster.library-artwork .library-title-fallback { font-size:clamp(7px,4.2cqi,10px) !important; }\n.library-artwork-preview.library-artwork .library-title-fallback { font-size:clamp(11px,3.8cqi,18px) !important; }\n\n@media (max-width:720px) {\n  html, body { width:100%; max-width:100%; overflow-x:hidden; overscroll-behavior-x:none; }\n  .app-shell, .main, .main-header, .toolbar, .show-list, .show-modal, .show-modal form, .show-edit-layout, .poster-editor, .show-fields, .field-grid, .viewing-history-card { min-width:0; max-width:100%; box-sizing:border-box; }\n  .show-modal input, .show-modal select, .show-modal textarea, .show-modal button { max-width:100%; box-sizing:border-box; }\n\n  /* The phone editor is a deliberate vertical stack. */\n  .show-edit-layout { overflow-x:hidden; }\n  .poster-editor { display:flex !important; flex-direction:column; align-items:stretch; gap:8px; margin-bottom:16px; }\n  .poster-preview { width:120px; max-width:42vw; align-self:flex-start; margin:0; }\n  .poster-picker-row { width:120px; max-width:42vw; justify-content:flex-start; margin:-2px 0 6px; }\n  .poster-picker-row .text-button { padding-left:0; }\n  .poster-editor > label { width:100%; min-width:0; }\n  .library-artwork-editor { width:100%; min-width:0; margin-top:4px; }\n  .library-artwork-label { display:flex; align-items:center; justify-content:space-between; gap:10px; width:100%; }\n  .library-artwork-actions { flex:0 0 auto; }\n  .library-artwork-preview { width:100%; max-width:100%; }\n\n  /* Dates do not squeeze into three columns on a phone. */\n  .viewing-date-grid { grid-template-columns:minmax(0,1fr) !important; gap:10px; }\n  .viewing-date-grid > label { grid-column:auto !important; min-width:0; }\n}\n\n@media (max-width:430px) {\n  .row-poster.library-artwork .library-logo { max-width:38% !important; max-height:19% !important; }\n  .row-poster.library-artwork .library-title-fallback { width:38% !important; max-width:38% !important; max-height:19% !important; }\n}\n\n@media (prefers-reduced-motion: reduce) { .sync-refresh-button.syncing svg { animation:none; } }\n
+/* TV v3.1.2 — artwork hover preview, borderless sync affordance, back to top */
+.sync-refresh-button {
+  border:0 !important;
+  outline-offset:2px;
+  box-shadow:none !important;
+  -webkit-appearance:none;
+  appearance:none;
+  background:transparent !important;
+}
+.sync-refresh-button:hover { background:transparent !important; color:var(--ink); }
+
+.artwork-hover-preview[hidden] { display:none !important; }
+.artwork-hover-preview {
+  position:fixed;
+  z-index:45;
+  width:min(520px,46vw);
+  aspect-ratio:16/9;
+  overflow:hidden;
+  border:1px solid rgba(255,255,255,.55);
+  border-radius:13px;
+  background:#111;
+  box-shadow:0 18px 52px rgba(0,0,0,.38);
+  pointer-events:none;
+}
+.artwork-hover-preview.poster-preview {
+  width:min(300px,28vw);
+  aspect-ratio:2/3;
+  background:var(--paper-deep);
+}
+.artwork-hover-preview img {
+  display:block;
+  width:100%;
+  height:100%;
+  object-fit:cover;
+}
+.artwork-hover-preview.poster-preview img { object-fit:contain; }
+.artwork-hover-preview-label {
+  position:absolute;
+  left:10px;
+  bottom:10px;
+  padding:5px 8px;
+  border-radius:999px;
+  background:rgba(15,16,16,.78);
+  color:#fff;
+  font-size:10px;
+  font-weight:800;
+  line-height:1;
+  letter-spacing:.02em;
+}
+@media (hover:none), (pointer:coarse) {
+  .artwork-hover-preview { display:none !important; }
+}
+
+.back-to-top[hidden] { display:none !important; }
+.back-to-top {
+  position:fixed;
+  right:24px;
+  bottom:24px;
+  z-index:14;
+  width:42px;
+  height:42px;
+  min-width:42px;
+  padding:0;
+  display:grid;
+  place-items:center;
+  border:1px solid var(--line-dark);
+  border-radius:999px;
+  background:rgba(250,248,243,.94);
+  color:var(--ink);
+  box-shadow:0 6px 22px rgba(29,27,23,.14);
+  -webkit-backdrop-filter:blur(8px);
+  backdrop-filter:blur(8px);
+}
+.back-to-top:hover { background:var(--panel); transform:translateY(-1px); }
+.back-to-top:focus-visible { outline:3px solid rgba(119,141,169,.42); outline-offset:2px; }
+.back-to-top [data-icon], .back-to-top svg { width:20px; height:20px; }
+:root[data-theme="dark"] .back-to-top {
+  background:rgba(35,38,36,.95);
+  color:var(--ink);
+  border-color:#444944;
+  box-shadow:0 6px 22px rgba(0,0,0,.28);
+}
+@media (max-width:720px) {
+  .back-to-top {
+    right:14px;
+    bottom:calc(82px + env(safe-area-inset-bottom));
+    width:40px;
+    height:40px;
+    min-width:40px;
+    -webkit-backdrop-filter:none;
+    backdrop-filter:none;
+  }
+}
+@media (display-mode:standalone) and (max-width:720px) {
+  .back-to-top { bottom:calc(18px + env(safe-area-inset-bottom)); }
+}
+@media (prefers-reduced-motion:reduce) {
+  .back-to-top:hover { transform:none; }
+}

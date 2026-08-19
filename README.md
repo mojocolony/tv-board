@@ -1,8 +1,8 @@
-# TV v3.1.1
+# TV v3.1.2
 
 TV is the redesigned successor to TV Board. It keeps the existing data/storage contracts while replacing the Kanban board with a scalable visual list library.
 
-## New in v3.1.1
+## New in v3.1.2
 
 - Added a compact **manual Dropbox refresh** control beside the main sync status.
 - TV now checks Dropbox automatically when the tab/window regains focus, when the page becomes visible again, when the device comes back online, and periodically while the visible app remains open.

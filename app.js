@@ -1,7 +1,7 @@
 (() => {
   'use strict';
 
-  const APP_VERSION = '3.1.1';
+  const APP_VERSION = '3.1.2';
   const TMDB_ARTWORK_POLICY = 'textfree-v2';
   const STORAGE_KEY = 'tvBoard.state.v1';
   const DROPBOX_KEY = 'tvBoard.dropbox.v1';
@@ -32,7 +32,7 @@
     clearFiltersButton: $('clearFiltersButton'), saveViewButton: $('saveViewButton'), applyFiltersButton: $('applyFiltersButton'),
     showDialog: $('showDialog'), showForm: $('showForm'), showDialogTitle: $('showDialogTitle'), showId: $('showId'), showTitle: $('showTitle'), showLocation: $('showLocation'), showRating: $('showRating'), showFavourite: $('showFavourite'), showFavouriteText: $('showFavouriteText'),
     showHero: $('showHero'), showHeroImage: $('showHeroImage'), showHeroTitle: $('showHeroTitle'), showHeroStatus: $('showHeroStatus'), pickHeroButton: $('pickHeroButton'), refreshBackdropButton: $('refreshBackdropButton'),
-    showPoster: $('showPoster'), posterPreview: $('posterPreview'), pickPosterButton: $('pickPosterButton'), libraryArtworkPreview: $('libraryArtworkPreview'), pickLibraryArtworkButton: $('pickLibraryArtworkButton'), refreshLibraryArtworkButton: $('refreshLibraryArtworkButton'), libraryArtworkStatus: $('libraryArtworkStatus'), artworkPickerOverlay: $('artworkPickerOverlay'), artworkPickerScrim: $('artworkPickerScrim'), artworkPickerTitle: $('artworkPickerTitle'), artworkPickerSubtitle: $('artworkPickerSubtitle'), artworkPickerGrid: $('artworkPickerGrid'), artworkPickerEmpty: $('artworkPickerEmpty'), closeArtworkPickerButton: $('closeArtworkPickerButton'), lookupShowButton: $('lookupShowButton'), lookupStatus: $('lookupStatus'), lookupResults: $('lookupResults'), showYear: $('showYear'), showSeasons: $('showSeasons'), showEpisodes: $('showEpisodes'),
+    showPoster: $('showPoster'), posterPreview: $('posterPreview'), pickPosterButton: $('pickPosterButton'), libraryArtworkPreview: $('libraryArtworkPreview'), pickLibraryArtworkButton: $('pickLibraryArtworkButton'), refreshLibraryArtworkButton: $('refreshLibraryArtworkButton'), libraryArtworkStatus: $('libraryArtworkStatus'), artworkPickerOverlay: $('artworkPickerOverlay'), artworkPickerScrim: $('artworkPickerScrim'), artworkPickerTitle: $('artworkPickerTitle'), artworkPickerSubtitle: $('artworkPickerSubtitle'), artworkPickerGrid: $('artworkPickerGrid'), artworkPickerEmpty: $('artworkPickerEmpty'), artworkHoverPreview: $('artworkHoverPreview'), artworkHoverPreviewImage: $('artworkHoverPreviewImage'), artworkHoverPreviewLabel: $('artworkHoverPreviewLabel'), closeArtworkPickerButton: $('closeArtworkPickerButton'), lookupShowButton: $('lookupShowButton'), lookupStatus: $('lookupStatus'), lookupResults: $('lookupResults'), showYear: $('showYear'), showSeasons: $('showSeasons'), showEpisodes: $('showEpisodes'),
     showRuntime: $('showRuntime'), showTotalMinutes: $('showTotalMinutes'), showSeriesStatus: $('showSeriesStatus'), showNetwork: $('showNetwork'), showCountry: $('showCountry'), showWatchingWith: $('showWatchingWith'), watchingWithSuggestions: $('watchingWithSuggestions'), showStartedDate: $('showStartedDate'), showFinishedDate: $('showFinishedDate'), showAbandonedDate: $('showAbandonedDate'), viewingRunsList: $('viewingRunsList'), startRewatchButton: $('startRewatchButton'), watchedEpisodeChoice: $('watchedEpisodeChoice'), markAllEpisodesWatched: $('markAllEpisodesWatched'), markAllEpisodesButton: $('markAllEpisodesButton'), chooseEpisodesButton: $('chooseEpisodesButton'), skipEpisodesButton: $('skipEpisodesButton'), watchedEpisodeChoiceNote: $('watchedEpisodeChoiceNote'), showGenres: $('showGenres'), showMetacritic: $('showMetacritic'),
     networkOptions: $('networkOptions'), watchingWithOptions: $('watchingWithOptions'), genresPicker: $('genresPicker'), genresPickerSummary: $('genresPickerSummary'), genreChoices: $('genreChoices'), genreAddInput: $('genreAddInput'), genreAddButton: $('genreAddButton'), tagsPicker: $('tagsPicker'), tagsPickerSummary: $('tagsPickerSummary'), tagChoices: $('tagChoices'), tagAddInput: $('tagAddInput'), tagAddButton: $('tagAddButton'),
     streamingProvidersText: $('streamingProvidersText'), streamingProvidersNote: $('streamingProvidersNote'), refreshShowStreamingButton: $('refreshShowStreamingButton'), showTags: $('showTags'), showNotes: $('showNotes'),
@@ -42,7 +42,7 @@
     settingsDialog: $('settingsDialog'), closeSettingsButton: $('closeSettingsButton'), backSettingsButton: $('backSettingsButton'), openStatusesButton: $('openStatusesButton'), exportButton: $('exportButton'), importInput: $('importInput'),
     tmdbStatus: $('tmdbStatus'), tmdbCredential: $('tmdbCredential'), tmdbTestMessage: $('tmdbTestMessage'), saveTmdbButton: $('saveTmdbButton'), refreshProvidersButton: $('refreshProvidersButton'),
     dropboxStatus: $('dropboxStatus'), dropboxSetup: $('dropboxSetup'), dropboxConnected: $('dropboxConnected'), dropboxAppKey: $('dropboxAppKey'), redirectUriText: $('redirectUriText'), copyRedirectButton: $('copyRedirectButton'),
-    connectDropboxButton: $('connectDropboxButton'), syncNowButton: $('syncNowButton'), disconnectDropboxButton: $('disconnectDropboxButton'), fontSizeSelector: $('fontSizeSelector'), themeSelector: $('themeSelector'), episodeGuideCard: $('episodeGuideCard'), episodeGuideStatus: $('episodeGuideStatus'), episodeProgressSummary: $('episodeProgressSummary'), episodeGuide: $('episodeGuide'), refreshEpisodesButton: $('refreshEpisodesButton'), castCard: $('castCard'), castStatus: $('castStatus'), castList: $('castList'), toast: $('toast')
+    connectDropboxButton: $('connectDropboxButton'), syncNowButton: $('syncNowButton'), disconnectDropboxButton: $('disconnectDropboxButton'), fontSizeSelector: $('fontSizeSelector'), themeSelector: $('themeSelector'), episodeGuideCard: $('episodeGuideCard'), episodeGuideStatus: $('episodeGuideStatus'), episodeProgressSummary: $('episodeProgressSummary'), episodeGuide: $('episodeGuide'), refreshEpisodesButton: $('refreshEpisodesButton'), castCard: $('castCard'), castStatus: $('castStatus'), castList: $('castList'), backToTopButton: $('backToTopButton'), toast: $('toast')
   };
 
   const ICONS = {
@@ -63,7 +63,8 @@
     bookmark: '<path d="M6 3h12v18l-6-4-6 4V3Z"/>',
     play: '<path d="m7 4 13 8-13 8V4Z"/>',
     refresh: '<path d="M20 11a8 8 0 0 0-14.9-4M4 4v5h5"/><path d="M4 13a8 8 0 0 0 14.9 4M20 20v-5h-5"/>',
-    chevron: '<path d="m9 18 6-6-6-6"/>'
+    chevron: '<path d="m9 18 6-6-6-6"/>',
+    'arrow-up': '<path d="m18 9-6-6-6 6"/><path d="M12 3v18"/>'
   };
 
   function iconSvg(name) {
@@ -1504,13 +1505,45 @@
   }
   function closeArtworkPicker() {
     if(!els.artworkPickerOverlay)return;
-    els.artworkPickerOverlay.hidden=true;artworkPickerMode='';artworkPickerItems=[];
+    hideArtworkHoverPreview();els.artworkPickerOverlay.hidden=true;artworkPickerMode='';artworkPickerItems=[];
   }
   function artworkLanguageLabel(item) {
     const lang=item?.iso_639_1;
     if(lang===null||lang===undefined||lang==='')return 'No language';
     return String(lang).toUpperCase();
   }
+  function hideArtworkHoverPreview() {
+    if(!els.artworkHoverPreview)return;
+    els.artworkHoverPreview.hidden=true;
+    els.artworkHoverPreview.classList.remove('poster-preview');
+    if(els.artworkHoverPreviewImage)els.artworkHoverPreviewImage.removeAttribute('src');
+  }
+  function positionArtworkHoverPreview(event) {
+    if(!els.artworkHoverPreview||els.artworkHoverPreview.hidden)return;
+    const box=els.artworkHoverPreview.getBoundingClientRect();
+    const gap=18, edge=12;
+    let left=event.clientX+gap, top=event.clientY+gap;
+    if(left+box.width>window.innerWidth-edge)left=event.clientX-box.width-gap;
+    if(top+box.height>window.innerHeight-edge)top=event.clientY-box.height-gap;
+    left=Math.max(edge,Math.min(left,window.innerWidth-box.width-edge));
+    top=Math.max(edge,Math.min(top,window.innerHeight-box.height-edge));
+    els.artworkHoverPreview.style.left=`${Math.round(left)}px`;
+    els.artworkHoverPreview.style.top=`${Math.round(top)}px`;
+  }
+  function showArtworkHoverPreview(item,event) {
+    if(!els.artworkHoverPreview||!matchMedia('(hover:hover) and (pointer:fine)').matches)return;
+    const path=normalizeBackdropPath(item?.file_path);if(!path)return;
+    const isPoster=artworkPickerMode==='poster';
+    els.artworkHoverPreview.classList.toggle('poster-preview',isPoster);
+    if(els.artworkHoverPreviewImage){els.artworkHoverPreviewImage.src=tmdbBackdropUrl(path);els.artworkHoverPreviewImage.alt='';}
+    if(els.artworkHoverPreviewLabel){
+      const dims=positiveIntegerOrNull(item?.width)&&positiveIntegerOrNull(item?.height)?` · ${item.width}×${item.height}`:'';
+      els.artworkHoverPreviewLabel.textContent=`${artworkLanguageLabel(item)}${dims}`;
+    }
+    els.artworkHoverPreview.hidden=false;
+    requestAnimationFrame(()=>positionArtworkHoverPreview(event));
+  }
+
   async function openArtworkPicker(mode) {
     if(!els.artworkPickerOverlay||!prefs.tmdbCredential){showToast('Add a TMDB credential in Settings first');return;}
     artworkPickerMode=mode;artworkPickerItems=[];els.artworkPickerGrid.replaceChildren();els.artworkPickerEmpty.hidden=true;
@@ -1530,6 +1563,10 @@
         const button=document.createElement('button');button.type='button';button.className=`artwork-choice ${mode==='poster'?'poster-choice':'backdrop-choice'}`;button.dataset.index=String(index);
         const img=new Image();img.src=tmdbLibraryImageUrl(path);img.alt='';img.loading='lazy';img.decoding='async';button.appendChild(img);
         const badge=document.createElement('span');badge.className='artwork-language-badge';badge.textContent=artworkLanguageLabel(item);button.appendChild(badge);
+        button.addEventListener('mouseenter',event=>showArtworkHoverPreview(item,event));
+        button.addEventListener('mousemove',positionArtworkHoverPreview);
+        button.addEventListener('mouseleave',hideArtworkHoverPreview);
+        button.addEventListener('focus',hideArtworkHoverPreview);
         button.addEventListener('click',()=>selectArtworkChoice(index));els.artworkPickerGrid.appendChild(button);
       });
       requestAnimationFrame(()=>els.artworkPickerGrid.querySelector('button')?.focus({preventScroll:true}));
@@ -2184,6 +2221,15 @@
   async function importBackup(file){try{const incoming=JSON.parse(await file.text());if(!incoming||!Array.isArray(incoming.shows)||!Array.isArray(incoming.columns))throw new Error('Invalid backup');state=mergeStates(state,incoming);saveState();showToast('Backup imported');}catch(err){console.error(err);showToast('That file is not a valid TV backup');}finally{els.importInput.value='';}}
 
   function openSettings(){closeMobileNav();updateDropboxUI();updateTmdbUI();applyTheme();if(!els.settingsDialog.open){pushOverlayState('settings');els.settingsDialog.showModal();}}
+  function updateBackToTopVisibility(){
+    if(!els.backToTopButton)return;
+    const threshold=Math.max(700,window.innerHeight*1.25);
+    els.backToTopButton.hidden=window.scrollY<threshold;
+  }
+  function scrollBackToTop(){
+    const reduced=matchMedia('(prefers-reduced-motion: reduce)').matches;
+    window.scrollTo({top:0,behavior:reduced?'auto':'smooth'});
+  }
   function showToast(message){clearTimeout(toastTimer);els.toast.textContent=message;els.toast.classList.add('show');toastTimer=setTimeout(()=>els.toast.classList.remove('show'),2600);}
   function openMobileNav(){els.sidebar.classList.add('open');els.sidebarScrim.classList.add('open');document.body.style.overflow='hidden';}
   function closeMobileNav(){els.sidebar.classList.remove('open');els.sidebarScrim.classList.remove('open');if(!els.filterDrawer.classList.contains('open'))document.body.style.overflow='';}
@@ -2221,7 +2267,7 @@
     els.manageSavedViewsButton.onclick=()=>{renderSavedViewManager();if(!els.savedViewsDialog.open){pushOverlayState('saved-views');els.savedViewsDialog.showModal();}};els.closeSavedViewsButton.onclick=()=>closeDialogWithHistory(els.savedViewsDialog,'saved-views');els.backSavedViewsButton.onclick=()=>closeDialogWithHistory(els.savedViewsDialog,'saved-views');
     els.exportButton.onclick=exportBackup;els.importInput.onchange=()=>{const file=els.importInput.files?.[0];if(file)importBackup(file);};
     els.saveTmdbButton.onclick=testTmdb;els.refreshProvidersButton.onclick=refreshAllProviders;
-    els.connectDropboxButton.onclick=connectDropbox;els.syncNowButton.onclick=()=>syncWithDropbox({announce:true});if(els.syncRefreshButton)els.syncRefreshButton.onclick=()=>syncWithDropbox({announce:true});els.disconnectDropboxButton.onclick=disconnectDropbox;els.copyRedirectButton.onclick=async()=>{try{await navigator.clipboard.writeText(getRedirectUri());showToast('Redirect URI copied');}catch(_){els.redirectUriText.select();document.execCommand('copy');showToast('Redirect URI copied');}};
+    els.connectDropboxButton.onclick=connectDropbox;els.syncNowButton.onclick=()=>syncWithDropbox({announce:true});if(els.syncRefreshButton)els.syncRefreshButton.onclick=()=>syncWithDropbox({announce:true});els.disconnectDropboxButton.onclick=disconnectDropbox;if(els.backToTopButton)els.backToTopButton.onclick=scrollBackToTop;window.addEventListener('scroll',updateBackToTopVisibility,{passive:true});updateBackToTopVisibility();els.copyRedirectButton.onclick=async()=>{try{await navigator.clipboard.writeText(getRedirectUri());showToast('Redirect URI copied');}catch(_){els.redirectUriText.select();document.execCommand('copy');showToast('Redirect URI copied');}};
     [
       [els.showDialog,'show'],[els.settingsDialog,'settings'],[els.statusesDialog,'statuses'],[els.savedViewsDialog,'saved-views']
     ].forEach(([dialog,name])=>dialog.addEventListener('cancel',event=>{event.preventDefault();closeDialogWithHistory(dialog,name);}));

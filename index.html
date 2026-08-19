@@ -57,7 +57,7 @@
 
       <div class="sidebar-footer">
         <button class="nav-item" id="settingsButton"><span class="nav-icon" data-icon="settings"></span><span>Settings</span></button>
-        <div class="version">TV v3.1.1</div>
+        <div class="version">TV v3.1.2</div>
       </div>
     </aside>
 
@@ -331,6 +331,10 @@
           <div class="artwork-picker-grid" id="artworkPickerGrid"></div>
           <div class="artwork-picker-empty" id="artworkPickerEmpty" hidden>No suitable images are available.</div>
         </section>
+        <div class="artwork-hover-preview" id="artworkHoverPreview" hidden aria-hidden="true">
+          <img id="artworkHoverPreviewImage" alt="">
+          <div class="artwork-hover-preview-label" id="artworkHoverPreviewLabel"></div>
+        </div>
       </div>
 
       <div class="modal-footer split">
@@ -404,9 +408,10 @@
         </div>
       </section>
     </div>
-    <div class="settings-footer">TV v3.1.1</div>
+    <div class="settings-footer">TV v3.1.2</div>
   </dialog>
 
+  <button type="button" class="back-to-top" id="backToTopButton" aria-label="Back to top" title="Back to top" hidden><span data-icon="arrow-up"></span></button>
   <div class="toast" id="toast" role="status" aria-live="polite"></div>
   <script src="app.js"></script>
 </body>
