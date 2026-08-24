@@ -1,7 +1,7 @@
 (() => {
   'use strict';
 
-  const APP_VERSION = '3.1.3';
+  const APP_VERSION = '3.1.4';
   const TMDB_ARTWORK_POLICY = 'textfree-v2';
   const STORAGE_KEY = 'tvBoard.state.v1';
   const DROPBOX_KEY = 'tvBoard.dropbox.v1';

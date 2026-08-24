@@ -1473,3 +1473,24 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
 .sync-refresh-button:hover { background:rgba(119,141,169,.11) !important; color:var(--ink); }
 .sync-refresh-button:focus-visible { outline:2px solid rgba(119,141,169,.55); outline-offset:1px; }
 .sync-refresh-button [data-icon], .sync-refresh-button svg { width:14px; height:14px; }
+
+
+/* TV v3.1.4 — phone Add/Edit Show hierarchy
+   Keep the tablet/desktop editor unchanged, but make Title the first actionable
+   field on iPhone. display:contents lets the existing fields participate in the
+   phone stack without duplicating controls or IDs. */
+@media (max-width:430px) {
+  .show-modal .show-edit-layout {
+    display:flex !important;
+    flex-direction:column;
+    gap:13px;
+  }
+  .show-modal .show-fields {
+    display:contents !important;
+  }
+  .show-modal .show-fields > .lookup-row { order:0; }
+  .show-modal .show-fields > #lookupStatus { order:1; }
+  .show-modal .show-fields > #lookupResults { order:2; }
+  .show-modal .show-edit-layout > .poster-editor { order:3; }
+  .show-modal .show-fields > *:not(.lookup-row):not(#lookupStatus):not(#lookupResults) { order:4; }
+}

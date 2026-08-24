@@ -1,8 +1,12 @@
-# TV v3.1.3
+# TV v3.1.4
 
 TV is the redesigned successor to TV Board. It keeps the existing data/storage contracts while replacing the Kanban board with a scalable visual list library.
 
-## New in v3.1.3
+## New in v3.1.4
+
+- Title is now the first actionable field on iPhone Add/Edit Show screens.
+- Poster and Library Artwork follow the title lookup area on phones; iPad and desktop layout remain unchanged.
+
 
 - Hero artwork now follows the source **16:9 TMDB backdrop ratio** instead of being flattened by the old 310 px / 220 px height caps. This substantially reduces top/bottom cropping on desktop, iPad, and iPhone.
 - Repaired the Dropbox refresh-control CSS so the refresh glyph is genuinely borderless while retaining its 24 px hit target and keyboard focus treatment.

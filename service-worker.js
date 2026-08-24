@@ -1,4 +1,4 @@
-const APP_CACHE = 'tv-v3.1.3';
+const APP_CACHE = 'tv-v3.1.4';
 const IMAGE_CACHE = 'tv-images-v1';
 const ASSETS = ['./','./index.html','./styles.css','./app.js','./manifest.webmanifest','./icon-192.png','./icon-512.png'];
 
