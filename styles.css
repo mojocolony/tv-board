@@ -1494,3 +1494,57 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
   .show-modal .show-edit-layout > .poster-editor { order:3; }
   .show-modal .show-fields > *:not(.lookup-row):not(#lookupStatus):not(#lookupResults) { order:4; }
 }
+
+
+/* TV v3.1.5 — mobile editor polish + complete dark-mode surfaces */
+:root[data-theme="dark"] .watched-episode-choice {
+  background:rgba(255,255,255,.035);
+  border-color:var(--line);
+  color:var(--ink);
+}
+
+:root[data-theme="dark"] .status-pill.archive {
+  background:#2b2f2d;
+  color:#c6c1b8;
+  border:1px solid #3b403d;
+}
+
+:root[data-theme="dark"] .toast {
+  background:#292d2b;
+  color:#f2efe8;
+  border:1px solid #454a46;
+  box-shadow:0 12px 36px rgba(0,0,0,.34);
+}
+
+:root[data-theme="dark"] .check-option,
+:root[data-theme="dark"] .choice-pill {
+  background:#292d2b;
+  color:#d2cec5;
+  border-color:#404541;
+}
+:root[data-theme="dark"] .choice-pill.selected {
+  background:var(--app-blue);
+  color:#fff;
+  border-color:var(--app-blue);
+}
+
+/* iPad mini and phones need the artwork actions below the heading, not squeezed
+   into the side rail beside the metadata grid. */
+@media (max-width:900px) {
+  .library-artwork-label {
+    flex-direction:column;
+    align-items:flex-start;
+    justify-content:flex-start;
+    gap:2px;
+  }
+  .library-artwork-actions {
+    display:flex;
+    align-items:center;
+    gap:10px;
+    flex:0 0 auto;
+  }
+  .library-artwork-actions .text-button {
+    padding-top:3px;
+    padding-bottom:3px;
+  }
+}

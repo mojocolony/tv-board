@@ -1,6 +1,14 @@
-# TV v3.1.4
+# TV v3.1.5
 
 TV is the redesigned successor to TV Board. It keeps the existing data/storage contracts while replacing the Kanban board with a scalable visual list library.
+
+## New in v3.1.5
+
+- Dark mode now gives the **Mark episodes watched?** prompt a proper dark surface instead of a large gray panel.
+- Watched/Abandoned archive pills now use a restrained dark-mode treatment instead of staying nearly white.
+- Toast notifications such as **Show updated** now remain legible in dark mode.
+- Filter status rows, alphabet buttons, genre pills, and Watching With choices now use dark-mode surfaces while selected choices retain TV blue.
+- On iPad mini, iPhone, and other constrained widths, **Library Artwork** places **Pick / Refresh** on their own line so the controls cannot intrude into the main metadata fields.
 
 ## New in v3.1.4
 
