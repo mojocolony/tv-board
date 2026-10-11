@@ -1,6 +1,12 @@
-# TV v3.1.6
+# TV v3.1.7
 
 TV is the redesigned successor to TV Board. It keeps the existing data/storage contracts while replacing the Kanban board with a scalable visual list library.
+
+## New in v3.1.7
+
+- Fixed Edit Show opening partway down the full-size 16:9 hero image: automatic focus on Title was scrolling the dialog underneath its sticky header, creating the appearance of severe image cropping.
+- Edit Show now opens at the top without focusing the off-screen Title field. Add Show retains its existing Title autofocus.
+- Picking or refreshing a hero backdrop returns the editor to the top so the full image can be inspected from its beginning. The image aspect ratio, artwork choices, data, and sync logic are unchanged.
 
 ## New in v3.1.6
 

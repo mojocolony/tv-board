@@ -1,7 +1,7 @@
 (() => {
   'use strict';
 
-  const APP_VERSION = '3.1.6';
+  const APP_VERSION = '3.1.7';
   const TMDB_ARTWORK_POLICY = 'textfree-v2';
   const STORAGE_KEY = 'tvBoard.state.v1';
   const DROPBOX_KEY = 'tvBoard.dropbox.v1';
@@ -1386,8 +1386,18 @@
     prepareEpisodeGuide(show);
     prepareCast(show);
     if(!els.showDialog.open){pushOverlayState('show');els.showDialog.showModal();}
+    // The hero is a full 16:9 image. Focusing the Title field below it used
+    // to scroll the editor down behind its sticky header, making every hero
+    // look severely cropped. Preserve title autofocus for Add Show only.
+    els.showDialog.scrollTop=0;
     (async()=>{if(show&&!show.country)await prepareDraftCountry(show,{preserveExisting:false});await prepareHeroBackdrop(show || draftMeta);await prepareLibraryArtwork(show || draftMeta);})();
-    setTimeout(()=>els.showTitle.focus(),30);
+    setTimeout(()=>{
+      if(!els.showDialog.open)return;
+      if(show){
+        els.backShowButton.focus({preventScroll:true});
+        els.showDialog.scrollTop=0;
+      }else els.showTitle.focus();
+    },30);
   }
   function closeShowDialog(skipHistory=false){closeArtworkPicker();clearTimeout(autocompleteTimer);autocompleteTimer=null;if(els.showDialog.open)els.showDialog.close(); if(lookupController){lookupController.abort();lookupController=null;}els.showTitle.setAttribute('aria-expanded','false');if(!skipHistory)removeOverlayState('show');flushPendingLibraryRender();}
   function setFavourite(value){draftMeta.favourite=Boolean(value);els.showFavourite.classList.toggle('active',draftMeta.favourite);els.showFavourite.setAttribute('aria-pressed',String(draftMeta.favourite));els.showFavouriteText.textContent=draftMeta.favourite?'Favourite':'Not favourite';}
@@ -1512,6 +1522,11 @@
     if(!els.artworkPickerOverlay)return;
     hideArtworkHoverPreview();els.artworkPickerOverlay.hidden=true;artworkPickerMode='';artworkPickerItems=[];
   }
+  function revealHeroBackdrop() {
+    // After a Pick/Refresh, return to the beginning of the full image rather
+    // than leaving its upper portion hidden above the editor's sticky header.
+    requestAnimationFrame(()=>{if(els.showDialog.open)els.showDialog.scrollTop=0;});
+  }
   function artworkLanguageLabel(item) {
     const lang=item?.iso_639_1;
     if(lang===null||lang===undefined||lang==='')return 'No language';
@@ -1586,7 +1601,7 @@
     if(artworkPickerMode==='hero'){
       draftMeta.heroBackdropPath=path;
       const pool=normalizeBackdropPool([path,...draftMeta.heroBackdropPool]);draftMeta.heroBackdropPool=pool;draftMeta.heroBackdropUpdatedAt=nowIso();draftMeta.heroArtworkPolicy=TMDB_ARTWORK_POLICY;
-      persistHeroBackdrop();renderHeroBackdrop(draftMeta);closeArtworkPicker();showToast('Hero selected');return;
+      persistHeroBackdrop();renderHeroBackdrop(draftMeta);closeArtworkPicker();revealHeroBackdrop();showToast('Hero selected');return;
     }
     if(artworkPickerMode==='library'){
       await preloadImage(tmdbLibraryImageUrl(path));
@@ -1770,7 +1785,7 @@
       const current=normalizeBackdropPath(draftMeta.heroBackdropPath);const next=randomBackdropPath(pool,current);
       if(!next || next===current){showToast('No other backdrop is available');renderHeroBackdrop(draftMeta);return;}
       await preloadImage(tmdbBackdropUrl(next));
-      draftMeta.heroBackdropPath=next;draftMeta.heroBackdropUpdatedAt=nowIso();persistHeroBackdrop();renderHeroBackdrop(draftMeta);showToast('Backdrop changed');
+      draftMeta.heroBackdropPath=next;draftMeta.heroBackdropUpdatedAt=nowIso();persistHeroBackdrop();renderHeroBackdrop(draftMeta);revealHeroBackdrop();showToast('Backdrop changed');
     }catch(err){console.error(err);showToast('Backdrop could not be refreshed');renderHeroBackdrop(draftMeta);}
   }
   function updatePosterPreview(){setArtwork(els.posterPreview,els.showPoster.value);}
