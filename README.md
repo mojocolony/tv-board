@@ -1,6 +1,14 @@
-# TV v3.1.5
+# TV v3.1.6
 
 TV is the redesigned successor to TV Board. It keeps the existing data/storage contracts while replacing the Kanban board with a scalable visual list library.
+
+## New in v3.1.6
+
+- Replaced the old cream/slate-blue light palette with Bear-inspired **Ayu**: near-white surfaces, violet-grey text, and orange accents sampled from the supplied reference screenshot.
+- Replaced the green-charcoal dark palette with **Ayu Mirage**: navy-charcoal backgrounds, warm-grey text, and golden-amber accents, including a muted-gold active navigation state.
+- Applied the palette across the library, navigation, filters, dialogs, settings, buttons, pills, inputs, episode guide, toasts, and selected controls; retained custom status distinctions via a small coloured dot.
+- Updated PWA/browser theme colours for both modes. Layout, typography, artwork choices, localStorage keys, Dropbox configuration, and sync logic are unchanged.
+- Filled orange controls use a slightly deeper shade than Bear's link orange to preserve white-label contrast.
 
 ## New in v3.1.5
 

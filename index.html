@@ -3,12 +3,12 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <meta name="theme-color" content="#f4f1ea">
+  <meta name="theme-color" content="#fafafa">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <meta name="apple-mobile-web-app-title" content="TV">
   <script>
-    (()=>{try{const p=JSON.parse(localStorage.getItem('tvBoard.settings.v1')||'{}');const t=['light','dark'].includes(p.theme)?p.theme:(matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light');document.documentElement.dataset.theme=t;document.documentElement.dataset.themeChoice=p.theme||'system';const m=document.querySelector('meta[name="theme-color"]');if(m)m.content=t==='dark'?'#171918':'#f4f1ea';}catch(_){}})();
+    (()=>{try{const p=JSON.parse(localStorage.getItem('tvBoard.settings.v1')||'{}');const t=['light','dark'].includes(p.theme)?p.theme:(matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light');document.documentElement.dataset.theme=t;document.documentElement.dataset.themeChoice=p.theme||'system';const m=document.querySelector('meta[name="theme-color"]');if(m)m.content=t==='dark'?'#1f232f':'#fafafa';}catch(_){}})();
   </script>
   <title>TV</title>
   <link rel="manifest" href="manifest.webmanifest">
@@ -57,7 +57,7 @@
 
       <div class="sidebar-footer">
         <button class="nav-item" id="settingsButton"><span class="nav-icon" data-icon="settings"></span><span>Settings</span></button>
-        <div class="version">TV v3.1.5</div>
+        <div class="version">TV v3.1.6</div>
       </div>
     </aside>
 
@@ -408,7 +408,7 @@
         </div>
       </section>
     </div>
-    <div class="settings-footer">TV v3.1.5</div>
+    <div class="settings-footer">TV v3.1.6</div>
   </dialog>
 
   <button type="button" class="back-to-top" id="backToTopButton" aria-label="Back to top" title="Back to top" hidden><span data-icon="arrow-up"></span></button>

@@ -1548,3 +1548,261 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
     padding-bottom:3px;
   }
 }
+
+
+/* TV v3.1.6 — Bear-inspired Ayu / Ayu Mirage colour system.
+   Colour-only refresh: layout, font sizing, data contracts and artwork untouched.
+   Screenshots sampled 2026-10-11: Ayu orange #e96101, Mirage amber #fecb66,
+   light text #6b6884, Mirage background #1f232f, sidebar #1b1d29.
+   Filled orange controls use a slightly darker accessible tone. */
+:root {
+  --paper: #fafafa;
+  --paper-deep: #f4f4f6;
+  --panel: #fbfbfc;
+  --card: #ffffff;
+  --ink: #6b6884;
+  --muted: #77758c;
+  --line: #e2e1e8;
+  --line-dark: #c8c6d1;
+  --accent-soft: #fff0e4;
+  --danger: #b74d51;
+  --success: #477d64;
+  --warning: #a66e22;
+  --blue: #a94600;
+  --app-blue: #c94f00; /* readable white-on-orange buttons */
+  --app-blue-deep: #a94600;
+  --app-blue-soft: #fff0e4;
+  --app-blue-wash: rgba(233,97,1,.09);
+  --shadow: 0 18px 52px rgba(39,34,54,.10);
+  --ayu-accent: #e96101;
+  --ayu-link: #a94600;
+  --ayu-on-accent: #fff;
+  --ayu-sidebar: #fafafa;
+  --ayu-control: #fff;
+  --ayu-surface: #fff;
+  --ayu-hover: #f4f3f6;
+  --ayu-subtle: #f4f4f6;
+  --ayu-chip: #f3f1f5;
+  --ayu-chip-ink: #6b6884;
+  --ayu-nav-text: #737187;
+  --ayu-nav-selected: #f1f0f3;
+  --ayu-nav-selected-ink: #6b6884;
+  --ayu-heading: #6b6884;
+  --ayu-placeholder: #9290a2;
+  --ayu-toast: #6b6884;
+  --ayu-toast-text: #fff;
+  --ayu-stars: #e96101;
+  --ayu-empty-stars: #dcd3d2;
+}
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --paper: #1f232f;
+  --paper-deep: #1b1d29;
+  --panel: #242837;
+  --card: #292d3c;
+  --ink: #d9d7d1;
+  --muted: #a5a6b1;
+  --line: #3b3e50;
+  --line-dark: #52566a;
+  --accent-soft: #353241;
+  --danger: #e49a9b;
+  --success: #9fceb0;
+  --warning: #fecb66;
+  --blue: #fecb66;
+  --app-blue: #fecb66;
+  --app-blue-deep: #fecb66;
+  --app-blue-soft: rgba(254,203,102,.14);
+  --app-blue-wash: rgba(254,203,102,.10);
+  --shadow: 0 18px 52px rgba(0,0,0,.33);
+  --ayu-accent: #fecb66;
+  --ayu-link: #fecb66;
+  --ayu-on-accent: #1b1d29;
+  --ayu-sidebar: #1b1d29;
+  --ayu-control: #2b2e3e;
+  --ayu-surface: #282c3b;
+  --ayu-hover: #333747;
+  --ayu-subtle: #2b2e3e;
+  --ayu-chip: #333747;
+  --ayu-chip-ink: #d9d7d1;
+  --ayu-nav-text: #a7a9b8;
+  --ayu-nav-selected: #b49a60;
+  --ayu-nav-selected-ink: #1b1d29;
+  --ayu-heading: #aab3c2;
+  --ayu-placeholder: #a4a6b3;
+  --ayu-toast: #303446;
+  --ayu-toast-text: #f0eee8;
+  --ayu-stars: #fecb66;
+  --ayu-empty-stars: #5d5260;
+}
+
+/* The app shell, navigation, typography, and selected item. */
+:root .sidebar, :root[data-theme="dark"] .sidebar { background: var(--ayu-sidebar); }
+:root .nav-label { color: var(--muted); }
+:root .nav-item { color: var(--ayu-nav-text); }
+:root .nav-item:hover { background: var(--ayu-hover); color: var(--ink); }
+:root .nav-item.active { position: relative; background: var(--ayu-nav-selected); color: var(--ayu-nav-selected-ink); }
+:root .nav-item.active::before { content:""; position:absolute; top:7px; bottom:7px; left:0; width:3px; border-radius:3px; background:var(--ayu-accent); }
+:root .nav-item.active .nav-icon,
+:root .nav-item.status-nav.active .nav-icon,
+:root .nav-item.active .nav-count { color: var(--ayu-nav-selected-ink); }
+:root .nav-item.active .nav-count { background: var(--ayu-chip); }
+:root .brand-mark { background: var(--ayu-accent); color: var(--ayu-on-accent); }
+:root[data-theme="dark"] .brand-mark { background: var(--ayu-nav-selected); }
+:root .brand-title, :root h1, :root h2 { color: var(--ayu-heading); }
+:root .brand-sub, :root .version, :root .settings-footer { color: var(--muted); }
+:root .row-sub, :root .row-meta, :root .row-meta span { color: var(--muted); }
+:root .row-title { color: var(--ink); }
+:root .heart { color: var(--ayu-accent); }
+:root .status-dot { background: var(--muted); }
+:root .status-dot.connected { background: var(--success); }
+
+/* Inputs and surfaces: override older hard-coded cream and green-charcoal fills. */
+:root .search-wrap, :root .sort-wrap, :root .toolbar-button,
+:root .sync-chip, :root .secondary-button, :root .icon-button,
+:root .mobile-menu, :root .back-button, :root .sort-button,
+:root .favourite-toggle, :root .multi-picker > summary,
+:root .filter-section select, :root .filter-section input,
+:root .show-fields input, :root .show-fields select,
+:root .show-fields textarea, :root .poster-editor input,
+:root .settings-card input, :root .inline-form input,
+:root .font-size-selector button, :root .theme-selector button,
+:root .manager-actions button { background: var(--ayu-control); color: var(--ink); border-color: var(--line); }
+:root[data-theme="dark"] .search-wrap,
+:root[data-theme="dark"] .sort-wrap,
+:root[data-theme="dark"] .toolbar-button,
+:root[data-theme="dark"] .sync-chip,
+:root[data-theme="dark"] .secondary-button,
+:root[data-theme="dark"] .icon-button,
+:root[data-theme="dark"] .favourite-toggle,
+:root[data-theme="dark"] .filter-section select,
+:root[data-theme="dark"] .filter-section input,
+:root[data-theme="dark"] .show-fields input,
+:root[data-theme="dark"] .show-fields select,
+:root[data-theme="dark"] .show-fields textarea,
+:root[data-theme="dark"] .poster-editor input,
+:root[data-theme="dark"] .settings-card input,
+:root[data-theme="dark"] .inline-form input,
+:root[data-theme="dark"] .multi-picker > summary,
+:root[data-theme="dark"] .font-size-selector button,
+:root[data-theme="dark"] .theme-selector button,
+:root[data-theme="dark"] .sort-button { background:var(--ayu-control); color:var(--ink); }
+:root .search-wrap input { color: var(--ink); }
+:root input::placeholder, :root textarea::placeholder { color:var(--ayu-placeholder); opacity:1; }
+:root .toolbar-button:hover, :root .secondary-button:hover,
+:root .sort-button:hover, :root .icon-button:hover { background: var(--ayu-hover); border-color:var(--line-dark); }
+:root .search-wrap:focus-within, :root .sort-wrap:focus-within,
+:root .multi-picker[open] > summary { border-color:var(--ayu-accent); background:var(--ayu-control); }
+:root button:focus-visible, :root input:focus-visible,
+:root select:focus-visible, :root textarea:focus-visible,
+:root summary:focus-visible { outline-color:var(--ayu-accent); }
+:root .sort-button:focus-visible { border-color:var(--ayu-accent); box-shadow:0 0 0 2px var(--app-blue-wash); }
+:root .primary-button, :root .choice-pill.selected,
+:root .font-size-selector button.active, :root .theme-selector button.active,
+:root .alphabet-jump button.active, :root .filter-badge { background:var(--app-blue); border-color:var(--app-blue); color:var(--ayu-on-accent); }
+:root .primary-button:hover { background:var(--app-blue-deep); color:var(--ayu-on-accent); }
+:root[data-theme="dark"] .primary-button:hover { background:#f5bd51; }
+:root .text-button, :root .lookup-chevron, :root .cast-more > summary,
+:root .watching-now-progress, :root .episode-item.watched .episode-check,
+:root .back-button { color:var(--ayu-link); }
+:root .check-option input { accent-color:var(--app-blue); }
+:root .filter-chip, :root .picker-summary-chip, :root .episode-next-badge,
+:root .progress-callout, :root .viewing-run.current,
+:root .settings-status { background:var(--app-blue-soft); color:var(--ayu-link); border-color:var(--line); }
+:root .filter-chip button { color:var(--ayu-link); }
+:root .alphabet-jump button:hover:not(:disabled),
+:root .sort-menu-item:hover, :root .sort-menu-item.active,
+:root .watching-with-option:hover, :root .watching-with-option:focus-visible,
+:root .lookup-result:hover { background:var(--app-blue-soft); color:var(--ayu-link); }
+:root[data-theme="dark"] .sort-menu-item:hover,
+:root[data-theme="dark"] .sort-menu-item.active,
+:root[data-theme="dark"] .watching-with-option:hover,
+:root[data-theme="dark"] .watching-with-option:focus-visible { background:var(--app-blue-soft); }
+
+/* List and secondary screens. Avoid the original white glass on Mirage. */
+:root .show-list, :root .settings-card, :root .stream-box,
+:root .episode-guide-card, :root .cast-card, :root .viewing-history-card,
+:root .watched-episode-choice { background:var(--ayu-surface); border-color:var(--line); }
+:root[data-theme="dark"] .show-list,
+:root[data-theme="dark"] .settings-card,
+:root[data-theme="dark"] .stream-box,
+:root[data-theme="dark"] .episode-guide-card,
+:root[data-theme="dark"] .cast-card,
+:root[data-theme="dark"] .viewing-history-card,
+:root[data-theme="dark"] .watched-episode-choice { background:var(--ayu-surface); }
+:root .show-row:hover, :root[data-theme="dark"] .show-row:hover { background:var(--ayu-hover); }
+:root .show-row:focus-visible { box-shadow:inset 4px 0 0 var(--ayu-accent); background:var(--app-blue-wash); }
+:root .tag-mini, :root .provider-pill, :root .progress-callout.quiet,
+:root .viewing-run, :root .choice-pill, :root .check-option,
+:root .status-pill.archive { background:var(--ayu-chip); color:var(--ayu-chip-ink); border-color:var(--line); }
+:root[data-theme="dark"] .tag-mini,
+:root[data-theme="dark"] .provider-pill,
+:root[data-theme="dark"] .progress-callout.quiet,
+:root[data-theme="dark"] .choice-pill,
+:root[data-theme="dark"] .check-option,
+:root[data-theme="dark"] .status-pill.archive { background:var(--ayu-chip); color:var(--ayu-chip-ink); border-color:var(--line); }
+:root .status-pill:not(.archive) { background:var(--ayu-chip) !important; color:var(--ayu-chip-ink) !important; border:1px solid var(--line); }
+:root .status-pill:not(.archive)::before { content:""; display:inline-block; width:6px; height:6px; border-radius:50%; margin-right:6px; vertical-align:1px; background:var(--status-color,var(--ayu-accent)); }
+:root .rating-star::before { color:var(--ayu-empty-stars); }
+:root .rating-star::after, :root[data-theme="dark"] .rating-star::after { color:var(--ayu-stars); }
+:root .rating-text { color:var(--ink); }
+:root .cast-row, :root .episode-item { border-bottom-color:var(--line); }
+:root .episode-body p, :root[data-theme="dark"] .episode-body p { color:var(--muted); }
+:root .lookup-results, :root .multi-picker-panel,
+:root .sort-menu, :root .watching-with-suggestions { background:var(--panel); border-color:var(--line); }
+:root[data-theme="dark"] .lookup-results,
+:root[data-theme="dark"] .multi-picker-panel { background:var(--panel); }
+:root .lookup-result, :root .season-block, :root .manager-row { background:var(--ayu-surface); border-color:var(--line); color:var(--ink); }
+:root[data-theme="dark"] .lookup-result,
+:root[data-theme="dark"] .season-block,
+:root[data-theme="dark"] .manager-row { background:var(--ayu-surface); color:var(--ink); }
+:root .manager-status-swatch { box-shadow:inset 0 0 0 3px var(--ayu-surface); }
+:root .modal-header, :root .modal-footer,
+:root[data-theme="dark"] .modal-header,
+:root[data-theme="dark"] .modal-footer { background:var(--panel); border-color:var(--line); }
+:root .filter-drawer, :root dialog.modal { background:var(--panel); color:var(--ink); }
+:root .drawer-header, :root .drawer-footer { background:var(--panel); border-color:var(--line); }
+:root .toast, :root[data-theme="dark"] .toast { background:var(--ayu-toast); color:var(--ayu-toast-text); border:1px solid var(--line-dark); }
+:root .back-to-top, :root[data-theme="dark"] .back-to-top { background:var(--ayu-control); color:var(--ink); border-color:var(--line); }
+:root .back-to-top:focus-visible, :root .sync-refresh-button:focus-visible { outline-color:var(--ayu-accent); }
+:root .sync-refresh-button:hover { background:var(--app-blue-wash) !important; }
+
+/* Dark sidebar uses Bear Mirage's muted gold selection with dark text. */
+:root[data-theme="dark"] .nav-item.active::before { background:#fecb66; }
+:root[data-theme="dark"] .nav-item.active .nav-count { background:rgba(27,29,41,.16); }
+:root[data-theme="dark"] .nav-item.active .nav-icon,
+:root[data-theme="dark"] .nav-item.status-nav.active .nav-icon { color:var(--ayu-nav-selected-ink); }
+:root[data-theme="dark"] .shortcut-key { background:rgba(27,29,41,.16); color:var(--ayu-on-accent); }
+:root[data-theme="dark"] .row-poster,
+:root[data-theme="dark"] .poster-preview,
+:root[data-theme="dark"] .library-artwork-preview { background:#1b1d29; }
+:root[data-theme="dark"] .show-hero { background:#1b1d29; }
+
+/* Consistent Ayu surfaces on small screens; layout rules remain unchanged. */
+@media (max-width:1100px) {
+  :root .sidebar, :root[data-theme="dark"] .sidebar { background:var(--ayu-sidebar); }
+}
+
+/* Accessibility/QA pass: headings and fallbacks must not inherit legacy
+   low-contrast olive labels or cream artwork placeholders. */
+:root .filter-heading, :root label > span { color:var(--muted); }
+:root .main-footer { color:var(--muted); }
+:root .row-poster:not(.library-artwork):not(.portrait-source),
+:root .poster-preview:not(.portrait-source) { background:var(--paper-deep); box-shadow:none; }
+:root .row-poster .poster-fallback,
+:root .poster-preview .poster-fallback { color:var(--muted); }
+:root .favourite-toggle.active { color:var(--ayu-link); background:var(--app-blue-soft); border-color:var(--line); }
+:root .episode-check { color:var(--muted); }
+:root .danger-button { border-color:var(--line-dark); }
+:root .poster-fallback svg,
+:root .library-artwork-preview .poster-fallback svg {
+  fill:none; stroke:currentColor; stroke-width:1.8;
+  stroke-linecap:round; stroke-linejoin:round;
+}
+:root .library-artwork-preview .poster-fallback {
+  width:100%; height:100%; display:grid; place-items:center; color:var(--muted);
+}
+:root .library-artwork-preview .poster-fallback svg { width:36px; height:36px; }
+:root[data-theme="dark"] .choice-pill.selected {
+  background:var(--app-blue); border-color:var(--app-blue);
+  color:var(--ayu-on-accent);
+}

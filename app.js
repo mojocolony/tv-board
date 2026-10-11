@@ -1,7 +1,7 @@
 (() => {
   'use strict';
 
-  const APP_VERSION = '3.1.5';
+  const APP_VERSION = '3.1.6';
   const TMDB_ARTWORK_POLICY = 'textfree-v2';
   const STORAGE_KEY = 'tvBoard.state.v1';
   const DROPBOX_KEY = 'tvBoard.dropbox.v1';
@@ -267,7 +267,12 @@
     return palette[index % palette.length];
   }
   function statusNavColour(column, index = 0) {
-    const named = { watching: '#778DA9', next: '#a17e55', someday: '#7f9270', waiting: '#5f8883' };
+    // Named status indicators adapt to Ayu/Ayu Mirage; custom status colours
+    // remain exactly as chosen by the user and stored in Dropbox.
+    const dark = document.documentElement.dataset.theme === 'dark';
+    const named = dark
+      ? { watching: '#fecb66', next: '#b49a60', someday: '#a5b69b', waiting: '#9cb9c1' }
+      : { watching: '#e96101', next: '#aa8149', someday: '#849474', waiting: '#678b91' };
     return named[String(column?.id || '').toLowerCase()] || safeColour(column?.color, index);
   }
   function safeColour(value, index = 0) { return /^#[0-9a-f]{6}$/i.test(String(value || '')) ? String(value) : defaultColour(index); }
@@ -719,8 +724,8 @@
   function validTheme(value){ return ['system','light','dark'].includes(value) ? value : 'system'; }
   function resolvedTheme(){ const choice=validTheme(prefs.theme); return choice==='system' ? (matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light') : choice; }
   function applyTheme(){
-    prefs.theme=validTheme(prefs.theme); const theme=resolvedTheme(); document.documentElement.dataset.theme=theme; document.documentElement.dataset.themeChoice=prefs.theme; const themeMeta=document.querySelector('meta[name="theme-color"]'); if(themeMeta)themeMeta.content=theme==='dark'?'#171918':'#f4f1ea';
-    document.documentElement.style.colorScheme=theme; const meta=document.querySelector('meta[name="theme-color"]'); if(meta)meta.content=theme==='dark'?'#171918':'#f4f1ea';
+    prefs.theme=validTheme(prefs.theme); const theme=resolvedTheme(); document.documentElement.dataset.theme=theme; document.documentElement.dataset.themeChoice=prefs.theme; const themeMeta=document.querySelector('meta[name="theme-color"]'); if(themeMeta)themeMeta.content=theme==='dark'?'#1f232f':'#fafafa';
+    document.documentElement.style.colorScheme=theme; const meta=document.querySelector('meta[name="theme-color"]'); if(meta)meta.content=theme==='dark'?'#1f232f':'#fafafa';
     if(els.themeSelector) els.themeSelector.querySelectorAll('[data-theme-choice]').forEach(btn=>btn.classList.toggle('active',btn.dataset.themeChoice===prefs.theme));
   }
 
@@ -1018,7 +1023,7 @@
     }
 
     const pill = document.createElement('span'); pill.className = `status-pill${status.archive ? ' archive' : ''}`; pill.textContent = status.name;
-    if (!status.archive) { pill.style.background = hexAlpha(status.color, .12); pill.style.color = status.color; }
+    if (!status.archive) { pill.style.setProperty('--status-color', statusNavColour(status)); pill.style.background = hexAlpha(status.color, .12); pill.style.color = status.color; }
     row.append(poster, main, personal, pill);
     row.addEventListener('click', (event) => {
       lastShowTrigger = row;
