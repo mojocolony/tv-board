@@ -12,7 +12,8 @@
   </script>
   <title>TV</title>
   <link rel="manifest" href="manifest.webmanifest">
-  <link rel="apple-touch-icon" href="icon-192.png">
+  <link rel="apple-touch-icon" sizes="180x180" href="icon-light-180.png">
+  <link id="tvFavicon" rel="icon" type="image/png" sizes="32x32" href="icon-light-32.png">
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
@@ -20,7 +21,8 @@
     <aside class="sidebar" id="sidebar" aria-label="TV navigation">
       <div class="brand-row">
         <div class="brand-mark" aria-hidden="true">
-          <svg viewBox="0 0 24 24"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="m8 2 4 3 4-3"/></svg>
+          <img class="brand-icon brand-icon-light" src="icon-light-192.png" width="44" height="44" alt="" decoding="async">
+          <img class="brand-icon brand-icon-dark" src="icon-192.png" width="44" height="44" alt="" decoding="async">
         </div>
         <div>
           <div class="brand-title">TV</div>
@@ -57,7 +59,7 @@
 
       <div class="sidebar-footer">
         <button class="nav-item" id="settingsButton"><span class="nav-icon" data-icon="settings"></span><span>Settings</span></button>
-        <div class="version">TV v3.1.7</div>
+        <div class="version">TV v3.1.8</div>
       </div>
     </aside>
 
@@ -408,7 +410,7 @@
         </div>
       </section>
     </div>
-    <div class="settings-footer">TV v3.1.7</div>
+    <div class="settings-footer">TV v3.1.8</div>
   </dialog>
 
   <button type="button" class="back-to-top" id="backToTopButton" aria-label="Back to top" title="Back to top" hidden><span data-icon="arrow-up"></span></button>

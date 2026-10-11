@@ -1806,3 +1806,33 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
   background:var(--app-blue); border-color:var(--app-blue);
   color:var(--ayu-on-accent);
 }
+
+
+/* TV v3.1.8 — themed sculptural TV identity; geometry/layout elsewhere unchanged. */
+.brand-mark,
+:root .brand-mark,
+:root[data-theme="dark"] .brand-mark {
+  width:44px;
+  height:44px;
+  min-width:44px;
+  flex:0 0 44px;
+  display:grid;
+  position:relative;
+  place-items:center;
+  padding:0;
+  overflow:hidden;
+  background:transparent;
+  box-shadow:none;
+  border-radius:11px;
+}
+.brand-mark .brand-icon {
+  display:block;
+  position:absolute;
+  inset:0;
+  width:100%;
+  height:100%;
+  object-fit:contain;
+}
+:root .brand-mark .brand-icon-dark { display:none; }
+:root[data-theme="dark"] .brand-mark .brand-icon-light { display:none; }
+:root[data-theme="dark"] .brand-mark .brand-icon-dark { display:block; }

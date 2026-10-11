@@ -1,4 +1,18 @@
-# TV v3.1.7
+# TV v3.1.8
+
+## New in v3.1.8 — Ayu / Ayu Mirage app icon
+
+- New layered media-play icon, with light and dark variants drawn from the approved artwork.
+- The in-app sidebar icon changes automatically with TV's Light, Dark or System theme.
+- The browser-tab favicon changes with TV's chosen theme.
+- `icon-192.png` and `icon-512.png` are the dark default for the installed PWA/Home Screen icon, because browsers do not consistently update installed icons when in-app theme preferences change.
+- Added `icon-light-192.png` and `icon-light-512.png` for the light-themed app identity.
+- Updated service-worker cache version and precache list to include both themes.
+- No changes to the TV library, Dropbox sync, TVmaze/TMDB integrations, or show editor.
+
+**Deployment:** Upload all ten files to the `main` branch root, replacing matching files. Keep the names unchanged. Chrome/iOS may retain an installed app icon until the operating system refreshes it or the PWA is reinstalled. Do not remove an existing PWA before syncing/exporting TV data.
+
+## TV v3.1.7
 
 TV is the redesigned successor to TV Board. It keeps the existing data/storage contracts while replacing the Kanban board with a scalable visual list library.
 
@@ -215,3 +229,15 @@ Export a backup from the current TV Board app. The redesign is migration-compati
 - Added explicit Back controls to shows, Settings, Filters, Manage Statuses and Saved Views.
 - Browser Back now closes the current secondary screen before leaving TV.
 - Added extra mobile safe-area space above Safari’s floating toolbar.
+
+
+## Icon asset completion (TV v3.1.8, no version change)
+
+- Ayu Mirage (dark): `icon-{16,32,180,192,512,1024}.png`.
+- Ayu (light): `icon-light-{16,32,180,192,512,1024}.png`.
+- Dedicated Android maskable PNGs: `icon-maskable-{192,512}.png` and `icon-light-maskable-{192,512}.png`.
+- `favicon.ico` and `favicon-light.ico` contain 16, 32 and 48 px sizes.
+- 1024 px assets are **upscaled from the supplied 512 px artwork**, not original vector/full-resolution design masters. Replace if actual 1024 px source masters become available.
+- The manifest references standard and separately padded maskable icons. Standard install icons use the supplied dark set; both theme variants are included for future use.
+- `index.html` uses a 180 px light Apple touch icon. The browser favicon follows the light/dark interface theme at 32 px.
+- Service-worker app cache name revised so clients can pick up these asset changes; TV remains v3.1.8.

@@ -1,6 +1,6 @@
-const APP_CACHE = 'tv-v3.1.7';
+const APP_CACHE = 'tv-v3.1.8-icon-assets-2';
 const IMAGE_CACHE = 'tv-images-v1';
-const ASSETS = ['./','./index.html','./styles.css','./app.js','./manifest.webmanifest','./icon-192.png','./icon-512.png'];
+const ASSETS = ["./","./index.html","./styles.css","./app.js","./manifest.webmanifest","./icon-16.png","./icon-32.png","./icon-180.png","./icon-192.png","./icon-512.png","./icon-maskable-192.png","./icon-maskable-512.png","./icon-light-16.png","./icon-light-32.png","./icon-light-180.png","./icon-light-192.png","./icon-light-512.png","./favicon.ico","./favicon-light.ico"];
 
 self.addEventListener('install', event => {
   event.waitUntil(caches.open(APP_CACHE).then(cache => cache.addAll(ASSETS)).then(() => self.skipWaiting()));

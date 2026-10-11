@@ -1,7 +1,7 @@
 (() => {
   'use strict';
 
-  const APP_VERSION = '3.1.7';
+  const APP_VERSION = '3.1.8';
   const TMDB_ARTWORK_POLICY = 'textfree-v2';
   const STORAGE_KEY = 'tvBoard.state.v1';
   const DROPBOX_KEY = 'tvBoard.dropbox.v1';
@@ -726,6 +726,7 @@
   function applyTheme(){
     prefs.theme=validTheme(prefs.theme); const theme=resolvedTheme(); document.documentElement.dataset.theme=theme; document.documentElement.dataset.themeChoice=prefs.theme; const themeMeta=document.querySelector('meta[name="theme-color"]'); if(themeMeta)themeMeta.content=theme==='dark'?'#1f232f':'#fafafa';
     document.documentElement.style.colorScheme=theme; const meta=document.querySelector('meta[name="theme-color"]'); if(meta)meta.content=theme==='dark'?'#1f232f':'#fafafa';
+    const tvIcon=document.getElementById('tvFavicon'); if(tvIcon) tvIcon.href=theme==='dark'?'icon-32.png':'icon-light-32.png';
     if(els.themeSelector) els.themeSelector.querySelectorAll('[data-theme-choice]').forEach(btn=>btn.classList.toggle('active',btn.dataset.themeChoice===prefs.theme));
   }
 
