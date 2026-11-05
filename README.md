@@ -1,4 +1,16 @@
-# TV v3.1.8
+# TV v3.1.9
+
+## New in v3.1.9 — consistent light app icon
+
+- Reuse the existing approved light TV artwork without regenerating or altering its design.
+- Point the Chrome/desktop PWA manifest's 192 px and 512 px install and maskable entries to the light artwork (the previous manifest still pointed to dark files).
+- Keep the light artwork for Chrome tab favicons, Apple touch icon, and in-app sidebar branding regardless of light/dark interface theme.
+- Version icon references and the service-worker shell cache to help Chrome and installed PWAs discover the corrected icon assets.
+- No changes to show data, settings/storage keys, Dropbox sync, TMDB/TVmaze, or application behavior.
+
+**Installed Chrome apps:** Chrome/macOS can retain the previously installed icon. After the new version appears, update the existing app or reinstall it if its icon stays cached; ensure TV data is synced/exported before uninstalling.
+
+## TV v3.1.8
 
 ## New in v3.1.8 — Ayu / Ayu Mirage app icon
 

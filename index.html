@@ -11,9 +11,10 @@
     (()=>{try{const p=JSON.parse(localStorage.getItem('tvBoard.settings.v1')||'{}');const t=['light','dark'].includes(p.theme)?p.theme:(matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light');document.documentElement.dataset.theme=t;document.documentElement.dataset.themeChoice=p.theme||'system';const m=document.querySelector('meta[name="theme-color"]');if(m)m.content=t==='dark'?'#1f232f':'#fafafa';}catch(_){}})();
   </script>
   <title>TV</title>
-  <link rel="manifest" href="manifest.webmanifest">
-  <link rel="apple-touch-icon" sizes="180x180" href="icon-light-180.png">
-  <link id="tvFavicon" rel="icon" type="image/png" sizes="32x32" href="icon-light-32.png">
+  <link rel="manifest" href="manifest.webmanifest?v=3.1.9">
+  <link rel="apple-touch-icon" sizes="180x180" href="icon-light-180.png?v=3.1.9">
+  <link rel="icon" type="image/png" sizes="16x16" href="icon-light-16.png?v=3.1.9">
+  <link id="tvFavicon" rel="icon" type="image/png" sizes="32x32" href="icon-light-32.png?v=3.1.9">
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
@@ -21,8 +22,7 @@
     <aside class="sidebar" id="sidebar" aria-label="TV navigation">
       <div class="brand-row">
         <div class="brand-mark" aria-hidden="true">
-          <img class="brand-icon brand-icon-light" src="icon-light-192.png" width="44" height="44" alt="" decoding="async">
-          <img class="brand-icon brand-icon-dark" src="icon-192.png" width="44" height="44" alt="" decoding="async">
+          <img class="brand-icon" src="icon-light-192.png?v=3.1.9" width="44" height="44" alt="" decoding="async">
         </div>
         <div>
           <div class="brand-title">TV</div>
@@ -59,7 +59,7 @@
 
       <div class="sidebar-footer">
         <button class="nav-item" id="settingsButton"><span class="nav-icon" data-icon="settings"></span><span>Settings</span></button>
-        <div class="version">TV v3.1.8</div>
+        <div class="version">TV v3.1.9</div>
       </div>
     </aside>
 
